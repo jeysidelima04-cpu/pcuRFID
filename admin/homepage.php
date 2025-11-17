@@ -162,10 +162,13 @@ $activeSection = $_GET['section'] ?? 'students';
                 box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3) !important;
                 width: 3.5rem !important;
                 height: 3.5rem !important;
+                min-width: 3.5rem !important;
+                min-height: 3.5rem !important;
                 border-radius: 50% !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
+                padding: 0 !important;
             }
             .toggle-btn:hover {
                 background-color: #0056b3;
@@ -196,7 +199,7 @@ $activeSection = $_GET['section'] ?? 'students';
     <!-- Sidebar Toggle Button (Mobile Only) -->
     <button 
         id="sidebarToggle" 
-        class="toggle-btn fixed top-4 left-4 z-50 bg-[#0056b3] text-white p-3 rounded-lg shadow-lg hover:shadow-xl"
+        class="toggle-btn fixed top-4 left-4 z-50 bg-[#0056b3] text-white shadow-lg hover:shadow-xl"
         onclick="toggleSidebar()"
         title="Toggle Menu"
     >
@@ -212,7 +215,7 @@ $activeSection = $_GET['section'] ?? 'students';
                 <img src="../pcu-logo.png" alt="PCU Logo" class="w-10 h-10">
                 <div>
                     <h2 class="font-semibold text-slate-800">Admin Panel</h2>
-                    <p class="text-xs text-slate-500">RFID System</p>
+                    <p class="text-xs text-slate-500">GateWatch</p>
                 </div>
             </a>
 
@@ -364,9 +367,10 @@ $activeSection = $_GET['section'] ?? 'students';
                         <div class="grid gap-4">
                         <?php foreach ($registeredStudents as $student): ?>
                             <div class="border border-green-200 bg-green-50/50 rounded-lg p-4 fade-in">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2 mb-2">
+                                <!-- Desktop: side-by-side layout, Mobile: centered layout -->
+                                <div class="flex flex-col md:flex-row items-center md:items-stretch md:justify-between text-center md:text-left">
+                                    <div class="w-full md:flex-1 flex flex-col">
+                                        <div class="flex items-center justify-center md:justify-start gap-2 mb-2">
                                             <h3 class="font-semibold text-slate-800">
                                                 <?php echo htmlspecialchars($student['name']); ?>
                                             </h3>
@@ -378,7 +382,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                         <p class="text-sm text-slate-500 mb-2">
                                             <?php echo htmlspecialchars($student['email']); ?>
                                         </p>
-                                        <div class="bg-white rounded-md p-3 mt-3">
+                                        <div class="bg-white rounded-md p-3 mt-3 max-w-md mx-auto md:mx-0 flex-1 flex flex-col justify-between">
                                             <div class="flex items-center justify-between text-sm">
                                                 <span class="text-slate-600">RFID UID:</span>
                                                 <code class="bg-slate-100 px-3 py-1 rounded font-mono text-slate-800"><?php echo htmlspecialchars($student['rfid_uid']); ?></code>
@@ -389,7 +393,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex flex-col gap-2 ml-4">
+                                    <div class="flex flex-row md:flex-col gap-2 mt-4 md:mt-0 md:ml-4">
                                         <button 
                                             onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>')"
                                             class="px-4 py-2 bg-blue-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
