@@ -60,7 +60,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID | Home</title>
+    <title>GateWatch | Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="assets/css/styles.css">
@@ -352,6 +352,123 @@ try {
                 margin-top: -0.125rem !important;
             }
         }
+        
+        /* Modal fade-in animation */
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Success animation */
+        @keyframes successPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .modal-show {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        
+        .success-animation {
+            animation: successPulse 0.5s ease-in-out;
+        }
+        
+        /* Page reload transition */
+        .page-reload-transition {
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        
+        /* Checkmark animation */
+        .checkmark-circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 2;
+            stroke-miterlimit: 10;
+            stroke: #10b981;
+            fill: none;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+        
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 3;
+            stroke: #10b981;
+            stroke-miterlimit: 10;
+            margin: 0 auto;
+            box-shadow: inset 0px 0px 0px #10b981;
+            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+        }
+        
+        .checkmark-check {
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+        }
+        
+        @keyframes stroke {
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+        
+        @keyframes scale {
+            0%, 100% {
+                transform: none;
+            }
+            50% {
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+        
+        @keyframes fill {
+            100% {
+                box-shadow: inset 0px 0px 0px 40px #10b981;
+            }
+        }
+        
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 60;
+            opacity: 0;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .success-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            opacity: 0;
+            animation: fadeIn 0.4s ease-out 0.8s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -364,7 +481,7 @@ try {
                     <div class="flex items-center">
                         <a href="homepage.php" class="flex items-center hover:opacity-80 transition-opacity">
                             <img src="pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
-                            <span class="ml-2 text-xl font-semibold text-sky-700">PCU RFID</span>
+                            <span class="ml-2 text-xl font-semibold text-sky-700">GateWatch</span>
                         </a>
                     </div>
                     
@@ -391,6 +508,19 @@ try {
                                     <div class="mb-1">Signed in as</div>
                                     <div class="font-medium text-slate-700 break-words"><?= htmlspecialchars($user['email']) ?></div>
                                 </div>
+                                <div class="border-t border-slate-200"></div>
+                                <button type="button" onclick="toggleEditProfile(); closeUserMenu();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                    Edit Profile
+                                </button>
+                                <button type="button" onclick="toggleContactSupport(); closeUserMenu();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                                    </svg>
+                                    Contact Support
+                                </button>
                                 <div class="border-t border-slate-200"></div>
                                 <form action="auth.php" method="POST" class="block">
                                     <?= csrf_input() ?>
@@ -516,41 +646,37 @@ try {
                             </div>
                         </div>
 
-                        <!-- Strike/Violation Card -->
-                        <div class="col-span-full">
-                            <div class="bg-gradient-to-br from-rose-50 to-white rounded-xl p-4 border border-rose-100 shadow-sm">
-                                <div class="flex items-center space-x-3">
-                                    <div class="p-2 bg-rose-100 rounded-lg">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                                        </svg>
+                        <!-- RFID Card Status -->
+                        <div class="bg-gradient-to-br from-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-50 to-white rounded-xl p-4 border border-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-100 shadow-sm">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-100 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-slate-500">RFID Card</div>
+                                    <div class="text-lg">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium <?= !empty($user['rfid_uid']) ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' ?>">
+                                            <?= !empty($user['rfid_uid']) ? 'Active' : 'Not Active' ?>
+                                        </span>
                                     </div>
-                                    <div class="flex-grow">
-                                        <div class="text-sm font-medium text-slate-500">ID Violations</div>
-                                        <div class="flex items-center justify-between">
-                                            <div class="text-lg font-semibold text-slate-700">
-                                                <?= $user['violation_count'] ?? 0 ?> Strike<?= ($user['violation_count'] ?? 0) !== 1 ? 's' : '' ?>
-                                            </div>
-                                            <?php if (($user['violation_count'] ?? 0) > 0): ?>
-                                            <span class="text-sm text-rose-600">
-                                                <?php
-                                                    $remainingStrikes = 3 - ($user['violation_count'] ?? 0);
-                                                    echo $remainingStrikes > 0 ? 
-                                                        "$remainingStrikes strike" . ($remainingStrikes !== 1 ? 's' : '') . " remaining" : 
-                                                        "Account review required";
-                                                ?>
-                                            </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <?php if (($user['violation_count'] ?? 0) > 0): ?>
-                                        <div class="mt-2 flex">
-                                            <div class="flex-grow bg-slate-200 rounded-full h-2">
-                                                <div class="bg-rose-500 h-2 rounded-full transition-all duration-500" 
-                                                     style="width: <?= min(100, (($user['violation_count'] ?? 0) / 3) * 100) ?>%">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Strike/Violation Card -->
+                        <div class="bg-gradient-to-br from-rose-50 to-white rounded-xl p-4 border border-rose-100 shadow-sm">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-rose-100 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-grow">
+                                    <div class="text-sm font-medium text-slate-500">ID Violations</div>
+                                    <div class="text-lg font-semibold text-slate-700">
+                                        <?= $user['violation_count'] ?? 0 ?> Strike<?= ($user['violation_count'] ?? 0) !== 1 ? 's' : '' ?>
                                     </div>
                                 </div>
                             </div>
@@ -559,6 +685,89 @@ try {
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Edit Profile Modal (Hidden by default) -->
+    <div id="editProfileForm" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h4 class="text-xl font-semibold text-slate-700 mb-6">Edit Profile</h4>
+            <form id="profileForm" onsubmit="return updateProfile(event)">
+                <?= csrf_input() ?>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="editName" 
+                            name="name" 
+                            value="<?= htmlspecialchars($user['name']) ?>"
+                            required
+                            class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-base text-slate-800 placeholder-slate-400 shadow-sm transition duration-150 hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 focus:outline-none"
+                        >
+                    </div>
+                    <div class="flex gap-3">
+                        <button 
+                            type="submit" 
+                            class="flex-1 h-11 bg-sky-600 text-white text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-sky-700 active:transform active:scale-[0.98]">
+                            Apply
+                        </button>
+                        <button 
+                            type="button" 
+                            onclick="toggleEditProfile()" 
+                            class="flex-1 h-11 bg-slate-200 text-slate-700 text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-slate-300 active:transform active:scale-[0.98]">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Support Modal (Hidden by default) -->
+    <div id="contactSupportModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl relative">
+            <!-- Close button -->
+            <button onclick="toggleContactSupport()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <!-- Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Title -->
+            <h4 class="text-2xl font-bold text-slate-800 text-center mb-4">Contact Support</h4>
+            
+            <!-- Message -->
+            <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-6 border border-sky-100 mb-6">
+                <p class="text-slate-700 text-center mb-4 leading-relaxed">
+                    For any issues or concerns regarding your RFID account, please contact our support team:
+                </p>
+                <div class="flex items-center justify-center gap-2 text-sky-600 font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <a href="mailto:rfid.support@pcu.edu.ph" class="hover:underline">rfid.support@pcu.edu.ph</a>
+                </div>
+            </div>
+            
+            <!-- Action button -->
+            <button 
+                onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=rfid.support@pcu.edu.ph', '_blank')" 
+                class="w-full h-11 bg-sky-600 text-white text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-sky-700 active:transform active:scale-[0.98] flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send Email
+            </button>
+        </div>
     </div>
 
     <!-- Toast Container -->
@@ -584,6 +793,12 @@ try {
             }
         });
 
+        // Function to close user menu
+        function closeUserMenu() {
+            userMenuButton.setAttribute('aria-expanded', 'false');
+            userMenu.hidden = true;
+        }
+
         // Toggle user information
         function toggleInformation() {
             const infoSection = document.getElementById('userInformation');
@@ -593,6 +808,114 @@ try {
             } else {
                 infoSection.classList.add('hidden');
                 infoSection.classList.remove('animate-fade-in');
+            }
+        }
+
+        // Toggle edit profile form
+        function toggleEditProfile() {
+            const editForm = document.getElementById('editProfileForm');
+            const modalContent = editForm.querySelector('div');
+            
+            if (editForm.classList.contains('hidden')) {
+                editForm.classList.remove('hidden');
+                editForm.style.display = 'flex';
+                setTimeout(() => {
+                    modalContent.classList.add('modal-show');
+                }, 10);
+            } else {
+                modalContent.classList.remove('modal-show');
+                setTimeout(() => {
+                    editForm.classList.add('hidden');
+                    editForm.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // Toggle contact support modal
+        function toggleContactSupport() {
+            const modal = document.getElementById('contactSupportModal');
+            const modalContent = modal.querySelector('div');
+            
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                setTimeout(() => {
+                    modalContent.classList.add('modal-show');
+                }, 10);
+            } else {
+                modalContent.classList.remove('modal-show');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // Update profile
+        async function updateProfile(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            
+            // Disable button and show loading state
+            submitButton.disabled = true;
+            submitButton.textContent = 'Applying...';
+            
+            try {
+                const response = await fetch('update_profile.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Step 1: Fade out modal (300ms)
+                    const modal = document.getElementById('editProfileForm');
+                    const modalContent = modal.querySelector('div');
+                    
+                    modalContent.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    modalContent.style.opacity = '0';
+                    modalContent.style.transform = 'scale(0.95)';
+                    modal.style.transition = 'opacity 0.3s ease-out';
+                    modal.style.opacity = '0';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    // Step 2: Show checkmark animation (1.5s)
+                    const successOverlay = document.createElement('div');
+                    successOverlay.className = 'success-overlay';
+                    successOverlay.innerHTML = `
+                        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="checkmark-check" fill="none" stroke="#fff" stroke-width="3" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                        <div class="success-text">Changes Applied!</div>
+                    `;
+                    document.body.appendChild(successOverlay);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Step 3: Fade out entire page (400ms)
+                    document.body.style.transition = 'opacity 0.4s ease-out';
+                    document.body.style.opacity = '0';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 400));
+                    
+                    // Force reload
+                    window.location.href = window.location.href;
+                    
+                } else {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                    showToast(result.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+                showToast('An error occurred while updating profile', 'error');
+                console.error('Update profile error:', error);
             }
         }
     </script>
