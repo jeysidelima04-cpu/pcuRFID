@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // Verify CSRF token
 if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-    header('Location: forgot_password.php?error=' . urlencode('Invalid request. Please try again.'));
+    $_SESSION['error'] = 'Invalid request. Please try again.';
+    header('Location: forgot_password.php');
     exit;
 }
 
@@ -29,7 +30,8 @@ if ($action === 'request_reset') {
     $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
     
     if (!$email) {
-        header('Location: forgot_password.php?error=' . urlencode('Please enter a valid email address.'));
+        $_SESSION['error'] = 'Please enter a valid email address.';
+        header('Location: forgot_password.php');
         exit;
     }
 
@@ -43,12 +45,14 @@ if ($action === 'request_reset') {
 
         if (!$user) {
             // Don't reveal if email exists or not
-            header('Location: forgot_password.php?success=' . urlencode('If your email is registered, you will receive password reset instructions shortly.'));
+            $_SESSION['success'] = 'If your email is registered, you will receive password reset instructions shortly.';
+            header('Location: forgot_password.php');
             exit;
         }
 
         if ($user['status'] !== 'Active') {
-            header('Location: forgot_password.php?error=' . urlencode('This account is not active. Please contact support.'));
+            $_SESSION['error'] = 'This account is not active. Please contact support.';
+            header('Location: forgot_password.php');
             exit;
         }
 
@@ -85,9 +89,10 @@ if ($action === 'request_reset') {
             $mail->setFrom('jeysidelima04@gmail.com', 'PCU RFID System');
             $mail->addAddress($user['email'], $user['name']);
 
-            // Get the base URL dynamically
+            // Get the base URL dynamically (fix for Windows backslashes)
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['PHP_SELF']));
+            $basePath = str_replace('\\', '/', dirname($_SERVER['PHP_SELF']));
+            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $basePath;
             $resetLink = $baseUrl . '/reset_password_form.php?token=' . $token;
 
             $mail->isHTML(true);
@@ -117,18 +122,21 @@ if ($action === 'request_reset') {
             $mail->send();
             error_log('Email sent successfully to ' . $user['email']);
             
-            header('Location: forgot_password.php?success=' . urlencode('If your email is registered, you will receive password reset instructions shortly.'));
+            $_SESSION['success'] = 'If your email is registered, you will receive password reset instructions shortly.';
+            header('Location: forgot_password.php');
             exit;
 
         } catch (Exception $e) {
             error_log('Mailer Error: ' . $mail->ErrorInfo);
-            header('Location: forgot_password.php?error=' . urlencode('Failed to send email. Please try again later.'));
+            $_SESSION['error'] = 'Failed to send email. Please try again later.';
+            header('Location: forgot_password.php');
             exit;
         }
 
     } catch (Exception $e) {
         error_log('Password reset error: ' . $e->getMessage());
-        header('Location: forgot_password.php?error=' . urlencode('An error occurred. Please try again later.'));
+        $_SESSION['error'] = 'An error occurred. Please try again later.';
+        header('Location: forgot_password.php');
         exit;
     }
 } elseif ($action === 'reset_password') {
@@ -181,7 +189,8 @@ if ($action === 'request_reset') {
 
         if (!$reset) {
             error_log('Invalid reset attempt - Token: ' . $token . ' - Time: ' . date('Y-m-d H:i:s'));
-            header('Location: forgot_password.php?error=' . urlencode('Invalid or expired reset link. Please request a new one.'));
+            $_SESSION['error'] = 'Invalid or expired reset link. Please request a new one.';
+            header('Location: forgot_password.php');
             exit;
         }
 
@@ -260,7 +269,14 @@ if ($action === 'request_reset') {
             </div>
             <script>
                 setTimeout(() => {
-                    window.location.href = 'login.php?toast=' + encodeURIComponent('Your password has been successfully reset. Please sign in with your new password.');
+                    // Store success message in session
+                    fetch('auth.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ action: 'set_toast', message: 'Your password has been successfully reset. Please sign in with your new password.' })
+                    }).then(() => {
+                        window.location.href = 'login.php';
+                    });
                 }, 3000);
             </script>
         </body>

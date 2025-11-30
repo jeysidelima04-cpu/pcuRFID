@@ -87,9 +87,10 @@ if ($action === 'request_reset') {
             $mail->setFrom('jeysidelima04@gmail.com', 'PCU RFID System');
             $mail->addAddress($user['email'], $user['name']);
 
-            // Get the base URL dynamically
+            // Get the base URL dynamically (fix for Windows backslashes)
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['PHP_SELF']));
+            $basePath = str_replace('\\', '/', dirname($_SERVER['PHP_SELF']));
+            $baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . $basePath;
             $resetLink = $baseUrl . '/reset_password_form.php?token=' . $token;
             
             $mail->isHTML(true);

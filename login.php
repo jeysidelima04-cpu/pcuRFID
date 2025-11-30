@@ -37,15 +37,16 @@
         <a href="login.php" class="inline-block hover:opacity-80 transition-opacity">
           <img src="pcu-logo.png" alt="PCU Logo" class="w-24 h-24 mx-auto mb-6">
         </a>
-        <h1 class="text-3xl font-semibold text-sky-700 mb-2">Welcome Back</h1>
-        <p class="text-base text-slate-600">RFID-Enabled Identity Verification</p>
+        <h1 class="text-3xl font-semibold text-sky-700 mb-2">GateWatch</h1>
+        <p class="text-base text-slate-600">RFID-Enabled Violation Tracking</p>
       </div>
 
-      <?php if (isset($_GET['error'])): ?>
-        <div class="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_GET['error']); ?></div>
+      <?php if (isset($_SESSION['error'])): ?>
+        <div class="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
       <?php endif; ?>
-      <?php if (isset($_GET['toast'])): ?>
-        <div data-toast="<?php echo htmlspecialchars($_GET['toast']); ?>"></div>
+      <?php if (isset($_SESSION['toast'])): ?>
+        <div data-toast="<?php echo htmlspecialchars($_SESSION['toast']); ?>"></div>
+        <?php unset($_SESSION['toast']); ?>
       <?php endif; ?>
 
       <form action="auth.php" method="POST" class="space-y-5" id="loginForm" novalidate>

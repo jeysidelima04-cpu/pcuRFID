@@ -41,11 +41,11 @@
         <p class="text-base text-slate-600">Enter your email to receive reset instructions</p>
       </div>
 
-      <?php if (isset($_GET['error'])): ?>
-        <div class="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_GET['error']); ?></div>
+      <?php if (isset($_SESSION['error'])): ?>
+        <div class="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
       <?php endif; ?>
-      <?php if (isset($_GET['success'])): ?>
-        <div class="mb-6 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_GET['success']); ?></div>
+      <?php if (isset($_SESSION['success'])): ?>
+        <div class="mb-6 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
       <?php endif; ?>
 
       <form action="reset_password.php" method="POST" class="space-y-6" id="resetForm" novalidate>

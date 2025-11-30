@@ -38,8 +38,16 @@ try {
             break;
         case 'logout':
             session_destroy();
-            $redirectBack('login.php', ['toast' => 'Logged out']);
+            session_start(); // Restart session to store the message
+            $_SESSION['toast'] = 'Logged out';
+            header('Location: login.php');
+            exit;
             break;
+        case 'set_toast':
+            // Simple action to set toast message in session (called via AJAX)
+            $_SESSION['toast'] = $_POST['message'] ?? '';
+            echo json_encode(['success' => true]);
+            exit;
         default:
             http_response_code(400);
             exit('Unknown action');
@@ -152,7 +160,9 @@ function handleSignup(): void {
         sendMail($email, $subject, $body);
 
         $_SESSION['pending_user_id'] = $userId;
-        header('Location: verify_2fa.php?email=' . urlencode($email) . '&info=Code sent');
+        $_SESSION['verify_email'] = $email;
+        $_SESSION['info'] = 'Code sent';
+        header('Location: verify_2fa.php');
         exit;
     } catch (Throwable $e) {
         $pdo->rollBack();
@@ -195,7 +205,9 @@ function handleLogin(): void {
         // Resend a fresh 2FA code for convenience
         generateAndSend2FA((int)$user['id'], $user['name'], $user['email']);
         $_SESSION['pending_user_id'] = (int)$user['id'];
-        header('Location: verify_2fa.php?email=' . urlencode($user['email']) . '&info=Verify your account');
+        $_SESSION['verify_email'] = $user['email'];
+        $_SESSION['info'] = 'Verify your account';
+        header('Location: verify_2fa.php');
         exit;
     }
 
@@ -273,7 +285,8 @@ function handleVerify2FA(): void {
         exit('Account verified');
     }
     
-    header('Location: login.php?toast=Account verified. You can now log in.');
+    $_SESSION['toast'] = 'Account verified. You can now log in.';
+    header('Location: login.php');
     exit;
 }
 
@@ -290,7 +303,9 @@ function handleResend2FA(): void {
 
     generateAndSend2FA((int)$user['id'], $user['name'], $user['email']);
 
-    header('Location: verify_2fa.php?email=' . urlencode($user['email']) . '&info=New code sent');
+    $_SESSION['verify_email'] = $user['email'];
+    $_SESSION['info'] = 'New code sent';
+    header('Location: verify_2fa.php');
     exit;
 }
 
