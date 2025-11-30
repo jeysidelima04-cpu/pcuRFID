@@ -1,0 +1,40 @@
+# Error logs
+error.log
+*.log
+
+# Vendor directory (Composer dependencies - will be reinstalled)
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.local
+
+# Uploaded user files (avatars and profiles)
+assets/images/avatars/*
+assets/images/profiles/*
+assets/profiles/*
+
+# Keep .gitkeep files to preserve directory structure
+!assets/images/avatars/.gitkeep
+!assets/images/profiles/.gitkeep
+!assets/profiles/.gitkeep
+
+# PHP temporary files
+*.cache
+*.tmp
+
+# Database backups
+*.sql.backup
+backup/
