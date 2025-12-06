@@ -9,30 +9,35 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $email = strtolower(trim($_POST['username'] ?? ''));
     $password = $_POST['password'] ?? '';
 
-    // Verify credentials (using constants for demo - in production, use database)
-    if ($username === './pcuadmin' && $password === './@pcuAdmin') {
-        // Get the admin user ID from the database
+    if (!$email || !$password) {
+        $error = 'Please enter email and password.';
+    } else {
         try {
             $pdo = pdo();
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
-            $stmt->execute();
+            // Query admin user from database
+            $stmt = $pdo->prepare("SELECT id, email, password, name FROM users WHERE email = :email AND role = 'Admin' LIMIT 1");
+            $stmt->execute([':email' => $email]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            $_SESSION['user_id'] = 'admin';
-            $_SESSION['role'] = 'Admin';
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $admin['id'] ?? 1; // Get actual admin ID from database
-            header('Location: homepage.php');
-            exit;
+            if ($admin && password_verify($password, $admin['password'])) {
+                // Valid admin credentials
+                $_SESSION['user_id'] = $admin['id'];
+                $_SESSION['role'] = 'Admin';
+                $_SESSION['admin_logged_in'] = true;
+                $_SESSION['admin_id'] = $admin['id'];
+                $_SESSION['admin_name'] = $admin['name'];
+                header('Location: homepage.php');
+                exit;
+            } else {
+                $error = 'Invalid email or password';
+            }
         } catch (PDOException $e) {
             error_log("Admin login error: " . $e->getMessage());
             $error = 'Login system error. Please try again.';
         }
-    } else {
-        $error = 'Invalid username or password';
     }
 }
 ?>

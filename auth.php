@@ -115,9 +115,18 @@ function handleSignup(): void {
     $_POST['student_type'] = 'college'; // Ensure college type is set
 
     // Check duplicates
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email OR student_id = :sid LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, student_id, role, verification_status FROM users WHERE email = :email OR student_id = :sid LIMIT 1');
     $stmt->execute([':email' => $email, ':sid' => $student_id]);
-    if ($stmt->fetch()) {
+    $existing = $stmt->fetch();
+    
+    if ($existing) {
+        // If trying to register with admin email
+        if ($existing['role'] === 'Admin' && $existing['email'] === $email) {
+            $_SESSION['info'] = 'This email is already registered. If you are the administrator, please use the admin login page. If this is your first time, please wait for verification approval.';
+            header('Location: login.php');
+            exit;
+        }
+        // If email or student ID already exists
         redirect_error('signup.php', 'Email or Student ID already in use.');
     }
 
