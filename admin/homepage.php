@@ -12,6 +12,20 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit();
 }
 
+// Auto-fix: Set admin_id if not already set (for existing sessions)
+if (!isset($_SESSION['admin_id'])) {
+    try {
+        $pdo = pdo();
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
+        $stmt->execute();
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $_SESSION['admin_id'] = $admin['id'] ?? 1;
+    } catch (PDOException $e) {
+        error_log("Auto-fix admin_id error: " . $e->getMessage());
+        $_SESSION['admin_id'] = 1; // Fallback
+    }
+}
+
 $page_title = 'Student Management';
 
 // Get all students
