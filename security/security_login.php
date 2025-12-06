@@ -1,38 +1,27 @@
 <?php
 require_once __DIR__ . '/../db.php';
 
-// If already logged in, redirect to homepage
-if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header('Location: homepage.php');
+// If already logged in, redirect to gate monitor
+if (isset($_SESSION['security_logged_in']) && $_SESSION['security_logged_in'] === true) {
+    header('Location: gate_monitor.php');
     exit;
 }
 
-// Handle login form submission
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-
-    // Verify credentials (using constants for demo - in production, use database)
-    if ($username === './pcuadmin' && $password === './@pcuAdmin') {
-        // Get the admin user ID from the database
-        try {
-            $pdo = pdo();
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
-            $stmt->execute();
-            $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            $_SESSION['user_id'] = 'admin';
-            $_SESSION['role'] = 'Admin';
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $admin['id'] ?? 1; // Get actual admin ID from database
-            header('Location: homepage.php');
-            exit;
-        } catch (PDOException $e) {
-            error_log("Admin login error: " . $e->getMessage());
-            $error = 'Login system error. Please try again.';
-        }
+    
+    // Simple hardcoded security credentials (you can enhance this later with database)
+    // Default: username = "security", password = "guard123"
+    if ($username === 'security' && $password === 'guard123') {
+        $_SESSION['security_logged_in'] = true;
+        $_SESSION['security_username'] = $username;
+        header('Location: gate_monitor.php');
+        exit();
     } else {
-        $error = 'Invalid username or password';
+        $error = 'Invalid credentials. Please try again.';
     }
 }
 ?>
@@ -41,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Admin | Login</title>
+    <title>PCU RFID Security | Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
@@ -85,12 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-white/95 rounded-2xl shadow-2xl p-8 fade-in">
             <div class="text-center mb-8">
-                <img src="../pcu-logo.png" alt="PCU Logo" class="w-24 h-24 mx-auto mb-6">
-                <h1 class="text-3xl font-semibold text-[#0056b3] mb-2">Admin Login</h1>
-                <p class="text-slate-600">RFID System Administration</p>
+                <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full p-4 flex items-center justify-center shadow-lg">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-semibold text-[#0056b3] mb-2">Security Login</h1>
+                <p class="text-slate-600">Gate Monitor System</p>
             </div>
 
-            <?php if (isset($error)): ?>
+            <?php if ($error): ?>
                 <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm fade-in">
                     <?php echo htmlspecialchars($error); ?>
                 </div>
@@ -103,8 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         type="text" 
                         name="username" 
                         required 
+                        autofocus
                         class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 focus:border-[#0056b3] focus:ring-4 focus:ring-blue-100 transition-all"
-                        placeholder="Enter admin username"
+                        placeholder="Enter security username"
                     >
                 </div>
 
@@ -115,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         name="password" 
                         required 
                         class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 focus:border-[#0056b3] focus:ring-4 focus:ring-blue-100 transition-all"
-                        placeholder="Enter admin password"
+                        placeholder="Enter security password"
                     >
                 </div>
 
@@ -123,9 +117,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     type="submit" 
                     class="w-full h-11 bg-[#0056b3] text-white font-medium rounded-lg btn-hover transition-all"
                 >
-                    Sign In
+                    Sign In to Gate Monitor
                 </button>
             </form>
+
+            <div class="mt-6 pt-6 border-t border-slate-200">
+                <p class="text-center">
+                    <a href="../admin/admin_login.php" class="text-[#0056b3] hover:underline text-sm">
+                        ← Back to Admin Login
+                    </a>
+                </p>
+            </div>
         </div>
     </div>
 

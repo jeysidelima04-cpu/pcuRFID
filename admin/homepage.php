@@ -18,16 +18,29 @@ $page_title = 'Student Management';
 try {
     $pdo = pdo();
     
-    // Get all students
+    // Get all students WITHOUT registered RFID cards (for Student Management panel)
+    // Exclude students pending verification
     $query = '
-        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at 
+        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture
         FROM users 
-        WHERE role = "Student" 
+        WHERE role = "Student" AND rfid_uid IS NULL AND verification_status = "approved"
         ORDER BY created_at DESC
     ';
     $stmt = $pdo->prepare($query);
     $stmt->execute();
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get ALL students including those with RFID (for Registered Cards panel)
+    // Exclude students pending verification
+    $queryAll = '
+        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture
+        FROM users 
+        WHERE role = "Student" AND verification_status = "approved"
+        ORDER BY created_at DESC
+    ';
+    $stmtAll = $pdo->prepare($queryAll);
+    $stmtAll->execute();
+    $allStudents = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     
     // Get registered cards count
     $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL');
@@ -89,6 +102,16 @@ try {
         $stmt = $pdo->query("SELECT COUNT(*) FROM violations WHERE YEAR(scanned_at) = YEAR(CURDATE())");
         $yearlyViolations = $stmt->fetchColumn();
     }
+    
+    // Get pending verification students
+    $stmt = $pdo->query('
+        SELECT id, student_id, name, email, created_at, profile_picture 
+        FROM users 
+        WHERE role = "Student" AND verification_status = "pending"
+        ORDER BY created_at DESC
+    ');
+    $pendingStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pendingCount = count($pendingStudents);
     
 } catch (PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
@@ -221,6 +244,18 @@ $activeSection = $_GET['section'] ?? 'students';
 
             <!-- Navigation -->
             <nav class="space-y-2">
+                <a href="?section=verify" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'verify' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="flex-1 flex items-center justify-between">
+                        <span class="font-medium">Verify Students</span>
+                        <?php if ($pendingCount > 0): ?>
+                        <span class="bg-amber-500 text-white text-xs px-2 py-1 rounded-full animate-pulse"><?php echo $pendingCount; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                
                 <a href="?section=students" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'students' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -258,6 +293,22 @@ $activeSection = $_GET['section'] ?? 'students';
                 </a>
             </nav>
 
+            <!-- Gate Monitor Link -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <a href="../security/gate_monitor.php" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 hover:from-green-100 hover:to-emerald-100 border border-green-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <span class="font-medium">Gate Monitor</span>
+                        <p class="text-xs text-green-600">Security Access</p>
+                    </div>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
+            </div>
+
             <!-- Logout Button -->
             <div class="mt-8 pt-6 border-t border-slate-200">
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
@@ -278,7 +329,120 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
         <?php endif; ?>
 
-        <?php if ($activeSection === 'students'): ?>
+        <?php if ($activeSection === 'verify'): ?>
+            <!-- Verify Students Section -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">Verify Student Accounts</h1>
+                <p class="text-slate-600 mt-1">Review and approve student registration requests</p>
+            </div>
+
+            <?php if (empty($pendingStudents)): ?>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-12 text-center">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">All Caught Up!</h3>
+                        <p class="text-slate-600">No pending student verifications at this time.</p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="grid gap-6">
+                    <?php foreach ($pendingStudents as $student): ?>
+                        <div class="bg-white rounded-xl shadow-sm overflow-hidden fade-in">
+                            <div class="p-6">
+                                <div class="flex items-start gap-6">
+                                    <!-- Profile Picture or Avatar -->
+                                    <div class="flex-shrink-0">
+                                        <?php if (!empty($student['profile_picture'])): ?>
+                                            <img src="../assets/profiles/<?php echo htmlspecialchars($student['profile_picture']); ?>" 
+                                                 alt="Profile" 
+                                                 class="w-20 h-20 rounded-full object-cover border-4 border-slate-100">
+                                        <?php else: ?>
+                                            <?php
+                                            $firstLetter = strtoupper(substr($student['name'], 0, 1));
+                                            $colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+                                            $colorIndex = ord($firstLetter) % count($colors);
+                                            $bgColor = $colors[$colorIndex];
+                                            ?>
+                                            <div class="w-20 h-20 rounded-full <?php echo $bgColor; ?> flex items-center justify-center text-white text-2xl font-bold border-4 border-slate-100">
+                                                <?php echo $firstLetter; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <!-- Student Info -->
+                                    <div class="flex-1">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div>
+                                                <h3 class="text-xl font-semibold text-slate-800 mb-1">
+                                                    <?php echo htmlspecialchars($student['name']); ?>
+                                                </h3>
+                                                <div class="space-y-1">
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                                                        </svg>
+                                                        <strong>Student ID:</strong> 
+                                                        <code class="bg-slate-100 px-2 py-0.5 rounded text-slate-800"><?php echo htmlspecialchars($student['student_id']); ?></code>
+                                                    </p>
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                        </svg>
+                                                        <strong>Email:</strong> <?php echo htmlspecialchars($student['email']); ?>
+                                                    </p>
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        <strong>Registered:</strong> <?php echo date('M d, Y • g:i A', strtotime($student['created_at'])); ?>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1 rounded-full">
+                                                Pending Verification
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg mb-4">
+                                            <p class="text-sm text-amber-800">
+                                                <strong>Action Required:</strong> Please verify this student's credentials against enrolled student records before approving their account.
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="flex gap-3 mt-4">
+                                            <button 
+                                                onclick="approveStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['name'], ENT_QUOTES); ?>')"
+                                                class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold transition-all duration-150
+                                                       hover:bg-green-700 hover:shadow-lg active:scale-[0.98]
+                                                       flex items-center justify-center gap-2">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Approve Account
+                                            </button>
+                                            <button 
+                                                onclick="denyStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['name'], ENT_QUOTES); ?>')"
+                                                class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold transition-all duration-150
+                                                       hover:bg-red-700 hover:shadow-lg active:scale-[0.98]
+                                                       flex items-center justify-center gap-2">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                                Deny & Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        <?php elseif ($activeSection === 'students'): ?>
             <!-- All Students Section -->
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Student Management</h1>
@@ -298,7 +462,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                         <?php echo htmlspecialchars($student['name']); ?>
                                     </h3>
                                     <p class="text-sm text-slate-600">
-                                        ID: <?php echo htmlspecialchars($student['student_id']); ?>
+                                        Student ID: <?php echo htmlspecialchars($student['student_id']); ?>
                                     </p>
                                     <p class="text-sm text-slate-500">
                                         <?php echo htmlspecialchars($student['email']); ?>
@@ -354,7 +518,7 @@ $activeSection = $_GET['section'] ?? 'students';
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="p-6">
                     <?php 
-                    $registeredStudents = array_filter($students, function($s) { return !empty($s['rfid_uid']); });
+                    $registeredStudents = array_filter($allStudents, function($s) { return !empty($s['rfid_uid']); });
                     if (empty($registeredStudents)): 
                     ?>
                         <div class="text-center py-12">
@@ -395,7 +559,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                     </div>
                                     <div class="flex flex-row md:flex-col gap-2 mt-4 md:mt-0 md:ml-4">
                                         <button 
-                                            onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>')"
+                                            onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
                                             class="px-4 py-2 bg-blue-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
                                         >
                                             View Details
@@ -728,13 +892,14 @@ function pollRFIDReader() {
     let cardBuffer = '';
     let bufferTimeout = null;
     
-    // Listen for keyboard input from RFID reader
+    // Listen for keyboard input from RFID reader - Use keydown instead of keypress
     rfidInputListener = function(e) {
-        // Enter key signals end of card scan
+        // Enter key signals end of card scan - process buffer FIRST
         if (e.key === 'Enter') {
             e.preventDefault();
             
             const uid = cardBuffer.trim();
+            console.log('Admin RFID Scan - Buffer:', cardBuffer, 'Trimmed:', uid, 'Length:', uid.length);
             
             // More flexible validation - just check if something was scanned
             if (uid.length >= 4) {
@@ -746,7 +911,7 @@ function pollRFIDReader() {
                 `;
                 
                 // Remove listener to prevent duplicate scans
-                document.removeEventListener('keypress', rfidInputListener);
+                document.removeEventListener('keydown', rfidInputListener);
                 rfidInputListener = null;
                 
                 // Register the card (keep original format - don't convert to uppercase for decimal numbers)
@@ -761,19 +926,23 @@ function pollRFIDReader() {
                 setTimeout(() => pollRFIDReader(), 2000);
             }
             
+            cardBuffer = '';
+            clearTimeout(bufferTimeout);
             return;
         }
         
-        // Accumulate characters from RFID reader
-        if (e.key.length === 1) {
+        // Accumulate all other single-character keys (numbers)
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
             cardBuffer += e.key;
             input.value = cardBuffer;
+            console.log('Admin - Character captured:', e.key, 'Buffer now:', cardBuffer);
             
             // Reset timeout (R20XC sends data quickly, within ~100ms)
             clearTimeout(bufferTimeout);
             bufferTimeout = setTimeout(() => {
                 // If buffer doesn't complete, reset
-                if (cardBuffer.length > 0 && cardBuffer.length < 8) {
+                if (cardBuffer.length > 0 && cardBuffer.length < 4) {
+                    console.warn('Admin - Buffer timeout, clearing:', cardBuffer);
                     cardBuffer = '';
                     input.value = '';
                 }
@@ -781,7 +950,7 @@ function pollRFIDReader() {
         }
     };
     
-    document.addEventListener('keypress', rfidInputListener);
+    document.addEventListener('keydown', rfidInputListener);
     
     // Also handle direct input field submission (manual entry fallback)
     input.addEventListener('keydown', function(e) {
@@ -902,12 +1071,31 @@ function confirmDelete(studentId) {
     }
 }
 
-function viewCardDetails(studentId, name, uid, registeredAt) {
+function viewCardDetails(studentId, name, uid, registeredAt, profilePicture) {
     const modal = document.getElementById('cardDetailsModal');
     const content = document.getElementById('cardDetailsContent');
     
+    // Get first letter for fallback avatar
+    const firstLetter = name.charAt(0).toUpperCase();
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+    const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+    const bgColor = colors[colorIndex];
+    
     content.innerHTML = `
         <div class="space-y-4">
+            ${profilePicture ? `
+                <div class="flex justify-center mb-4">
+                    <img src="../assets/images/profiles/${profilePicture}" 
+                         alt="${name}" 
+                         class="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-lg">
+                </div>
+            ` : `
+                <div class="flex justify-center mb-4">
+                    <div class="w-32 h-32 rounded-full ${bgColor} border-4 border-blue-200 shadow-lg flex items-center justify-center text-white text-5xl font-bold">
+                        ${firstLetter}
+                    </div>
+                </div>
+            `}
             <div class="bg-slate-50 p-4 rounded-lg">
                 <p class="text-sm text-slate-600 mb-1">Student Name</p>
                 <p class="font-medium text-slate-800">${name}</p>
@@ -1017,6 +1205,103 @@ function clearViolation(studentId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to clear violations. Please try again.');
+    });
+}
+
+// Approve student account
+function approveStudent(studentId, studentName) {
+    if (!confirm(`Approve account for ${studentName}?\n\nThis will:\n✓ Activate their account\n✓ Send approval email\n✓ Allow them to log in`)) {
+        return;
+    }
+    
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    
+    fetch('verify_account.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            student_id: studentId,
+            action: 'approve'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message with animation
+            btn.innerHTML = '<svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-green-800');
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(data.error || 'Failed to approve account');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to approve account. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    });
+}
+
+// Deny student account
+function denyStudent(studentId, studentName) {
+    if (!confirm(`Deny and remove account for ${studentName}?\n\n⚠️ WARNING: This will:\n✗ Delete their account permanently\n✗ Send denial email notification\n\nThis action cannot be undone!`)) {
+        return;
+    }
+    
+    // Double confirmation for destructive action
+    if (!confirm(`Are you absolutely sure?\n\nStudent: ${studentName}\nAction: DENY & DELETE\n\nType reason in next dialog...`)) {
+        return;
+    }
+    
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    
+    fetch('verify_account.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            student_id: studentId,
+            action: 'deny'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message with animation
+            btn.innerHTML = '<svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(data.error || 'Failed to deny account');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to deny account. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     });
 }
 

@@ -131,6 +131,57 @@
         <div class="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm"><?php echo htmlspecialchars($_GET['error']); ?></div>
       <?php endif; ?>
 
+      <!-- Google Sign-Up Button -->
+      <?php
+      $show_google_button = false;
+      $google_signup_url = '#';
+      
+      if (file_exists('vendor/autoload.php') && file_exists('config/google_config.php')) {
+          try {
+              require_once 'vendor/autoload.php';
+              require_once 'config/google_config.php';
+              
+              if (class_exists('Google_Client')) {
+                  $google_client = new Google_Client();
+                  $google_client->setClientId(GOOGLE_CLIENT_ID);
+                  $google_client->setClientSecret(GOOGLE_CLIENT_SECRET);
+                  $google_client->setRedirectUri(GOOGLE_REDIRECT_URI);
+                  $google_client->addScope("email");
+                  $google_client->addScope("profile");
+                  
+                  $google_signup_url = $google_client->createAuthUrl();
+                  $show_google_button = true;
+              }
+          } catch (Exception $e) {
+              // Google library not available, hide button
+              $show_google_button = false;
+          }
+      }
+      ?>
+      
+      <?php if ($show_google_button): ?>
+      <a href="<?php echo htmlspecialchars($google_signup_url); ?>" 
+         class="flex items-center justify-center w-full h-11 bg-white text-slate-700 text-base font-medium rounded-lg border-2 border-slate-300
+                shadow-sm transition duration-150
+                hover:bg-slate-50 hover:border-slate-400 hover:shadow-md
+                active:transform active:scale-[0.98]">
+        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign up with Google
+      </a>
+
+      <!-- OR Divider -->
+      <div class="relative flex items-center my-6">
+        <div class="flex-grow border-t border-slate-300"></div>
+        <span class="flex-shrink mx-4 text-sm text-slate-500 font-medium">OR</span>
+        <div class="flex-grow border-t border-slate-300"></div>
+      </div>
+      <?php endif; ?>
+
       <form action="auth.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6" id="signupForm" novalidate>
         <?php echo csrf_input(); ?>
         <input type="hidden" name="action" value="signup">
@@ -153,21 +204,56 @@
             oninput="this.value = this.value.replace(/[^0-9\-]/g, '')"
           >
         </div>
-        <div class="md:col-span-1 space-y-2">
-          <label class="block text-base font-medium text-slate-700">Name</label>
+        <div class="md:col-span-2 space-y-2">
+          <label class="block text-base font-medium text-slate-700">First Name</label>
           <input 
             type="text" 
-            name="name" 
+            name="first_name" 
             required 
             pattern="[A-Za-z\s\.]+"
-            title="Name must contain only letters, spaces, and periods"
+            title="First name must contain only letters, spaces, and periods"
             class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-base text-slate-800 placeholder-slate-400
                    shadow-sm transition duration-150
                    hover:border-slate-300
                    focus:border-sky-500 focus:ring-4 focus:ring-sky-100 focus:outline-none
                    invalid:border-red-300 invalid:text-red-600
                    invalid:focus:border-red-500 invalid:focus:ring-red-100" 
-            placeholder="Full name"
+            placeholder="First name"
+            oninput="this.value = this.value.replace(/[^A-Za-z\s\.]/g, '')"
+          >
+        </div>
+        <div class="md:col-span-2 space-y-2">
+          <label class="block text-base font-medium text-slate-700">Middle Name</label>
+          <input 
+            type="text" 
+            name="middle_name" 
+            pattern="[A-Za-z\s\.]+"
+            title="Middle name must contain only letters, spaces, and periods"
+            class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-base text-slate-800 placeholder-slate-400
+                   shadow-sm transition duration-150
+                   hover:border-slate-300
+                   focus:border-sky-500 focus:ring-4 focus:ring-sky-100 focus:outline-none
+                   invalid:border-red-300 invalid:text-red-600
+                   invalid:focus:border-red-500 invalid:focus:ring-red-100" 
+            placeholder="Middle name (optional)"
+            oninput="this.value = this.value.replace(/[^A-Za-z\s\.]/g, '')"
+          >
+        </div>
+        <div class="md:col-span-2 space-y-2">
+          <label class="block text-base font-medium text-slate-700">Surname</label>
+          <input 
+            type="text" 
+            name="surname" 
+            required 
+            pattern="[A-Za-z\s\.]+"
+            title="Surname must contain only letters, spaces, and periods"
+            class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-base text-slate-800 placeholder-slate-400
+                   shadow-sm transition duration-150
+                   hover:border-slate-300
+                   focus:border-sky-500 focus:ring-4 focus:ring-sky-100 focus:outline-none
+                   invalid:border-red-300 invalid:text-red-600
+                   invalid:focus:border-red-500 invalid:focus:ring-red-100" 
+            placeholder="Surname"
             oninput="this.value = this.value.replace(/[^A-Za-z\s\.]/g, '')"
           >
         </div>
