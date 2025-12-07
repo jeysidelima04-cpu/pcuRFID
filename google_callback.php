@@ -28,13 +28,23 @@ try {
     // Validate OAuth state parameter (CSRF protection)
     if (!isset($_GET['state']) || !isset($_SESSION['oauth_state']) || 
         $_GET['state'] !== $_SESSION['oauth_state']) {
-        unset($_SESSION['oauth_state']); // Clear state
+        unset($_SESSION['oauth_state']);
+        unset($_SESSION['oauth_state_time']);
         header('Location: login.php?error=' . urlencode('Invalid OAuth state. Please try again.'));
+        exit;
+    }
+    
+    // Check state expiration (10 minutes max)
+    if (!isset($_SESSION['oauth_state_time']) || (time() - $_SESSION['oauth_state_time']) > 600) {
+        unset($_SESSION['oauth_state']);
+        unset($_SESSION['oauth_state_time']);
+        header('Location: login.php?error=' . urlencode('OAuth session expired. Please try again.'));
         exit;
     }
     
     // Clear state after validation (single use)
     unset($_SESSION['oauth_state']);
+    unset($_SESSION['oauth_state_time']);
     
     // Check if we have an authorization code
     if (!isset($_GET['code'])) {

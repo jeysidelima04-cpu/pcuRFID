@@ -82,7 +82,9 @@
                   $google_client->addScope("profile");
                   
                   // OAuth state parameter for CSRF protection
+                  // Add timestamp to prevent replay attacks (state expires in 10 minutes)
                   $_SESSION['oauth_state'] = bin2hex(random_bytes(16));
+                  $_SESSION['oauth_state_time'] = time();
                   $google_client->setState($_SESSION['oauth_state']);
                   
                   $google_login_url = $google_client->createAuthUrl();
