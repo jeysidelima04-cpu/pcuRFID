@@ -35,11 +35,30 @@ function e($string): string {
     return htmlspecialchars($string ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
-// Database config
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'pcu_rfid2');  // Updated database name
-define('DB_USER', 'root');
-define('DB_PASS', '');
+/**
+ * Load environment variables from .env file
+ */
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $env = parse_ini_file($envFile);
+} else {
+    // Fallback for backward compatibility
+    $env = [];
+}
+
+/**
+ * Helper function to get environment variable with fallback
+ */
+function env($key, $default = '') {
+    global $env;
+    return isset($env[$key]) ? $env[$key] : $default;
+}
+
+// Database config (load from .env for security)
+define('DB_HOST', env('DB_HOST', '127.0.0.1'));
+define('DB_NAME', env('DB_NAME', 'pcu_rfid2'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
 
 // Enable error logging

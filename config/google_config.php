@@ -1,13 +1,33 @@
 <?php
-// Google OAuth Client ID (from Google Cloud Console)
-define('GOOGLE_CLIENT_ID', '1036942169198-5cd08d6doa4vb4r6442g9k9vdnjgfs7j.apps.googleusercontent.com');
+/**
+ * Google OAuth Configuration
+ * Loads credentials from .env file for security
+ */
 
-// Google OAuth Client Secret (from Google Cloud Console)
-define('GOOGLE_CLIENT_SECRET', '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');
+// Load environment variables from .env file
+$envFile = __DIR__ . '/../.env';
+if (file_exists($envFile)) {
+    $env = parse_ini_file($envFile);
+} else {
+    // Fallback for backward compatibility (if .env doesn't exist)
+    $env = [];
+}
 
-// Redirect URI (must match what you registered in Google Console)
-define('GOOGLE_REDIRECT_URI', 'http://localhost/pcuRFID2/google_callback.php');
+// Helper function to get environment variable with fallback
+function env($key, $default = '') {
+    global $env;
+    return isset($env[$key]) ? $env[$key] : $default;
+}
 
-// Application name
-define('GOOGLE_APP_NAME', 'GateWatchProject');
+// Google OAuth Client ID (from .env)
+define('GOOGLE_CLIENT_ID', env('GOOGLE_CLIENT_ID', '1036942169198-5cd08d6doa4vb4r6442g9k9vdnjgfs7j.apps.googleusercontent.com'));
+
+// Google OAuth Client Secret (from .env)
+define('GOOGLE_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET', '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'));
+
+// Redirect URI (from .env)
+define('GOOGLE_REDIRECT_URI', env('GOOGLE_REDIRECT_URI', 'http://localhost/pcuRFID2/google_callback.php'));
+
+// Application name (from .env)
+define('GOOGLE_APP_NAME', env('GOOGLE_APP_NAME', 'GateWatchProject'));
 ?>
