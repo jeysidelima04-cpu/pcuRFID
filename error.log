@@ -1419,3 +1419,33 @@ Stack trace:
 [06-Dec-2025 07:55:50 Europe/Berlin] [PCU RFID] Database connection successful
 [06-Dec-2025 07:56:07 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
 [06-Dec-2025 07:56:07 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:41:20 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:41:20 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:41:21 Europe/Berlin] Admin creation error: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'ADMIN001' for key 'student_id'
+[06-Dec-2025 12:41:39 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:41:39 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:41:39 Europe/Berlin] Admin creation error: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'ADMIN001' for key 'student_id'
+[06-Dec-2025 12:42:27 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:42:27 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:43:31 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:43:31 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:43:34 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:43:34 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:45:02 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:45:02 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:45:11 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:45:11 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:45:12 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:45:12 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 12:52:02 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 12:52:02 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 13:00:20 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 13:00:20 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 13:00:49 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 13:00:49 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 13:00:50 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 13:00:50 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 13:00:52 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 13:00:52 Europe/Berlin] [PCU RFID] Database connection successful
+[06-Dec-2025 13:21:47 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[06-Dec-2025 13:21:47 Europe/Berlin] [PCU RFID] Database connection successful

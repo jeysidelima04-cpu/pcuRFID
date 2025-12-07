@@ -836,6 +836,9 @@ try {
     <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
 
     <script>
+        // CSRF Token for JavaScript fetch requests
+        const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
+        
         // User menu toggle
         const userMenuButton = document.getElementById('user-menu-button');
         const userMenu = document.getElementById('user-menu');
@@ -1096,7 +1099,8 @@ try {
                 const response = await fetch('delete_profile_picture.php', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
                     }
                 });
                 

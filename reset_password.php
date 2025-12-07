@@ -27,6 +27,13 @@ if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST
 $action = $_POST['action'] ?? '';
 
 if ($action === 'request_reset') {
+    // Rate limiting: 3 reset requests per 15 minutes
+    if (!check_rate_limit('password_reset', 3, 900)) {
+        $_SESSION['error'] = 'Too many password reset attempts. Please try again in 15 minutes.';
+        header('Location: forgot_password.php');
+        exit;
+    }
+    
     $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
     
     if (!$email) {

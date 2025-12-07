@@ -8,6 +8,13 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user']['id'])) {
     exit;
 }
 
+// CSRF protection for file upload (token sent in POST data)
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
+
 // Check if file was uploaded
 if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
     http_response_code(400);

@@ -10,18 +10,24 @@ if (isset($_SESSION['security_logged_in']) && $_SESSION['security_logged_in'] ==
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    
-    // Simple hardcoded security credentials (you can enhance this later with database)
-    // Default: username = "security", password = "guard123"
-    if ($username === 'security' && $password === 'guard123') {
-        $_SESSION['security_logged_in'] = true;
-        $_SESSION['security_username'] = $username;
-        header('Location: gate_monitor.php');
-        exit();
+    // Rate limiting: 5 attempts per 15 minutes
+    if (!check_rate_limit('security_login', 5, 900)) {
+        $error = 'Too many login attempts. Please try again in 15 minutes.';
     } else {
-        $error = 'Invalid credentials. Please try again.';
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        // Simple hardcoded security credentials (you can enhance this later with database)
+        // Default: username = "security", password = "guard123"
+        if ($username === 'security' && $password === 'guard123') {
+            reset_rate_limit('security_login');
+            $_SESSION['security_logged_in'] = true;
+            $_SESSION['security_username'] = $username;
+            header('Location: gate_monitor.php');
+            exit();
+        } else {
+            $error = 'Invalid credentials. Please try again.';
+        }
     }
 }
 ?>

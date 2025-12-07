@@ -25,6 +25,17 @@ $client->addScope("email");
 $client->addScope("profile");
 
 try {
+    // Validate OAuth state parameter (CSRF protection)
+    if (!isset($_GET['state']) || !isset($_SESSION['oauth_state']) || 
+        $_GET['state'] !== $_SESSION['oauth_state']) {
+        unset($_SESSION['oauth_state']); // Clear state
+        header('Location: login.php?error=' . urlencode('Invalid OAuth state. Please try again.'));
+        exit;
+    }
+    
+    // Clear state after validation (single use)
+    unset($_SESSION['oauth_state']);
+    
     // Check if we have an authorization code
     if (!isset($_GET['code'])) {
         header('Location: login.php?error=no_code');

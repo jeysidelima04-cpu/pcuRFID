@@ -8,6 +8,14 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user']['id'])) {
     exit;
 }
 
+// CSRF protection for JSON API (check custom header)
+$headers = getallheaders();
+if (!isset($headers['X-CSRF-Token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $headers['X-CSRF-Token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
+
 $userId = $_SESSION['user']['id'];
 
 try {

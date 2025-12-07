@@ -857,6 +857,9 @@ $activeSection = $_GET['section'] ?? 'students';
 </div>
 
 <script>
+// CSRF Token for JavaScript fetch requests
+const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
+
 let currentStudentId = null;
 let rfidInputListener = null;
 
@@ -995,6 +998,7 @@ function registerCard(studentId, uid) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId,
@@ -1039,6 +1043,7 @@ function unregisterCard(studentId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 student_id: studentId
@@ -1065,6 +1070,7 @@ function confirmDelete(studentId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 student_id: studentId
@@ -1201,6 +1207,7 @@ function clearViolation(studentId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId
@@ -1238,6 +1245,7 @@ function approveStudent(studentId, studentName) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId,
@@ -1290,6 +1298,7 @@ function denyStudent(studentId, studentName) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId,

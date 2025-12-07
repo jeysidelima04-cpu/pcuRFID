@@ -81,6 +81,10 @@
                   $google_client->addScope("email");
                   $google_client->addScope("profile");
                   
+                  // OAuth state parameter for CSRF protection
+                  $_SESSION['oauth_state'] = bin2hex(random_bytes(16));
+                  $google_client->setState($_SESSION['oauth_state']);
+                  
                   $google_login_url = $google_client->createAuthUrl();
                   $show_google_button = true;
               }

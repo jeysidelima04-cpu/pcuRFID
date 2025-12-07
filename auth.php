@@ -194,6 +194,13 @@ function handleSignup(): void {
 }
 
 function handleLogin(): void {
+    // Rate limiting: 5 attempts per 15 minutes
+    if (!check_rate_limit('login', 5, 900)) {
+        $_SESSION['error'] = 'Too many login attempts. Please try again in 15 minutes.';
+        header('Location: login.php');
+        exit;
+    }
+    
     $pdo = pdo();
     $email = strtolower(trim($_POST['email'] ?? ''));
     $password = $_POST['password'] ?? '';
@@ -251,6 +258,9 @@ function handleLogin(): void {
     // Success: reset attempts, update last_login, set session
     $stmt = $pdo->prepare('UPDATE users SET failed_attempts = 0, last_login = NOW() WHERE id = :id');
     $stmt->execute([':id' => $user['id']]);
+
+    // Reset rate limit on successful login
+    reset_rate_limit('login');
 
     $_SESSION['user'] = [
         'id' => (int)$user['id'],
