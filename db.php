@@ -49,9 +49,11 @@ if (file_exists($envFile)) {
 /**
  * Helper function to get environment variable with fallback
  */
-function env($key, $default = '') {
-    global $env;
-    return isset($env[$key]) ? $env[$key] : $default;
+if (!function_exists('env')) {
+    function env($key, $default = '') {
+        global $env;
+        return isset($env[$key]) ? $env[$key] : $default;
+    }
 }
 
 // Database config (load from .env for security)
@@ -67,14 +69,13 @@ ini_set('log_errors', '1');
 error_reporting(E_ALL);
 ini_set('error_log', __DIR__ . '/error.log');
 
-// SMTP config (PHPMailer)
-// Gmail SMTP configuration
-define('SMTP_HOST', 'smtp.gmail.com');
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'jeysidelima04@gmail.com');  // CHANGE THIS to your dummy Gmail address
-define('SMTP_PASS', 'donx oasl cjsw eywx');  // CHANGE THIS to your Gmail app-specific password
-define('SMTP_FROM', 'jeysidelima04@gmail.com');  // CHANGE THIS to your dummy Gmail address
-define('SMTP_FROM_NAME', 'PCU RFID System');
+// SMTP config (load from .env for security)
+define('SMTP_HOST', env('SMTP_HOST', 'smtp.gmail.com'));
+define('SMTP_PORT', env('SMTP_PORT', 587));
+define('SMTP_USER', env('SMTP_USER', 'jeysidelima04@gmail.com'));
+define('SMTP_PASS', env('SMTP_PASS', ''));
+define('SMTP_FROM', env('SMTP_FROM', 'jeysidelima04@gmail.com'));
+define('SMTP_FROM_NAME', env('SMTP_FROM_NAME', 'PCU RFID System'));
 
 function pdo(): PDO {
     static $pdo;

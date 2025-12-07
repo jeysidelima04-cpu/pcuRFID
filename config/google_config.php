@@ -4,19 +4,23 @@
  * Loads credentials from .env file for security
  */
 
-// Load environment variables from .env file
-$envFile = __DIR__ . '/../.env';
-if (file_exists($envFile)) {
-    $env = parse_ini_file($envFile);
-} else {
-    // Fallback for backward compatibility (if .env doesn't exist)
-    $env = [];
+// Load environment variables from .env file (if not already loaded)
+if (!isset($env)) {
+    $envFile = __DIR__ . '/../.env';
+    if (file_exists($envFile)) {
+        $env = parse_ini_file($envFile);
+    } else {
+        // Fallback for backward compatibility (if .env doesn't exist)
+        $env = [];
+    }
 }
 
-// Helper function to get environment variable with fallback
-function env($key, $default = '') {
-    global $env;
-    return isset($env[$key]) ? $env[$key] : $default;
+// Helper function to get environment variable with fallback (only declare if not exists)
+if (!function_exists('env')) {
+    function env($key, $default = '') {
+        global $env;
+        return isset($env[$key]) ? $env[$key] : $default;
+    }
 }
 
 // Google OAuth Client ID (from .env)
