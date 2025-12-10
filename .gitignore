@@ -2,8 +2,9 @@
 error.log
 *.log
 
-# Vendor directory (Composer dependencies - will be reinstalled)
-vendor/
+# Vendor directory - INCLUDED for plug-and-play XAMPP portability
+# All Composer dependencies are committed to Git for easy deployment
+# vendor/
 
 # OS files
 .DS_Store
