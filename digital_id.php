@@ -77,6 +77,12 @@ try {
         .bg-gradient-pcu {
             background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         }
+        .pcu-logo-bg {
+            background-image: url('pcu-building.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -100,22 +106,25 @@ try {
     <div class="min-h-screen flex justify-center items-center p-4 py-12">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
             <!-- Card Header -->
-            <div class="bg-gradient-pcu p-6 text-center">
-                <div class="flex justify-center mb-3">
-                    <img src="https://via.placeholder.com/80?text=PCU" alt="PCU Logo" class="h-20 w-20 rounded-full bg-white p-2">
+            <div class="relative bg-gradient-pcu pb-20 pt-8 text-center overflow-hidden">
+                <!-- Background Image Overlay -->
+                <div class="absolute inset-0 pcu-logo-bg opacity-20"></div>
+                
+                <!-- Content -->
+                <div class="relative z-10">
+                    <h2 class="text-white text-2xl font-bold">GateWatch System</h2>
+                    <p class="text-blue-100 text-sm mt-1">Philippine Christian University</p>
                 </div>
-                <h2 class="text-white text-2xl font-bold">GateWatch System</h2>
-                <p class="text-blue-100 text-sm">Philippine Christian University</p>
             </div>
 
             <!-- Student Photo -->
-            <div class="flex justify-center -mt-12 mb-4">
+            <div class="flex justify-center px-6 -mt-16 mb-6 relative z-20">
                 <?php if (!empty($user['profile_picture'])): ?>
                     <img src="assets/profiles/<?php echo e($user['profile_picture']); ?>" 
                          alt="<?php echo e($user['name']); ?>" 
-                         class="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover bg-gray-200">
+                         class="w-32 h-32 rounded-full border-4 border-white shadow-2xl object-cover bg-gray-200">
                 <?php else: ?>
-                    <div class="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                    <div class="w-32 h-32 rounded-full border-4 border-white shadow-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
                         <span class="text-white text-4xl font-bold"><?php echo strtoupper(substr($user['name'], 0, 1)); ?></span>
                     </div>
                 <?php endif; ?>
@@ -123,10 +132,10 @@ try {
 
             <!-- Student Information -->
             <div class="px-6 pb-6 space-y-4">
-                <div class="text-center mb-6">
+                <div class="text-center">
                     <h3 class="text-2xl font-bold text-gray-800"><?php echo e($user['name']); ?></h3>
-                    <p class="text-blue-600 font-semibold text-lg"><?php echo e($user['student_id']); ?></p>
-                    <p class="text-gray-500 text-sm"><?php echo e($user['email']); ?></p>
+                    <p class="text-blue-600 font-semibold text-lg mt-1"><?php echo e($user['student_id']); ?></p>
+                    <p class="text-gray-500 text-sm mt-1"><?php echo e($user['email']); ?></p>
                 </div>
 
                 <!-- QR Code Section -->
