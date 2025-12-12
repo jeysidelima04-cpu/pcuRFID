@@ -2,8 +2,7 @@
 error.log
 *.log
 
-# Vendor directory - INCLUDED for plug-and-play XAMPP portability
-# All Composer dependencies are committed to Git for easy deployment
+# Vendor directory - NOW INCLUDED for plug-and-play XAMPP portability
 # vendor/
 
 # OS files

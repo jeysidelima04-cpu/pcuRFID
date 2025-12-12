@@ -65,7 +65,31 @@ try {
         exit;
     }
     
+    // 🔍 PHASE 1: CHECK IF RFID CARD IS MARKED AS LOST
+    $lostCard = is_rfid_lost($rfid_uid);
+    if ($lostCard) {
+        echo json_encode([
+            'success' => false,
+            'is_lost' => true,
+            'error' => 'RFID CARD REPORTED AS LOST',
+            'student' => [
+                'id' => $student['id'],
+                'name' => $student['name'],
+                'student_id' => $student['student_id']
+            ],
+            'lost_info' => [
+                'lost_at' => $lostCard['lost_at'],
+                'lost_reason' => $lostCard['lost_reason'],
+                'reported_by' => ($lostCard['reported_by_first_name'] ?? '') . ' ' . ($lostCard['reported_by_last_name'] ?? '')
+            ],
+            'message' => 'This RFID card has been reported as LOST. Please contact the administration office.',
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        exit;
+    }
+    
     // ✅ RECORD THE VIOLATION (student forgot physical ID, using RFID backup)
+    // Only record violations if RFID is NOT lost
     $stmt = $pdo->prepare('
         INSERT INTO violations (user_id, rfid_uid, scanned_at) 
         VALUES (?, ?, NOW())
@@ -82,6 +106,11 @@ try {
     
     // Get updated violation count
     $newViolationCount = $student['violation_count'] + 1;
+    
+    // 📧 PHASE 2: SEND GUARDIAN ENTRY NOTIFICATION
+    // This runs asynchronously - doesn't block gate scanning
+    $entryTime = date('Y-m-d H:i:s');
+    send_guardian_entry_notification($student['id'], $entryTime);
     
     // ⛔ CHECK IF STUDENT HAS REACHED MAXIMUM VIOLATIONS (3 strikes)
     if ($newViolationCount > 3) {

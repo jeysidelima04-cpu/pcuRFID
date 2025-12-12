@@ -1,4 +1,11 @@
-<?php require_once __DIR__ . '/db.php'; ?>
+<?php 
+// PHASE 3: Redirect to Google-only login
+// Manual signup is now disabled - users must sign up with Google
+header('Location: login.php?message=google_only');
+exit;
+
+require_once __DIR__ . '/db.php'; 
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

@@ -1449,3 +1449,62 @@ Stack trace:
 [06-Dec-2025 13:00:52 Europe/Berlin] [PCU RFID] Database connection successful
 [06-Dec-2025 13:21:47 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
 [06-Dec-2025 13:21:47 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:00:57 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:00:57 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:00:59 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:00:59 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:01:03 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:01:03 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:01:04 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:01:04 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:01:26 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:01:26 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:01:32 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:01:32 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:01:34 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:01:34 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:02:18 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:02:18 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:02:26 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:02:26 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:15:44 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:15:47 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:16:48 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:16:52 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:19:47 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:20:41 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:22:04 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:22:07 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:23:37 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:23:40 Europe/Berlin] PHP Fatal error:  Cannot redeclare env() (previously declared in C:\xampp\htdocs\pcuRFID2\db.php:52) in C:\xampp\htdocs\pcuRFID2\config\google_config.php on line 19
+[07-Dec-2025 02:26:43 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:26:43 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:26:45 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:26:45 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:27:01 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:27:01 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 02:27:01 Europe/Berlin] User ID 10 updated their name to: Jason RamosS
+[07-Dec-2025 02:27:03 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 02:27:03 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:10:09 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:10:09 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:10:18 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:10:18 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:10:26 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:10:26 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:11:02 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:11:02 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:13:58 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:13:58 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:17:04 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:17:04 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:20:14 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:20:14 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:21:35 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:21:35 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:21:40 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:21:40 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:23:56 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:23:56 Europe/Berlin] [PCU RFID] Database connection successful
+[07-Dec-2025 16:27:42 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[07-Dec-2025 16:27:42 Europe/Berlin] [PCU RFID] Database connection successful
