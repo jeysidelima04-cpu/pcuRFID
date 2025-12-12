@@ -126,12 +126,13 @@
         </svg>
         Sign in with Google
       </a>
-
-      <!-- OR Divider -->
-      <div class="relative flex items-center my-6">
-        <div class="flex-grow border-t border-slate-300"></div>
-        <span class="flex-shrink mx-4 text-sm text-slate-500 font-medium">OR</span>
-        <div class="flex-grow border-t border-slate-300"></div>
+      <?php else: ?>
+      <div class="text-center py-8">
+        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <p class="text-slate-600 font-medium">Google Sign-In Unavailable</p>
+        <p class="text-slate-500 text-sm mt-1">Please contact your administrator</p>
       </div>
       <?php endif; ?>
 
@@ -210,22 +211,5 @@
 
   <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
   <script src="assets/js/app.js"></script>
-  <script>
-    function togglePassword() {
-      const passwordInput = document.getElementById('password');
-      const eyeIcon = document.getElementById('eyeIcon');
-      const eyeOffIcon = document.getElementById('eyeOffIcon');
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        eyeIcon.classList.add('hidden');
-        eyeOffIcon.classList.remove('hidden');
-      } else {
-        passwordInput.type = 'password';
-        eyeIcon.classList.remove('hidden');
-        eyeOffIcon.classList.add('hidden');
-      }
-    }
-  </script>
 </body>
 </html>
