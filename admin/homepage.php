@@ -1667,26 +1667,20 @@ function initializeStudentDropzone() {
     studentPictureDropzone = new Dropzone("#studentPictureDropzone", {
         url: "upload_student_picture.php",
         maxFiles: 1,
-        maxFilesize: 5, // MB
+        maxFilesize: 5,
         acceptedFiles: "image/jpeg,image/png,image/jpg",
         addRemoveLinks: true,
-        createImageThumbnails: false, // Disable thumbnails to prevent filename display issues
+        createImageThumbnails: false,
+        previewsContainer: false,
         dictDefaultMessage: "Drop student photo here or click to upload",
         dictRemoveFile: "Remove",
         dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
         dictInvalidFileType: "Invalid file type. Only JPG and PNG are allowed.",
         init: function() {
-            // Add CSRF token to every request
             this.on("sending", function(file, xhr, formData) {
                 const studentId = document.getElementById('dropzoneStudentId').value;
                 formData.append("student_id", studentId);
-                
-                // Manually set CSRF token header
-                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
-                
-                // Log for debugging
-                console.log('Uploading for student ID:', studentId);
-                console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing');
+                formData.append("csrf_token", csrfToken);
             });
             
             this.on("success", function(file, response) {

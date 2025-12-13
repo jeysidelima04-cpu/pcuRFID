@@ -13,40 +13,8 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// Verify CSRF token - check multiple possible header formats
-$csrfToken = null;
-
-// Check common header variations
-if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'];
-}
-
-// Fallback: check all headers for case-insensitive match
-if (!$csrfToken) {
-    foreach ($_SERVER as $key => $value) {
-        if (strtoupper($key) === 'HTTP_X_CSRF_TOKEN') {
-            $csrfToken = $value;
-            break;
-        }
-    }
-}
-
-// Additional check: some clients send it differently
-if (!$csrfToken && function_exists('getallheaders')) {
-    $headers = getallheaders();
-    $csrfToken = $headers['X-CSRF-Token'] ?? $headers['X-Csrf-Token'] ?? $headers['x-csrf-token'] ?? null;
-}
-
-// Validate token
-if (!$csrfToken) {
-    error_log('CSRF token not found in request. Available headers: ' . print_r(array_keys($_SERVER), true));
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'CSRF token not provided']);
-    exit;
-}
-
-if ($csrfToken !== $_SESSION['csrf_token']) {
-    error_log('CSRF token mismatch. Received: ' . substr($csrfToken, 0, 10) . '... Expected: ' . substr($_SESSION['csrf_token'], 0, 10) . '...');
+// CSRF protection for file upload (token sent in POST data)
+if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
     exit;
