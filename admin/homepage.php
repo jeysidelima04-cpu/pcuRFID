@@ -631,7 +631,7 @@ $activeSection = $_GET['section'] ?? 'students';
                             try {
                                 $cardStmt = $pdo->prepare("
                                     SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason, rc.status,
-                                           admin.first_name AS reported_by_first_name, admin.last_name AS reported_by_last_name
+                                           admin.name AS reported_by_name
                                     FROM rfid_cards rc
                                     LEFT JOIN users admin ON rc.lost_reported_by = admin.id
                                     WHERE rc.user_id = ?
@@ -639,11 +639,29 @@ $activeSection = $_GET['section'] ?? 'students';
                                 ");
                                 $cardStmt->execute([$student['id']]);
                                 $cardInfo = $cardStmt->fetch();
+                                
+                                // If card not found in rfid_cards table, create it now
+                                if (!$cardInfo && !empty($student['rfid_uid'])) {
+                                    $insertStmt = $pdo->prepare("
+                                        INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+                                        VALUES (?, ?, ?, 'active')
+                                    ");
+                                    $insertStmt->execute([
+                                        $student['id'],
+                                        $student['rfid_uid'],
+                                        $student['rfid_registered_at'] ?? date('Y-m-d H:i:s')
+                                    ]);
+                                    
+                                    // Fetch the newly created card
+                                    $cardStmt->execute([$student['id']]);
+                                    $cardInfo = $cardStmt->fetch();
+                                }
+                                
                                 $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
                             } catch (PDOException $e) {
                                 // If rfid_cards table doesn't exist or query fails, use basic info from users table
                                 error_log("RFID card query error: " . $e->getMessage());
-                                $cardInfo = ['card_id' => null, 'is_lost' => 0];
+                                $cardInfo = ['card_id' => $student['id'], 'is_lost' => 0]; // Use user_id as fallback
                                 $isLost = false;
                             }
                         ?>
@@ -687,9 +705,9 @@ $activeSection = $_GET['section'] ?? 'students';
                                                         <strong>Reason:</strong> <?php echo htmlspecialchars($cardInfo['lost_reason']); ?>
                                                     </div>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($cardInfo['reported_by_first_name'])): ?>
+                                                    <?php if (!empty($cardInfo['reported_by_name'])): ?>
                                                     <div class="mt-1 text-xs text-red-500">
-                                                        <strong>Reported by:</strong> <?php echo htmlspecialchars($cardInfo['reported_by_first_name'] . ' ' . $cardInfo['reported_by_last_name']); ?>
+                                                        <strong>Reported by:</strong> <?php echo htmlspecialchars($cardInfo['reported_by_name']); ?>
                                                     </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -1291,6 +1309,13 @@ function unregisterCard(studentId) {
 
 // Toggle RFID Lost Status (Enable/Disable Mark Lost ID)
 function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
+    console.log('toggleRfidLostStatus called:', { cardId, studentName, studentEmail, markAsLost });
+    
+    if (!cardId) {
+        alert('Error: Card ID is missing. Please refresh the page and try again.');
+        return;
+    }
+    
     let confirmMessage, actionText;
     
     if (markAsLost) {
@@ -1321,22 +1346,30 @@ function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
     btn.disabled = true;
     btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
     
+    const payload = {
+        card_id: cardId,
+        action: actionText,
+        student_email: studentEmail,
+        student_name: studentName,
+        csrf_token: csrfToken
+    };
+    
+    console.log('Sending request:', payload);
+    
     fetch('mark_lost_rfid.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken
         },
-        body: JSON.stringify({
-            card_id: cardId,
-            action: actionText,
-            student_email: studentEmail,
-            student_name: studentName,
-            csrf_token: csrfToken
-        })
+        body: JSON.stringify(payload)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             alert(data.message || '✓ Status updated successfully');
             location.reload();
