@@ -720,13 +720,6 @@ try {
                                             <?php endif; ?>
                                         </span>
                                     </div>
-                                    <?php if ($rfidIsLost): ?>
-                                    <div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
-                                        <strong>⚠️ Important:</strong> Your RFID card is temporarily disabled.<br>
-                                        Please use your <strong>Digital ID QR Code</strong> for entry.<br>
-                                        Contact Student Services: <a href="mailto:studentservices@pcu.edu.ph" class="underline">studentservices@pcu.edu.ph</a>
-                                    </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
