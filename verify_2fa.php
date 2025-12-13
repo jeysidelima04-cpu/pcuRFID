@@ -2,9 +2,14 @@
 require_once 'db.php';
 verify_csrf();
 
-$email = $_GET['email'] ?? '';
-$info = $_GET['info'] ?? '';
-$error = $_GET['error'] ?? '';
+// Get email from session (set by auth.php)
+$email = $_SESSION['verify_email'] ?? '';
+$info = $_SESSION['info'] ?? '';
+$error = $_SESSION['error'] ?? '';
+
+// Clear messages after reading
+if ($info) unset($_SESSION['info']);
+if ($error) unset($_SESSION['error']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,7 +31,7 @@ $error = $_GET['error'] ?? '';
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('/pcuRFID2/pcu-building.jpg');
+            background-image: url('pcu-building.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -256,7 +261,14 @@ $error = $_GET['error'] ?? '';
                     
                     // Wait for animation to complete then redirect
                     setTimeout(() => {
-                        window.location.href = 'login.php?toast=Account verified. You can now log in.';
+                        // Store success message in session
+                        fetch('auth.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ action: 'set_toast', message: 'Account verified. You can now log in.' })
+                        }).then(() => {
+                            window.location.href = 'login.php';
+                        });
                     }, 2500);
                 } else {
                     // If error, submit form normally

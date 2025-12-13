@@ -3,6 +3,21 @@ require_once __DIR__ . '/../db.php';
 
 header('Content-Type: application/json');
 
+// Check if admin is logged in
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
+
+// CSRF protection for JSON API
+$headers = getallheaders();
+if (!isset($headers['X-CSRF-Token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $headers['X-CSRF-Token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
+
 // Check if request is POST and has valid JSON
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

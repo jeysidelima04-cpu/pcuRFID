@@ -69,7 +69,8 @@ body {
 }
 
 .bg-pcu {
-  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('/pcuRFID2/pcu-building.jpg');
+  position: relative;
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('../../pcu-building.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

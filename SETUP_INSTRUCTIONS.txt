@@ -1,0 +1,220 @@
+================================================================================
+PCU RFID SYSTEM - SETUP INSTRUCTIONS FOR NEW PC
+================================================================================
+
+IMPORTANT: Follow these steps exactly to set up the project on a new computer.
+
+================================================================================
+STEP 1: EXTRACT THE PROJECT
+================================================================================
+
+1. Extract the ZIP file to your XAMPP htdocs folder
+   Example: C:\xampp\htdocs\pcuRFID2
+   
+   ⚠️ IMPORTANT: You can rename the folder to anything you want!
+   The project will work with ANY folder name now.
+
+================================================================================
+STEP 2: INSTALL XAMPP (if not already installed)
+================================================================================
+
+1. Download XAMPP from https://www.apachefriends.org/
+2. Install XAMPP
+3. Start Apache and MySQL from XAMPP Control Panel
+
+================================================================================
+STEP 3: CREATE THE DATABASE
+================================================================================
+
+1. Open your browser and go to: http://localhost/phpmyadmin
+2. Click "New" to create a new database
+3. Database name: pcu_rfid2
+   ⚠️ Must be exactly "pcu_rfid2" (case-sensitive)
+4. Collation: utf8mb4_general_ci
+5. Click "Create"
+
+6. Import the database structure:
+   - Select the "pcu_rfid2" database
+   - Click "Import" tab
+   - Click "Choose File"
+   - Select "database.sql" from the project folder
+   - Click "Go" at the bottom
+
+================================================================================
+STEP 4: INSTALL COMPOSER DEPENDENCIES
+================================================================================
+
+1. Open Command Prompt or PowerShell
+2. Navigate to your project folder:
+   cd C:\xampp\htdocs\pcuRFID2
+   (or whatever you named your folder)
+
+3. Install PHPMailer:
+   composer install
+   
+   If composer is not installed:
+   - Download from: https://getcomposer.org/download/
+   - Install it first, then run "composer install"
+
+================================================================================
+STEP 5: CONFIGURE DATABASE CONNECTION (if needed)
+================================================================================
+
+⚠️ ONLY if your MySQL settings are different from default:
+
+1. Open: db.php
+2. Find these lines (around line 24-27):
+   
+   define('DB_HOST', '127.0.0.1');
+   define('DB_NAME', 'pcu_rfid2');
+   define('DB_USER', 'root');
+   define('DB_PASS', '');
+   
+3. Change ONLY if your MySQL has:
+   - Different host (keep 127.0.0.1 for localhost)
+   - Different username (default is 'root')
+   - A password (default is empty '')
+
+================================================================================
+STEP 6: CONFIGURE EMAIL (OPTIONAL - for password reset)
+================================================================================
+
+The email feature uses Gmail SMTP. To use it:
+
+1. Open: db.php
+2. Find these lines (around line 38-42):
+   
+   define('SMTP_USER', 'jeysidelima04@gmail.com');
+   define('SMTP_PASS', 'donx oasl cjsw eywx');
+   define('SMTP_FROM', 'jeysidelima04@gmail.com');
+   
+3. Replace with YOUR Gmail credentials:
+   - SMTP_USER: Your Gmail address
+   - SMTP_PASS: Your Gmail App Password (NOT your regular password!)
+   - SMTP_FROM: Same as SMTP_USER
+
+⚠️ How to get Gmail App Password:
+   1. Go to: https://myaccount.google.com/security
+   2. Enable 2-Step Verification
+   3. Create App Password for "Mail"
+   4. Use that 16-character password (without spaces)
+
+================================================================================
+STEP 7: ACCESS THE SYSTEM
+================================================================================
+
+1. Make sure Apache and MySQL are running in XAMPP
+2. Open your browser
+3. Go to: http://localhost/pcuRFID2
+   (or http://localhost/YOUR_FOLDER_NAME if you renamed it)
+
+DEFAULT ADMIN LOGIN:
+   Username: ./pcuadmin
+   Password: ./@pcuAdmin
+   
+   Access admin at: http://localhost/pcuRFID2/admin/admin_login.php
+
+================================================================================
+STEP 8: CREATE STUDENT ACCOUNTS
+================================================================================
+
+1. Go to: http://localhost/pcuRFID2/signup.php
+2. Fill in the form to create a student account
+3. Check your email for the 2FA verification code
+   (or check the error.log file if email fails)
+4. Enter the code to activate your account
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+❌ "Database connection error"
+   → Make sure MySQL is running in XAMPP
+   → Check database name is exactly "pcu_rfid2"
+   → Verify credentials in db.php
+
+❌ "Table does not exist"
+   → Import database.sql file in phpMyAdmin
+   → Make sure you selected the correct database
+
+❌ "PHPMailer not installed"
+   → Run: composer install
+   → Make sure you're in the project folder
+
+❌ Email not sending
+   → Check SMTP credentials in db.php
+   → Use Gmail App Password, not regular password
+   → Check error.log file for details
+
+❌ "Page not found" or 404 errors
+   → Check folder name in URL matches actual folder
+   → Clear browser cache
+   → Restart Apache in XAMPP
+
+❌ Background image not showing
+   → Make sure pcu-building.jpg exists in project root
+   → Check browser console for 404 errors
+   → Clear browser cache
+
+================================================================================
+FILE STRUCTURE
+================================================================================
+
+pcuRFID2/
+├── admin/                  # Admin panel files
+│   ├── homepage.php       # Admin dashboard
+│   ├── admin_login.php    # Admin login page
+│   └── ...
+├── assets/                # CSS, JS, and images
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── vendor/                # Composer dependencies (PHPMailer)
+├── db.php                 # Database configuration
+├── database.sql           # Database structure
+├── login.php              # Student login
+├── signup.php             # Student registration
+├── homepage.php           # Student dashboard
+├── profile.php            # Student profile
+├── error.log              # Error logs (for debugging)
+└── SETUP_INSTRUCTIONS.txt # This file
+
+================================================================================
+SECURITY NOTES
+================================================================================
+
+⚠️ FOR PRODUCTION USE:
+1. Change admin credentials in: admin/admin_login.php
+2. Use strong database password
+3. Enable HTTPS
+4. Keep error.log file private (don't commit to Git)
+5. Change SMTP credentials to production email
+
+================================================================================
+SUPPORT
+================================================================================
+
+If you encounter issues:
+1. Check error.log file for error messages
+2. Check XAMPP error logs
+3. Verify all steps were followed exactly
+4. Check that all required files are present
+
+For database issues:
+- Ensure MySQL is running
+- Check phpMyAdmin can connect
+- Verify database name matches db.php
+
+================================================================================
+DONE! ✅
+================================================================================
+
+Your PCU RFID System should now be running on the new PC!
+
+Test it by:
+1. Opening http://localhost/pcuRFID2 (or your folder name)
+2. Creating a test student account
+3. Logging in to admin panel
+4. Registering an RFID card
+
+Good luck!

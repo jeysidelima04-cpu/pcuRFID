@@ -9,18 +9,42 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-
-    // Verify credentials (using constants for demo - in production, use database)
-    if ($username === './pcuadmin' && $password === './@pcuAdmin') {
-        $_SESSION['user_id'] = 'admin';
-        $_SESSION['role'] = 'Admin';
-        $_SESSION['admin_logged_in'] = true;
-        header('Location: homepage.php');
-        exit;
+    // Rate limiting: 5 attempts per 15 minutes
+    if (!check_rate_limit('admin_login', 5, 900)) {
+        $error = 'Too many login attempts. Please try again in 15 minutes.';
     } else {
-        $error = 'Invalid username or password';
+        $email = strtolower(trim($_POST['username'] ?? ''));
+        $password = $_POST['password'] ?? '';
+
+        if (!$email || !$password) {
+            $error = 'Please enter email and password.';
+        } else {
+            try {
+                $pdo = pdo();
+                // Query admin user from database
+                $stmt = $pdo->prepare("SELECT id, email, password, name FROM users WHERE email = :email AND role = 'Admin' LIMIT 1");
+                $stmt->execute([':email' => $email]);
+                $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($admin && password_verify($password, $admin['password'])) {
+                    // Valid admin credentials - reset rate limit
+                    reset_rate_limit('admin_login');
+                    
+                    $_SESSION['user_id'] = $admin['id'];
+                    $_SESSION['role'] = 'Admin';
+                    $_SESSION['admin_logged_in'] = true;
+                    $_SESSION['admin_id'] = $admin['id'];
+                    $_SESSION['admin_name'] = $admin['name'];
+                    header('Location: homepage.php');
+                    exit;
+                } else {
+                    $error = 'Invalid email or password';
+                }
+            } catch (PDOException $e) {
+                error_log("Admin login error: " . $e->getMessage());
+                $error = 'Login system error. Please try again.';
+            }
+        }
     }
 }
 ?>
@@ -44,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('/pcuRFID2/pcu-building.jpg');
+            background-image: url('../pcu-building.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;

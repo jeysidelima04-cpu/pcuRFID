@@ -8,6 +8,14 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
+// CSRF protection for JSON API
+$headers = getallheaders();
+if (!isset($headers['X-CSRF-Token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $headers['X-CSRF-Token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
+
 // Check if request is POST and has JSON content
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty(file_get_contents('php://input'))) {
     http_response_code(400);

@@ -8,6 +8,14 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
+// CSRF protection for JSON API
+$headers = getallheaders();
+if (!isset($headers['X-CSRF-Token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $headers['X-CSRF-Token'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
+
 // Check if request is POST and has JSON content
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty(file_get_contents('php://input'))) {
     http_response_code(400);
@@ -55,6 +63,19 @@ try {
 
     if (!$success || $stmt->rowCount() === 0) {
         throw new Exception('Student not found or failed to update record');
+    }
+    
+    // Also insert into rfid_cards table for lost/found tracking
+    try {
+        $stmt = $pdo->prepare('
+            INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+            VALUES (?, ?, NOW(), "active")
+            ON DUPLICATE KEY UPDATE rfid_uid = VALUES(rfid_uid), registered_at = NOW(), status = "active"
+        ');
+        $stmt->execute([$data['student_id'], $rfid_uid]);
+    } catch (PDOException $e) {
+        // Table might not exist yet, log but don't fail the registration
+        error_log('Failed to insert into rfid_cards table: ' . $e->getMessage());
     }
 
     echo json_encode(['success' => true]);

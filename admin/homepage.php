@@ -12,22 +12,49 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit();
 }
 
+// Auto-fix: Set admin_id if not already set (for existing sessions)
+if (!isset($_SESSION['admin_id'])) {
+    try {
+        $pdo = pdo();
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
+        $stmt->execute();
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $_SESSION['admin_id'] = $admin['id'] ?? 1;
+    } catch (PDOException $e) {
+        error_log("Auto-fix admin_id error: " . $e->getMessage());
+        $_SESSION['admin_id'] = 1; // Fallback
+    }
+}
+
 $page_title = 'Student Management';
 
 // Get all students
 try {
     $pdo = pdo();
     
-    // Get all students
+    // Get all students WITHOUT registered RFID cards (for Student Management panel)
+    // Exclude students pending verification
     $query = '
-        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at 
+        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture
         FROM users 
-        WHERE role = "Student" 
+        WHERE role = "Student" AND rfid_uid IS NULL AND verification_status = "approved"
         ORDER BY created_at DESC
     ';
     $stmt = $pdo->prepare($query);
     $stmt->execute();
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get ALL students including those with RFID (for Registered Cards panel)
+    // Exclude students pending verification
+    $queryAll = '
+        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture
+        FROM users 
+        WHERE role = "Student" AND verification_status = "approved"
+        ORDER BY created_at DESC
+    ';
+    $stmtAll = $pdo->prepare($queryAll);
+    $stmtAll->execute();
+    $allStudents = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     
     // Get registered cards count
     $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL');
@@ -57,6 +84,83 @@ try {
             INDEX idx_scanned_at (scanned_at)
         )
     ");
+    
+    // Auto-setup: Create rfid_cards table if it doesn't exist (for lost/found tracking)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS rfid_cards (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            rfid_uid VARCHAR(50) NOT NULL,
+            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_lost TINYINT(1) DEFAULT 0,
+            lost_at TIMESTAMP NULL,
+            lost_reason TEXT NULL,
+            lost_reported_by INT NULL,
+            found_at TIMESTAMP NULL,
+            found_by INT NULL,
+            status ENUM('active', 'inactive', 'lost', 'replaced') DEFAULT 'active',
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_user (user_id),
+            INDEX idx_rfid_uid (rfid_uid),
+            INDEX idx_is_lost (is_lost)
+        )
+    ");
+    
+    // Auto-setup: Create rfid_status_history table if it doesn't exist
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS rfid_status_history (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            rfid_card_id INT NOT NULL,
+            user_id INT NOT NULL,
+            status_change VARCHAR(50) NOT NULL,
+            changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            changed_by INT NULL,
+            reason TEXT NULL,
+            notes TEXT NULL,
+            ip_address VARCHAR(45) NULL,
+            INDEX idx_rfid_card (rfid_card_id),
+            INDEX idx_user (user_id)
+        )
+    ");
+    
+    // Auto-populate rfid_cards table with existing RFID registrations
+    // Use a safer approach to avoid trigger conflicts
+    try {
+        // First, get all users who need entries in rfid_cards
+        $stmt = $pdo->query("
+            SELECT u.id, u.rfid_uid, u.rfid_registered_at
+            FROM users u
+            LEFT JOIN rfid_cards rc ON u.id = rc.user_id
+            WHERE u.role = 'Student' 
+            AND u.rfid_uid IS NOT NULL 
+            AND rc.user_id IS NULL
+        ");
+        $missingCards = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Insert each missing entry individually to avoid trigger conflicts
+        if (!empty($missingCards)) {
+            $insertStmt = $pdo->prepare("
+                INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+                VALUES (?, ?, ?, 'active')
+            ");
+            
+            foreach ($missingCards as $card) {
+                try {
+                    $insertStmt->execute([
+                        $card['id'],
+                        $card['rfid_uid'],
+                        $card['rfid_registered_at'] ?? date('Y-m-d H:i:s')
+                    ]);
+                } catch (PDOException $e) {
+                    // Skip duplicates or conflicts
+                    error_log("Skipping rfid_cards insert for user {$card['id']}: " . $e->getMessage());
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        // Log but don't fail - table population is optional
+        error_log("Failed to auto-populate rfid_cards: " . $e->getMessage());
+    }
     
     // Get students who reached maximum violations (3 or more)
     $maxViolationLimit = 3;
@@ -90,6 +194,16 @@ try {
         $yearlyViolations = $stmt->fetchColumn();
     }
     
+    // Get pending verification students
+    $stmt = $pdo->query('
+        SELECT id, student_id, name, email, created_at, profile_picture 
+        FROM users 
+        WHERE role = "Student" AND verification_status = "pending"
+        ORDER BY created_at DESC
+    ');
+    $pendingStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pendingCount = count($pendingStudents);
+    
 } catch (PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
     $error = 'Database error: ' . $e->getMessage();
@@ -110,6 +224,9 @@ $activeSection = $_GET['section'] ?? 'students';
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <!-- Dropzone.js for image upload -->
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <style type="text/tailwindcss">
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -162,10 +279,13 @@ $activeSection = $_GET['section'] ?? 'students';
                 box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3) !important;
                 width: 3.5rem !important;
                 height: 3.5rem !important;
+                min-width: 3.5rem !important;
+                min-height: 3.5rem !important;
                 border-radius: 50% !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
+                padding: 0 !important;
             }
             .toggle-btn:hover {
                 background-color: #0056b3;
@@ -196,7 +316,7 @@ $activeSection = $_GET['section'] ?? 'students';
     <!-- Sidebar Toggle Button (Mobile Only) -->
     <button 
         id="sidebarToggle" 
-        class="toggle-btn fixed top-4 left-4 z-50 bg-[#0056b3] text-white p-3 rounded-lg shadow-lg hover:shadow-xl"
+        class="toggle-btn fixed top-4 left-4 z-50 bg-[#0056b3] text-white shadow-lg hover:shadow-xl"
         onclick="toggleSidebar()"
         title="Toggle Menu"
     >
@@ -212,12 +332,24 @@ $activeSection = $_GET['section'] ?? 'students';
                 <img src="../pcu-logo.png" alt="PCU Logo" class="w-10 h-10">
                 <div>
                     <h2 class="font-semibold text-slate-800">Admin Panel</h2>
-                    <p class="text-xs text-slate-500">RFID System</p>
+                    <p class="text-xs text-slate-500">GateWatch</p>
                 </div>
             </a>
 
             <!-- Navigation -->
             <nav class="space-y-2">
+                <a href="?section=verify" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'verify' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="flex-1 flex items-center justify-between">
+                        <span class="font-medium">Verify Students</span>
+                        <?php if ($pendingCount > 0): ?>
+                        <span class="bg-amber-500 text-white text-xs px-2 py-1 rounded-full animate-pulse"><?php echo $pendingCount; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </a>
+                
                 <a href="?section=students" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'students' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -255,6 +387,22 @@ $activeSection = $_GET['section'] ?? 'students';
                 </a>
             </nav>
 
+            <!-- Gate Monitor Link -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <a href="../security/gate_monitor.php" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 hover:from-green-100 hover:to-emerald-100 border border-green-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <div class="flex-1">
+                        <span class="font-medium">Gate Monitor</span>
+                        <p class="text-xs text-green-600">Security Access</p>
+                    </div>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
+            </div>
+
             <!-- Logout Button -->
             <div class="mt-8 pt-6 border-t border-slate-200">
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
@@ -275,7 +423,120 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
         <?php endif; ?>
 
-        <?php if ($activeSection === 'students'): ?>
+        <?php if ($activeSection === 'verify'): ?>
+            <!-- Verify Students Section -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">Verify Student Accounts</h1>
+                <p class="text-slate-600 mt-1">Review and approve student registration requests</p>
+            </div>
+
+            <?php if (empty($pendingStudents)): ?>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-12 text-center">
+                        <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">All Caught Up!</h3>
+                        <p class="text-slate-600">No pending student verifications at this time.</p>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="grid gap-6">
+                    <?php foreach ($pendingStudents as $student): ?>
+                        <div class="bg-white rounded-xl shadow-sm overflow-hidden fade-in">
+                            <div class="p-6">
+                                <div class="flex items-start gap-6">
+                                    <!-- Profile Picture or Avatar -->
+                                    <div class="flex-shrink-0">
+                                        <?php if (!empty($student['profile_picture'])): ?>
+                                            <img src="../assets/profiles/<?php echo htmlspecialchars($student['profile_picture']); ?>" 
+                                                 alt="Profile" 
+                                                 class="w-20 h-20 rounded-full object-cover border-4 border-slate-100">
+                                        <?php else: ?>
+                                            <?php
+                                            $firstLetter = strtoupper(substr($student['name'], 0, 1));
+                                            $colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+                                            $colorIndex = ord($firstLetter) % count($colors);
+                                            $bgColor = $colors[$colorIndex];
+                                            ?>
+                                            <div class="w-20 h-20 rounded-full <?php echo $bgColor; ?> flex items-center justify-center text-white text-2xl font-bold border-4 border-slate-100">
+                                                <?php echo $firstLetter; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <!-- Student Info -->
+                                    <div class="flex-1">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div>
+                                                <h3 class="text-xl font-semibold text-slate-800 mb-1">
+                                                    <?php echo htmlspecialchars($student['name']); ?>
+                                                </h3>
+                                                <div class="space-y-1">
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+                                                        </svg>
+                                                        <strong>Student ID:</strong> 
+                                                        <code class="bg-slate-100 px-2 py-0.5 rounded text-slate-800"><?php echo htmlspecialchars($student['student_id']); ?></code>
+                                                    </p>
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                        </svg>
+                                                        <strong>Email:</strong> <?php echo htmlspecialchars($student['email']); ?>
+                                                    </p>
+                                                    <p class="text-sm text-slate-600 flex items-center gap-2">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        <strong>Registered:</strong> <?php echo date('M d, Y • g:i A', strtotime($student['created_at'])); ?>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1 rounded-full">
+                                                Pending Verification
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg mb-4">
+                                            <p class="text-sm text-amber-800">
+                                                <strong>Action Required:</strong> Please verify this student's credentials against enrolled student records before approving their account.
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="flex gap-3 mt-4">
+                                            <button 
+                                                onclick="approveStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['name'], ENT_QUOTES); ?>')"
+                                                class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold transition-all duration-150
+                                                       hover:bg-green-700 hover:shadow-lg active:scale-[0.98]
+                                                       flex items-center justify-center gap-2">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Approve Account
+                                            </button>
+                                            <button 
+                                                onclick="denyStudent(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['name'], ENT_QUOTES); ?>')"
+                                                class="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold transition-all duration-150
+                                                       hover:bg-red-700 hover:shadow-lg active:scale-[0.98]
+                                                       flex items-center justify-center gap-2">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                                Deny & Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        <?php elseif ($activeSection === 'students'): ?>
             <!-- All Students Section -->
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Student Management</h1>
@@ -295,7 +556,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                         <?php echo htmlspecialchars($student['name']); ?>
                                     </h3>
                                     <p class="text-sm text-slate-600">
-                                        ID: <?php echo htmlspecialchars($student['student_id']); ?>
+                                        Student ID: <?php echo htmlspecialchars($student['student_id']); ?>
                                     </p>
                                     <p class="text-sm text-slate-500">
                                         <?php echo htmlspecialchars($student['email']); ?>
@@ -350,8 +611,25 @@ $activeSection = $_GET['section'] ?? 'students';
 
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="p-6">
+                    <!-- Search Bar -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="registeredCardSearch" 
+                                placeholder="Search by Student ID..." 
+                                class="w-full px-4 py-3 pl-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                autocomplete="off"
+                            >
+                            <svg class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2" id="searchResultCount"></p>
+                    </div>
+
                     <?php 
-                    $registeredStudents = array_filter($students, function($s) { return !empty($s['rfid_uid']); });
+                    $registeredStudents = array_filter($allStudents, function($s) { return !empty($s['rfid_uid']); });
                     if (empty($registeredStudents)): 
                     ?>
                         <div class="text-center py-12">
@@ -362,15 +640,63 @@ $activeSection = $_GET['section'] ?? 'students';
                         </div>
                     <?php else: ?>
                         <div class="grid gap-4">
-                        <?php foreach ($registeredStudents as $student): ?>
-                            <div class="border border-green-200 bg-green-50/50 rounded-lg p-4 fade-in">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2 mb-2">
+                        <?php foreach ($registeredStudents as $student): 
+                            // Get RFID card details including lost status
+                            $cardInfo = null;
+                            $isLost = false;
+                            
+                            try {
+                                $cardStmt = $pdo->prepare("
+                                    SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason, rc.status,
+                                           admin.name AS reported_by_name
+                                    FROM rfid_cards rc
+                                    LEFT JOIN users admin ON rc.lost_reported_by = admin.id
+                                    WHERE rc.user_id = ?
+                                    LIMIT 1
+                                ");
+                                $cardStmt->execute([$student['id']]);
+                                $cardInfo = $cardStmt->fetch();
+                                
+                                // If card not found in rfid_cards table, create it now
+                                if (!$cardInfo && !empty($student['rfid_uid'])) {
+                                    $insertStmt = $pdo->prepare("
+                                        INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+                                        VALUES (?, ?, ?, 'active')
+                                    ");
+                                    $insertStmt->execute([
+                                        $student['id'],
+                                        $student['rfid_uid'],
+                                        $student['rfid_registered_at'] ?? date('Y-m-d H:i:s')
+                                    ]);
+                                    
+                                    // Fetch the newly created card
+                                    $cardStmt->execute([$student['id']]);
+                                    $cardInfo = $cardStmt->fetch();
+                                }
+                                
+                                $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
+                            } catch (PDOException $e) {
+                                // If rfid_cards table doesn't exist or query fails, use basic info from users table
+                                error_log("RFID card query error: " . $e->getMessage());
+                                $cardInfo = ['card_id' => $student['id'], 'is_lost' => 0]; // Use user_id as fallback
+                                $isLost = false;
+                            }
+                        ?>
+                            <div class="border <?php echo $isLost ? 'border-red-300 bg-red-50/50' : 'border-green-200 bg-green-50/50'; ?> rounded-lg p-4 fade-in registered-card-item" 
+                                 data-student-id="<?php echo strtolower(htmlspecialchars($student['student_id'])); ?>" 
+                                 data-student-name="<?php echo strtolower(htmlspecialchars($student['name'])); ?>">
+                                <!-- Desktop: side-by-side layout, Mobile: centered layout -->
+                                <div class="flex flex-col md:flex-row items-center md:items-stretch md:justify-between text-center md:text-left">
+                                    <div class="w-full md:flex-1 flex flex-col">
+                                        <div class="flex items-center justify-center md:justify-start gap-2 mb-2">
                                             <h3 class="font-semibold text-slate-800">
                                                 <?php echo htmlspecialchars($student['name']); ?>
                                             </h3>
-                                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Active</span>
+                                            <?php if ($isLost): ?>
+                                                <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">🔴 LOST</span>
+                                            <?php else: ?>
+                                                <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Active</span>
+                                            <?php endif; ?>
                                         </div>
                                         <p class="text-sm text-slate-600 mb-1">
                                             Student ID: <?php echo htmlspecialchars($student['student_id']); ?>
@@ -378,7 +704,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                         <p class="text-sm text-slate-500 mb-2">
                                             <?php echo htmlspecialchars($student['email']); ?>
                                         </p>
-                                        <div class="bg-white rounded-md p-3 mt-3">
+                                        <div class="bg-white rounded-md p-3 mt-3 max-w-md mx-auto md:mx-0 flex-1 flex flex-col justify-between">
                                             <div class="flex items-center justify-between text-sm">
                                                 <span class="text-slate-600">RFID UID:</span>
                                                 <code class="bg-slate-100 px-3 py-1 rounded font-mono text-slate-800"><?php echo htmlspecialchars($student['rfid_uid']); ?></code>
@@ -387,15 +713,60 @@ $activeSection = $_GET['section'] ?? 'students';
                                                 <span class="text-slate-600">Registered:</span>
                                                 <span class="text-slate-700"><?php echo date('M d, Y h:i A', strtotime($student['rfid_registered_at'])); ?></span>
                                             </div>
+                                            <?php if ($isLost): ?>
+                                                <div class="mt-3 p-2 bg-red-100 border border-red-200 rounded-md">
+                                                    <div class="flex items-center justify-between text-xs">
+                                                        <span class="text-red-600 font-semibold">Lost Date:</span>
+                                                        <span class="text-red-700"><?php echo date('M d, Y h:i A', strtotime($cardInfo['lost_at'])); ?></span>
+                                                    </div>
+                                                    <?php if (!empty($cardInfo['lost_reason'])): ?>
+                                                    <div class="mt-1 text-xs text-red-600">
+                                                        <strong>Reason:</strong> <?php echo htmlspecialchars($cardInfo['lost_reason']); ?>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($cardInfo['reported_by_name'])): ?>
+                                                    <div class="mt-1 text-xs text-red-500">
+                                                        <strong>Reported by:</strong> <?php echo htmlspecialchars($cardInfo['reported_by_name']); ?>
+                                                    </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
-                                    <div class="flex flex-col gap-2 ml-4">
+                                    <div class="flex flex-row md:flex-col gap-2 mt-4 md:mt-0 md:ml-4">
                                         <button 
-                                            onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>')"
+                                            onclick="openEditStudentModal('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['student_id']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
+                                            class="px-4 py-2 bg-indigo-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button 
+                                            onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
                                             class="px-4 py-2 bg-blue-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
                                         >
                                             View Details
                                         </button>
+                                        <?php if ($isLost): ?>
+                                            <button 
+                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', false)"
+                                                class="px-4 py-2 bg-green-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                Disable Mark Lost ID
+                                            </button>
+                                        <?php else: ?>
+                                            <button 
+                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', true)"
+                                                class="px-4 py-2 bg-orange-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                                Enable Mark Lost ID
+                                            </button>
+                                        <?php endif; ?>
                                         <button 
                                             onclick="unregisterCard('<?php echo htmlspecialchars($student['id']); ?>')"
                                             class="px-4 py-2 bg-yellow-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
@@ -674,7 +1045,259 @@ $activeSection = $_GET['section'] ?? 'students';
     </div>
 </div>
 
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-semibold text-slate-800">Edit Student Information</h3>
+            <button onclick="closeEditStudentModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div id="editStudentForm">
+            <input type="hidden" id="editStudentUserId" />
+            
+            <!-- Current Profile Picture -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Current Profile Picture</label>
+                <div class="flex items-center gap-4">
+                    <img id="currentProfilePicture" src="../assets/images/avatars/default-avatar.png" 
+                         alt="Profile" class="w-20 h-20 rounded-full object-cover border-2 border-slate-200">
+                    <button type="button" id="deleteProfilePictureBtn" onclick="deleteStudentProfilePicture()" 
+                            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
+                        Delete Picture
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Upload New Profile Picture -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Upload New Profile Picture</label>
+                <form action="upload_student_picture.php" class="dropzone" id="studentPictureDropzone">
+                    <input type="hidden" id="dropzoneStudentId" name="student_id" />
+                </form>
+            </div>
+            
+            <!-- Student Information -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="editStudentName" 
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
+                    <input type="text" id="editStudentId" 
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none">
+                    <p class="text-xs text-slate-500 mt-1">For temp IDs (e.g., TEMP-1702425600), enter the real student ID here</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email (Read-only)</label>
+                    <input type="email" id="editStudentEmail" readonly
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-slate-100 text-slate-600 cursor-not-allowed">
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="saveStudentInfo()" 
+                        class="flex-1 h-11 bg-indigo-600 text-white text-base font-medium rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeEditStudentModal()" 
+                        class="flex-1 h-11 bg-slate-200 text-slate-700 text-base font-medium rounded-lg shadow-md hover:bg-slate-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div id="customConfirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60]" style="display: none;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0" id="customConfirmContent">
+        <div class="p-6">
+            <div class="flex items-start gap-4">
+                <div id="confirmIcon" class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"></div>
+                <div class="flex-1">
+                    <h3 id="confirmTitle" class="text-lg font-semibold text-slate-800 mb-2"></h3>
+                    <div id="confirmMessage" class="text-sm text-slate-600 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-slate-200 p-4 flex gap-3">
+            <button id="confirmCancelBtn" class="flex-1 h-11 px-4 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors">
+                Cancel
+            </button>
+            <button id="confirmOkBtn" class="flex-1 h-11 px-4 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 transition-colors shadow-sm">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-[70] space-y-3 pointer-events-none"></div>
+
 <script>
+// CSRF Token for JavaScript fetch requests
+const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
+
+// ========================================
+// CUSTOM MODAL & NOTIFICATION SYSTEM
+// ========================================
+
+// Custom Confirm Dialog
+function showCustomConfirm(title, message, options = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customConfirmModal');
+        const content = document.getElementById('customConfirmContent');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        
+        // Set content
+        titleEl.textContent = title;
+        
+        // Handle message (can be string or array of items)
+        if (Array.isArray(message)) {
+            messageEl.innerHTML = message.map(item => `<div class="flex items-start gap-2"><span>${item}</span></div>`).join('');
+        } else {
+            messageEl.textContent = message;
+        }
+        
+        // Set icon based on type
+        const type = options.type || 'warning';
+        if (type === 'warning') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-orange-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-sm';
+        } else if (type === 'success') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-green-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm';
+        } else if (type === 'danger') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-red-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-sm';
+        } else {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-sky-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 transition-colors shadow-sm';
+        }
+        
+        // Set button text
+        okBtn.textContent = options.okText || 'OK';
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        
+        // Show modal with animation
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.remove('hidden');
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        // Handle buttons
+        const handleOk = () => {
+            closeCustomConfirm();
+            resolve(true);
+        };
+        
+        const handleCancel = () => {
+            closeCustomConfirm();
+            resolve(false);
+        };
+        
+        okBtn.onclick = handleOk;
+        cancelBtn.onclick = handleCancel;
+        
+        // Close on backdrop click
+        modal.onclick = (e) => {
+            if (e.target === modal) handleCancel();
+        };
+    });
+}
+
+function closeCustomConfirm() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('customConfirmContent');
+    
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }, 200);
+}
+
+// Toast Notification System
+function showToast(message, type = 'success', duration = 5000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'pointer-events-auto transform transition-all duration-300 translate-x-full opacity-0';
+    
+    let bgClass, iconSvg, iconBg;
+    
+    if (type === 'success') {
+        bgClass = 'bg-white border-l-4 border-green-500';
+        iconBg = 'bg-green-100';
+        iconSvg = '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    } else if (type === 'error') {
+        bgClass = 'bg-white border-l-4 border-red-500';
+        iconBg = 'bg-red-100';
+        iconSvg = '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+    } else if (type === 'warning') {
+        bgClass = 'bg-white border-l-4 border-orange-500';
+        iconBg = 'bg-orange-100';
+        iconSvg = '<svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+    } else {
+        bgClass = 'bg-white border-l-4 border-sky-500';
+        iconBg = 'bg-sky-100';
+        iconSvg = '<svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+    }
+    
+    toast.innerHTML = `
+        <div class="${bgClass} rounded-lg shadow-lg p-4 flex items-start gap-3 min-w-[320px] max-w-md">
+            <div class="${iconBg} rounded-full p-2 flex-shrink-0">
+                ${iconSvg}
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-slate-800">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full', 'opacity-0');
+        toast.classList.add('translate-x-0', 'opacity-100');
+    }, 10);
+    
+    // Auto remove
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+}
+
 let currentStudentId = null;
 let rfidInputListener = null;
 
@@ -724,13 +1347,14 @@ function pollRFIDReader() {
     let cardBuffer = '';
     let bufferTimeout = null;
     
-    // Listen for keyboard input from RFID reader
+    // Listen for keyboard input from RFID reader - Use keydown instead of keypress
     rfidInputListener = function(e) {
-        // Enter key signals end of card scan
+        // Enter key signals end of card scan - process buffer FIRST
         if (e.key === 'Enter') {
             e.preventDefault();
             
             const uid = cardBuffer.trim();
+            console.log('Admin RFID Scan - Buffer:', cardBuffer, 'Trimmed:', uid, 'Length:', uid.length);
             
             // More flexible validation - just check if something was scanned
             if (uid.length >= 4) {
@@ -742,7 +1366,7 @@ function pollRFIDReader() {
                 `;
                 
                 // Remove listener to prevent duplicate scans
-                document.removeEventListener('keypress', rfidInputListener);
+                document.removeEventListener('keydown', rfidInputListener);
                 rfidInputListener = null;
                 
                 // Register the card (keep original format - don't convert to uppercase for decimal numbers)
@@ -757,19 +1381,23 @@ function pollRFIDReader() {
                 setTimeout(() => pollRFIDReader(), 2000);
             }
             
+            cardBuffer = '';
+            clearTimeout(bufferTimeout);
             return;
         }
         
-        // Accumulate characters from RFID reader
-        if (e.key.length === 1) {
+        // Accumulate all other single-character keys (numbers)
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
             cardBuffer += e.key;
             input.value = cardBuffer;
+            console.log('Admin - Character captured:', e.key, 'Buffer now:', cardBuffer);
             
             // Reset timeout (R20XC sends data quickly, within ~100ms)
             clearTimeout(bufferTimeout);
             bufferTimeout = setTimeout(() => {
                 // If buffer doesn't complete, reset
-                if (cardBuffer.length > 0 && cardBuffer.length < 8) {
+                if (cardBuffer.length > 0 && cardBuffer.length < 4) {
+                    console.warn('Admin - Buffer timeout, clearing:', cardBuffer);
                     cardBuffer = '';
                     input.value = '';
                 }
@@ -777,7 +1405,7 @@ function pollRFIDReader() {
         }
     };
     
-    document.addEventListener('keypress', rfidInputListener);
+    document.addEventListener('keydown', rfidInputListener);
     
     // Also handle direct input field submission (manual entry fallback)
     input.addEventListener('keydown', function(e) {
@@ -808,6 +1436,7 @@ function registerCard(studentId, uid) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId,
@@ -852,6 +1481,7 @@ function unregisterCard(studentId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 student_id: studentId
@@ -872,12 +1502,146 @@ function unregisterCard(studentId) {
     }
 }
 
+// Toggle RFID Lost Status (Enable/Disable Mark Lost ID)
+async function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
+    console.log('toggleRfidLostStatus called:', { cardId, studentName, studentEmail, markAsLost });
+    
+    if (!cardId) {
+        showToast('Card ID is missing. Please refresh the page and try again.', 'error');
+        return;
+    }
+    
+    let confirmTitle, confirmMessages, actionText;
+    
+    if (markAsLost) {
+        confirmTitle = `Enable Mark Lost ID for ${studentName}?`;
+        confirmMessages = [
+            '✉️ Send email notification to student',
+            '🚫 Temporarily disable their RFID card',
+            '📱 Student must use Digital ID QR code for entry',
+            `📧 Student must email Student Services about lost card`,
+            '',
+            `<strong>Student Email:</strong> ${studentEmail}`
+        ];
+        actionText = 'mark_lost';
+    } else {
+        confirmTitle = `Disable Mark Lost ID for ${studentName}?`;
+        confirmMessages = [
+            '✅ Re-enable their RFID card',
+            '✉️ Send confirmation email to student',
+            '📱 RFID card can be used for entry again'
+        ];
+        actionText = 'mark_found';
+    }
+    
+    const confirmed = await showCustomConfirm(confirmTitle, confirmMessages, {
+        type: markAsLost ? 'warning' : 'success',
+        okText: markAsLost ? 'Enable Mark Lost ID' : 'Disable Mark Lost ID',
+        cancelText: 'Cancel'
+    });
+    
+    if (!confirmed) return;
+    
+    // Show loading toast
+    const loadingToast = showToast(
+        markAsLost ? 'Marking RFID as lost...' : 'Re-enabling RFID card...',
+        'info',
+        0 // Don't auto-dismiss
+    );
+    
+    const payload = {
+        card_id: cardId,
+        action: actionText,
+        student_email: studentEmail,
+        student_name: studentName,
+        csrf_token: csrfToken
+    };
+    
+    console.log('Sending request:', payload);
+    
+    try {
+        const response = await fetch('mark_lost_rfid.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        console.log('Response status:', response.status);
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        // Remove loading toast
+        const toastContainer = document.getElementById('toastContainer');
+        toastContainer.innerHTML = '';
+        
+        if (data.success) {
+            showToast(
+                data.message || '✓ Status updated successfully',
+                'success',
+                3000
+            );
+            
+            // Reload after toast is visible
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(
+                'Error: ' + (data.error || 'Unknown error occurred'),
+                'error'
+            );
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Remove loading toast
+        const toastContainer = document.getElementById('toastContainer');
+        toastContainer.innerHTML = '';
+        
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// PHASE 2: Toggle Guardian Notifications
+function toggleGuardianNotifications(enabled) {
+    fetch('toggle_guardian_notifications.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({
+            enabled: enabled,
+            csrf_token: csrfToken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const status = enabled ? 'ENABLED' : 'DISABLED';
+            alert(`✓ Guardian notifications ${status} successfully`);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update settings'));
+            // Revert toggle on error
+            document.getElementById('guardianNotificationsToggle').checked = !enabled;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error. Please try again.');
+        // Revert toggle on error
+        document.getElementById('guardianNotificationsToggle').checked = !enabled;
+    });
+}
+
 function confirmDelete(studentId) {
     if (confirm('Are you sure you want to delete this account?')) {
         fetch('delete_account.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
             },
             body: JSON.stringify({
                 student_id: studentId
@@ -898,12 +1662,31 @@ function confirmDelete(studentId) {
     }
 }
 
-function viewCardDetails(studentId, name, uid, registeredAt) {
+function viewCardDetails(studentId, name, uid, registeredAt, profilePicture) {
     const modal = document.getElementById('cardDetailsModal');
     const content = document.getElementById('cardDetailsContent');
     
+    // Get first letter for fallback avatar
+    const firstLetter = name.charAt(0).toUpperCase();
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+    const colorIndex = firstLetter.charCodeAt(0) % colors.length;
+    const bgColor = colors[colorIndex];
+    
     content.innerHTML = `
         <div class="space-y-4">
+            ${profilePicture ? `
+                <div class="flex justify-center mb-4">
+                    <img src="../assets/images/profiles/${profilePicture}" 
+                         alt="${name}" 
+                         class="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-lg">
+                </div>
+            ` : `
+                <div class="flex justify-center mb-4">
+                    <div class="w-32 h-32 rounded-full ${bgColor} border-4 border-blue-200 shadow-lg flex items-center justify-center text-white text-5xl font-bold">
+                        ${firstLetter}
+                    </div>
+                </div>
+            `}
             <div class="bg-slate-50 p-4 rounded-lg">
                 <p class="text-sm text-slate-600 mb-1">Student Name</p>
                 <p class="font-medium text-slate-800">${name}</p>
@@ -995,6 +1778,7 @@ function clearViolation(studentId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({
             student_id: studentId
@@ -1013,6 +1797,105 @@ function clearViolation(studentId) {
     .catch(error => {
         console.error('Error:', error);
         alert('Failed to clear violations. Please try again.');
+    });
+}
+
+// Approve student account
+function approveStudent(studentId, studentName) {
+    if (!confirm(`Approve account for ${studentName}?\n\nThis will:\n✓ Activate their account\n✓ Send approval email\n✓ Allow them to log in`)) {
+        return;
+    }
+    
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    
+    fetch('verify_account.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({
+            student_id: studentId,
+            action: 'approve'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message with animation
+            btn.innerHTML = '<svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-green-800');
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(data.error || 'Failed to approve account');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to approve account. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    });
+}
+
+// Deny student account
+function denyStudent(studentId, studentName) {
+    if (!confirm(`Deny and remove account for ${studentName}?\n\n⚠️ WARNING: This will:\n✗ Delete their account permanently\n✗ Send denial email notification\n\nThis action cannot be undone!`)) {
+        return;
+    }
+    
+    // Double confirmation for destructive action
+    if (!confirm(`Are you absolutely sure?\n\nStudent: ${studentName}\nAction: DENY & DELETE\n\nType reason in next dialog...`)) {
+        return;
+    }
+    
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    
+    fetch('verify_account.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({
+            student_id: studentId,
+            action: 'deny'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message with animation
+            btn.innerHTML = '<svg class="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(data.error || 'Failed to deny account');
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to deny account. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     });
 }
 
@@ -1058,6 +1941,266 @@ document.addEventListener('DOMContentLoaded', function() {
             initMobileSidebar();
         }, 250);
     });
+});
+
+// ========================================
+// EDIT STUDENT FUNCTIONS
+// ========================================
+
+let studentPictureDropzone = null;
+
+function openEditStudentModal(userId, name, studentId, email, profilePicture) {
+    // Set form values
+    document.getElementById('editStudentUserId').value = userId;
+    document.getElementById('editStudentName').value = name;
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editStudentEmail').value = email;
+    document.getElementById('dropzoneStudentId').value = userId;
+    
+    // Set profile picture
+    const imgElement = document.getElementById('currentProfilePicture');
+    if (profilePicture && profilePicture !== '') {
+        imgElement.src = '../assets/images/profiles/' + profilePicture;
+        document.getElementById('deleteProfilePictureBtn').style.display = 'block';
+    } else {
+        imgElement.src = '../assets/images/avatars/default-avatar.png';
+        document.getElementById('deleteProfilePictureBtn').style.display = 'none';
+    }
+    
+    // Show modal
+    document.getElementById('editStudentModal').classList.remove('hidden');
+    document.getElementById('editStudentModal').classList.add('flex');
+    
+    // Initialize Dropzone if not already initialized
+    if (!studentPictureDropzone) {
+        initializeStudentDropzone();
+    }
+}
+
+function closeEditStudentModal() {
+    document.getElementById('editStudentModal').classList.add('hidden');
+    document.getElementById('editStudentModal').classList.remove('flex');
+    
+    // Remove all files from dropzone
+    if (studentPictureDropzone) {
+        studentPictureDropzone.removeAllFiles();
+    }
+}
+
+function initializeStudentDropzone() {
+    // Disable auto-discover
+    Dropzone.autoDiscover = false;
+    
+    studentPictureDropzone = new Dropzone("#studentPictureDropzone", {
+        url: "upload_student_picture.php",
+        maxFiles: 1,
+        maxFilesize: 5,
+        acceptedFiles: "image/jpeg,image/png,image/jpg",
+        addRemoveLinks: true,
+        createImageThumbnails: false,
+        previewsContainer: false,
+        dictDefaultMessage: "Drop student photo here or click to upload",
+        dictRemoveFile: "Remove",
+        dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
+        dictInvalidFileType: "Invalid file type. Only JPG and PNG are allowed.",
+        init: function() {
+            this.on("sending", function(file, xhr, formData) {
+                formData.append("student_id", document.getElementById('dropzoneStudentId').value);
+            });
+            
+            this.on("success", function(file, response) {
+                try {
+                    const data = typeof response === 'string' ? JSON.parse(response) : response;
+                    
+                    if (data.success) {
+                        // Update the current profile picture
+                        document.getElementById('currentProfilePicture').src = '../assets/images/profiles/' + data.filename;
+                        document.getElementById('deleteProfilePictureBtn').style.display = 'block';
+                        
+                        // Show success message
+                        alert('Profile picture uploaded successfully!');
+                        
+                        // Remove the file from dropzone
+                        this.removeFile(file);
+                        
+                        // Reload page after short delay to update all student info displays
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        this.removeFile(file);
+                    }
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                    alert('Upload failed. Please try again.');
+                    this.removeFile(file);
+                }
+            });
+            
+            this.on("error", function(file, errorMessage) {
+                console.error('Dropzone error:', errorMessage);
+                let errorText = 'Unknown error';
+                
+                if (typeof errorMessage === 'string') {
+                    errorText = errorMessage;
+                } else if (errorMessage && errorMessage.error) {
+                    errorText = errorMessage.error;
+                } else if (errorMessage && errorMessage.message) {
+                    errorText = errorMessage.message;
+                }
+                
+                alert('Upload error: ' + errorText);
+                this.removeFile(file);
+            });
+            
+            this.on("maxfilesexceeded", function(file) {
+                this.removeAllFiles();
+                this.addFile(file);
+            });
+        }
+    });
+}
+
+async function saveStudentInfo() {
+    const userId = document.getElementById('editStudentUserId').value;
+    const name = document.getElementById('editStudentName').value.trim();
+    const studentId = document.getElementById('editStudentId').value.trim();
+    
+    // Validation
+    if (!name) {
+        alert('Please enter student name');
+        return;
+    }
+    
+    if (!studentId) {
+        alert('Please enter student ID');
+        return;
+    }
+    
+    if (studentId.length < 3) {
+        alert('Student ID must be at least 3 characters');
+        return;
+    }
+    
+    try {
+        const response = await fetch('update_student_info.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                name: name,
+                student_id: studentId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Student information updated successfully!');
+            closeEditStudentModal();
+            location.reload(); // Reload to show updated info
+        } else {
+            // Check if it's just "no changes" error - this is OK if only picture was uploaded
+            if (data.error && data.error.includes('no changes made')) {
+                alert('Information saved. No changes were made to name or student ID.');
+                closeEditStudentModal();
+                location.reload(); // Still reload to show any picture updates
+            } else {
+                alert('Update failed: ' + (data.error || 'Unknown error'));
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update student information. Please try again.');
+    }
+}
+
+async function deleteStudentProfilePicture() {
+    const userId = document.getElementById('editStudentUserId').value;
+    
+    if (!confirm('Are you sure you want to delete this student\'s profile picture?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('delete_student_picture.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                user_id: userId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reset to default avatar
+            document.getElementById('currentProfilePicture').src = '../assets/images/avatars/default-avatar.png';
+            document.getElementById('deleteProfilePictureBtn').style.display = 'none';
+            alert('Profile picture deleted successfully!');
+        } else {
+            alert('Delete failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to delete profile picture. Please try again.');
+    }
+}
+
+// ========================================
+// REGISTERED CARDS SEARCH FUNCTIONALITY
+// ========================================
+
+// Real-time search for registered cards
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('registeredCardSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.registered-card-item');
+            let visibleCount = 0;
+            
+            cards.forEach(card => {
+                const studentId = card.getAttribute('data-student-id');
+                const studentName = card.getAttribute('data-student-name');
+                
+                // Search in both student ID and name
+                if (studentId.includes(searchTerm) || studentName.includes(searchTerm)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Update result count
+            const resultCount = document.getElementById('searchResultCount');
+            if (resultCount) {
+                if (searchTerm === '') {
+                    resultCount.textContent = '';
+                } else {
+                    resultCount.textContent = `Showing ${visibleCount} of ${cards.length} registered card${cards.length !== 1 ? 's' : ''}`;
+                }
+            }
+        });
+        
+        // Clear search on Escape key
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchInput.blur();
+            }
+        });
+    }
 });
 </script>
 

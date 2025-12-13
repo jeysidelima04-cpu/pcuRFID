@@ -32,26 +32,30 @@ try {
 
     if (!$reset) {
         error_log('Token not found in database: ' . $token);
-        header('Location: forgot_password.php?error=' . urlencode('Invalid reset link. Please request a new one.'));
+        $_SESSION['error'] = 'Invalid reset link. Please request a new one.';
+        header('Location: forgot_password.php');
         exit;
     }
 
     // Separate expiry check for debugging
     if ($reset['used'] == 1) {
         error_log('Token already used: ' . $token);
-        header('Location: forgot_password.php?error=' . urlencode('This reset link has already been used. Please request a new one.'));
+        $_SESSION['error'] = 'This reset link has already been used. Please request a new one.';
+        header('Location: forgot_password.php');
         exit;
     }
 
     if (strtotime($reset['expires_at']) < time()) {
         error_log('Token expired at: ' . $reset['expires_at'] . ', current time: ' . date('Y-m-d H:i:s'));
-        header('Location: forgot_password.php?error=' . urlencode('This reset link has expired. Please request a new one.'));
+        $_SESSION['error'] = 'This reset link has expired. Please request a new one.';
+        header('Location: forgot_password.php');
         exit;
     }
 
 } catch (Exception $e) {
     error_log('Password reset error: ' . $e->getMessage());
-    header('Location: forgot_password.php?error=' . urlencode('An error occurred. Please try again later.'));
+    $_SESSION['error'] = 'An error occurred. Please try again later.';
+    header('Location: forgot_password.php');
     exit;
 }
 ?>
@@ -75,7 +79,7 @@ try {
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('/pcuRFID2/pcu-building.jpg');
+            background-image: url('pcu-building.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
