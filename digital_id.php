@@ -102,8 +102,8 @@ try {
         
         /* Ensure QR code canvas is always centered */
         #qr-code {
-            display: inline-block !important;
-            margin: 0 !important;
+            display: block !important;
+            margin: 0 auto !important;
         }
 
         /* QR wrapper centers the canvas at all widths */
@@ -111,7 +111,7 @@ try {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 100%;
+            width: fit-content;
             margin: 0 auto;
         }
         
