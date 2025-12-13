@@ -186,9 +186,9 @@ try {
                 <!-- QR Code Section -->
                 <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-inner border border-blue-100">
                     <p class="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4 font-semibold text-center">Scan QR Code for Verification</p>
-                    <div class="w-full flex justify-center items-center mb-3">
-                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg inline-flex justify-center items-center">
-                            <canvas id="qr-code"></canvas>
+                    <div class="flex justify-center items-center mb-3">
+                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg" style="display: flex; justify-content: center; align-items: center;">
+                            <canvas id="qr-code" style="display: block; margin: 0 auto;"></canvas>
                         </div>
                     </div>
                     <div class="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500 bg-white/60 rounded-full px-3 py-2 mx-auto w-fit">
