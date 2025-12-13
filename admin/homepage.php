@@ -1670,6 +1670,7 @@ function initializeStudentDropzone() {
         maxFilesize: 5, // MB
         acceptedFiles: "image/jpeg,image/png,image/jpg",
         addRemoveLinks: true,
+        createImageThumbnails: false, // Disable thumbnails to prevent filename display issues
         dictDefaultMessage: "Drop student photo here or click to upload",
         dictRemoveFile: "Remove",
         dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
@@ -1681,6 +1682,9 @@ function initializeStudentDropzone() {
             this.on("sending", function(file, xhr, formData) {
                 const studentId = document.getElementById('dropzoneStudentId').value;
                 formData.append("student_id", studentId);
+                
+                // Log for debugging
+                console.log('Uploading for student ID:', studentId);
             });
             
             this.on("success", function(file, response) {
@@ -1714,7 +1718,18 @@ function initializeStudentDropzone() {
             });
             
             this.on("error", function(file, errorMessage) {
-                alert('Upload error: ' + (typeof errorMessage === 'string' ? errorMessage : 'Unknown error'));
+                console.error('Dropzone error:', errorMessage);
+                let errorText = 'Unknown error';
+                
+                if (typeof errorMessage === 'string') {
+                    errorText = errorMessage;
+                } else if (errorMessage && errorMessage.error) {
+                    errorText = errorMessage.error;
+                } else if (errorMessage && errorMessage.message) {
+                    errorText = errorMessage.message;
+                }
+                
+                alert('Upload error: ' + errorText);
                 this.removeFile(file);
             });
             

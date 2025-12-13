@@ -13,10 +13,22 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// Verify CSRF token
-if (!isset($_SERVER['HTTP_X_CSRF_TOKEN']) || $_SERVER['HTTP_X_CSRF_TOKEN'] !== $_SESSION['csrf_token']) {
+// Verify CSRF token - check multiple possible header formats
+$csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+
+// Also check for lowercase variant that some clients send
+if (!$csrfToken) {
+    foreach ($_SERVER as $key => $value) {
+        if (strtolower($key) === 'http_x_csrf_token') {
+            $csrfToken = $value;
+            break;
+        }
+    }
+}
+
+if (!$csrfToken || $csrfToken !== $_SESSION['csrf_token']) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token', 'debug' => 'Token not found or mismatch']);
     exit;
 }
 
