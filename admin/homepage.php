@@ -611,6 +611,23 @@ $activeSection = $_GET['section'] ?? 'students';
 
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="p-6">
+                    <!-- Search Bar -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="registeredCardSearch" 
+                                placeholder="Search by Student ID..." 
+                                class="w-full px-4 py-3 pl-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                autocomplete="off"
+                            >
+                            <svg class="w-5 h-5 text-slate-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2" id="searchResultCount"></p>
+                    </div>
+
                     <?php 
                     $registeredStudents = array_filter($allStudents, function($s) { return !empty($s['rfid_uid']); });
                     if (empty($registeredStudents)): 
@@ -665,7 +682,9 @@ $activeSection = $_GET['section'] ?? 'students';
                                 $isLost = false;
                             }
                         ?>
-                            <div class="border <?php echo $isLost ? 'border-red-300 bg-red-50/50' : 'border-green-200 bg-green-50/50'; ?> rounded-lg p-4 fade-in">
+                            <div class="border <?php echo $isLost ? 'border-red-300 bg-red-50/50' : 'border-green-200 bg-green-50/50'; ?> rounded-lg p-4 fade-in registered-card-item" 
+                                 data-student-id="<?php echo strtolower(htmlspecialchars($student['student_id'])); ?>" 
+                                 data-student-name="<?php echo strtolower(htmlspecialchars($student['name'])); ?>">
                                 <!-- Desktop: side-by-side layout, Mobile: centered layout -->
                                 <div class="flex flex-col md:flex-row items-center md:items-stretch md:justify-between text-center md:text-left">
                                     <div class="w-full md:flex-1 flex flex-col">
@@ -2134,6 +2153,55 @@ async function deleteStudentProfilePicture() {
         alert('Failed to delete profile picture. Please try again.');
     }
 }
+
+// ========================================
+// REGISTERED CARDS SEARCH FUNCTIONALITY
+// ========================================
+
+// Real-time search for registered cards
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('registeredCardSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.registered-card-item');
+            let visibleCount = 0;
+            
+            cards.forEach(card => {
+                const studentId = card.getAttribute('data-student-id');
+                const studentName = card.getAttribute('data-student-name');
+                
+                // Search in both student ID and name
+                if (studentId.includes(searchTerm) || studentName.includes(searchTerm)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Update result count
+            const resultCount = document.getElementById('searchResultCount');
+            if (resultCount) {
+                if (searchTerm === '') {
+                    resultCount.textContent = '';
+                } else {
+                    resultCount.textContent = `Showing ${visibleCount} of ${cards.length} registered card${cards.length !== 1 ? 's' : ''}`;
+                }
+            }
+        });
+        
+        // Clear search on Escape key
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input'));
+                searchInput.blur();
+            }
+        });
+    }
+});
 </script>
 
 </body>
