@@ -686,7 +686,7 @@ try {
                                 <div class="flex-grow">
                                     <div class="text-sm font-medium text-slate-500">ID Violations</div>
                                     <div class="text-lg font-semibold text-slate-700">
-                                        <?= $user['violation_count'] ?? 0 ?> Strike<?= ($user['violation_count'] ?? 0) !== 1 ? 's' : '' ?>
+                                        <?= $user['violation_count'] ?? 0 ?> Violation<?= ($user['violation_count'] ?? 0) !== 1 ? 's' : '' ?>
                                     </div>
                                 </div>
                             </div>
