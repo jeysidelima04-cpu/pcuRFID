@@ -7,8 +7,12 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user']['id']) || empty($_SESSI
     session_unset();
     session_destroy();
     
-    // Redirect to login with error message
-    header('Location: login.php?error=' . urlencode('Please log in to access the system'));
+    // Start new session for toast message
+    session_start();
+    $_SESSION['toast'] = 'Please log in to access the system';
+    
+    // Redirect to login
+    header('Location: login.php');
     exit;
 }
 
@@ -22,7 +26,12 @@ if (!isset($_SESSION['last_activity'])) {
 if (time() - $_SESSION['last_activity'] > 1800) {
     session_unset();
     session_destroy();
-    header('Location: login.php?error=' . urlencode('Session expired. Please log in again'));
+    
+    // Start new session for toast message
+    session_start();
+    $_SESSION['toast'] = 'Session expired. Please log in again';
+    
+    header('Location: login.php');
     exit;
 }
 
@@ -41,7 +50,12 @@ try {
     if (!$userData || $userData['status'] !== 'Active') {
         session_unset();
         session_destroy();
-        header('Location: login.php?error=' . urlencode('Your account is no longer active. Please contact support.'));
+        
+        // Start new session for toast message
+        session_start();
+        $_SESSION['toast'] = 'Your account is no longer active. Please contact support.';
+        
+        header('Location: login.php');
         exit;
     }
     
@@ -50,8 +64,15 @@ try {
     
 } catch (Exception $e) {
     error_log('Database verification failed in homepage: ' . $e->getMessage());
-    // Don't show detailed error to user
-    header('Location: login.php?error=' . urlencode('System error. Please try again later.'));
+    
+    session_unset();
+    session_destroy();
+    
+    // Start new session for toast message
+    session_start();
+    $_SESSION['toast'] = 'System error. Please try again later.';
+    
+    header('Location: login.php');
     exit;
 }
 ?>
