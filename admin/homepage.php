@@ -124,13 +124,43 @@ try {
     ");
     
     // Auto-populate rfid_cards table with existing RFID registrations
-    $stmt = $pdo->query("
-        INSERT IGNORE INTO rfid_cards (user_id, rfid_uid, registered_at, status)
-        SELECT id, rfid_uid, rfid_registered_at, 'active'
-        FROM users 
-        WHERE role = 'Student' AND rfid_uid IS NOT NULL
-        AND id NOT IN (SELECT user_id FROM rfid_cards)
-    ");
+    // Use a safer approach to avoid trigger conflicts
+    try {
+        // First, get all users who need entries in rfid_cards
+        $stmt = $pdo->query("
+            SELECT u.id, u.rfid_uid, u.rfid_registered_at
+            FROM users u
+            LEFT JOIN rfid_cards rc ON u.id = rc.user_id
+            WHERE u.role = 'Student' 
+            AND u.rfid_uid IS NOT NULL 
+            AND rc.user_id IS NULL
+        ");
+        $missingCards = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Insert each missing entry individually to avoid trigger conflicts
+        if (!empty($missingCards)) {
+            $insertStmt = $pdo->prepare("
+                INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+                VALUES (?, ?, ?, 'active')
+            ");
+            
+            foreach ($missingCards as $card) {
+                try {
+                    $insertStmt->execute([
+                        $card['id'],
+                        $card['rfid_uid'],
+                        $card['rfid_registered_at'] ?? date('Y-m-d H:i:s')
+                    ]);
+                } catch (PDOException $e) {
+                    // Skip duplicates or conflicts
+                    error_log("Skipping rfid_cards insert for user {$card['id']}: " . $e->getMessage());
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        // Log but don't fail - table population is optional
+        error_log("Failed to auto-populate rfid_cards: " . $e->getMessage());
+    }
     
     // Get students who reached maximum violations (3 or more)
     $maxViolationLimit = 3;
