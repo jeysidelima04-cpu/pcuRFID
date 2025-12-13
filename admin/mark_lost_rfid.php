@@ -97,15 +97,15 @@ function sendLostRfidEmail($studentEmail, $studentName) {
         
         // Server settings
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
+        $mail->Host = SMTP_HOST;
         $mail->SMTPAuth = true;
-        $mail->Username = 'pcurfid.noreply@gmail.com';
-        $mail->Password = 'lsfd vjkp sjfd qpvt';
+        $mail->Username = SMTP_USER;
+        $mail->Password = SMTP_PASS;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port = SMTP_PORT;
         
         // Recipients
-        $mail->setFrom('pcurfid.noreply@gmail.com', 'PCU RFID System');
+        $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
         $mail->addAddress($studentEmail, $studentName);
         
         // Content
@@ -200,15 +200,15 @@ function sendFoundRfidEmail($studentEmail, $studentName) {
         
         // Server settings
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
+        $mail->Host = SMTP_HOST;
         $mail->SMTPAuth = true;
-        $mail->Username = 'pcurfid.noreply@gmail.com';
-        $mail->Password = 'lsfd vjkp sjfd qpvt';
+        $mail->Username = SMTP_USER;
+        $mail->Password = SMTP_PASS;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
+        $mail->Port = SMTP_PORT;
         
         // Recipients
-        $mail->setFrom('pcurfid.noreply@gmail.com', 'PCU RFID System');
+        $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
         $mail->addAddress($studentEmail, $studentName);
         
         // Content
