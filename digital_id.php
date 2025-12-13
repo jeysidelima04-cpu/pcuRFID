@@ -111,7 +111,7 @@ try {
             display: flex;
             justify-content: center;
             align-items: center;
-            width: max-content;
+            width: 100%;
             margin: 0 auto;
         }
         
