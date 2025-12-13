@@ -753,13 +753,6 @@ $activeSection = $_GET['section'] ?? 'students';
                 <p class="text-slate-600 mt-1">Track student card scan violations over time</p>
             </div>
 
-        <?php elseif ($activeSection === 'analytics'): ?>
-            <!-- Analytics Section -->
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-slate-800">Violation Analytics</h1>
-                <p class="text-slate-600 mt-1">Track student card scan violations over time</p>
-            </div>
-
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <!-- Daily -->
