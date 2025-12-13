@@ -16,7 +16,20 @@ function csrf_input(): string {
 }
 function verify_csrf(): void {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Check for CSRF token in POST data, JSON body, or HTTP header
         $token = $_POST['csrf_token'] ?? '';
+        
+        // If not in POST, check JSON body
+        if (empty($token)) {
+            $json = json_decode(file_get_contents('php://input'), true);
+            $token = $json['csrf_token'] ?? '';
+        }
+        
+        // If not in JSON body, check HTTP header
+        if (empty($token)) {
+            $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        }
+        
         if (!hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
             http_response_code(403);
             exit('Invalid CSRF token.');
