@@ -14,9 +14,22 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 }
 
 // CSRF protection for file upload (token sent in POST data)
+error_log('POST csrf_token: ' . ($_POST['csrf_token'] ?? 'NOT SET'));
+error_log('SESSION csrf_token: ' . ($_SESSION['csrf_token'] ?? 'NOT SET'));
+error_log('POST data: ' . print_r($_POST, true));
+
 if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+    echo json_encode([
+        'success' => false, 
+        'error' => 'Invalid CSRF token',
+        'debug' => [
+            'post_has_token' => isset($_POST['csrf_token']),
+            'session_has_token' => isset($_SESSION['csrf_token']),
+            'post_token_preview' => isset($_POST['csrf_token']) ? substr($_POST['csrf_token'], 0, 10) : 'none',
+            'session_token_preview' => isset($_SESSION['csrf_token']) ? substr($_SESSION['csrf_token'], 0, 10) : 'none'
+        ]
+    ]);
     exit;
 }
 
