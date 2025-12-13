@@ -308,14 +308,6 @@ $activeSection = $_GET['section'] ?? 'students';
                         <?php endif; ?>
                     </div>
                 </a>
-
-                <!-- PHASE 2: Guardian Settings Tab -->
-                <a href="?section=guardian-settings" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'guardian-settings' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                    </svg>
-                    <span class="font-medium">Guardian Settings</span>
-                </a>
             </nav>
 
             <!-- Gate Monitor Link -->
@@ -504,12 +496,6 @@ $activeSection = $_GET['section'] ?? 'students';
                                     <?php endif; ?>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button 
-                                        onclick="openEditStudentModal('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['student_id']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
-                                        class="px-4 py-2 bg-indigo-500 text-white rounded-lg btn-hover text-sm"
-                                    >
-                                        Edit
-                                    </button>
                                     <?php if (!$student['rfid_uid']): ?>
                                         <button 
                                             onclick="openCardRegistration('<?php echo htmlspecialchars($student['id']); ?>')"
@@ -760,197 +746,11 @@ $activeSection = $_GET['section'] ?? 'students';
                 </div>
             </div>
 
-        <?php elseif ($activeSection === 'guardian-settings'): ?>
-            <!-- PHASE 2: Guardian Settings Section -->
+        <?php elseif ($activeSection === 'analytics'): ?>
+            <!-- Analytics Section -->
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-slate-800">Guardian Notification Settings</h1>
-                <p class="text-slate-600 mt-1">Manage global notification settings and guardian notifications</p>
-            </div>
-
-            <!-- Global Notification Toggle -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-                <div class="p-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-slate-800 mb-1">Enable Guardian Notifications</h3>
-                            <p class="text-sm text-slate-600">Send email notifications to guardians when students enter campus</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <?php 
-                            $notificationsEnabled = are_guardian_notifications_enabled();
-                            ?>
-                            <input 
-                                type="checkbox" 
-                                id="guardianNotificationsToggle"
-                                <?php echo $notificationsEnabled ? 'checked' : ''; ?>
-                                class="sr-only peer"
-                                onchange="toggleGuardianNotifications(this.checked)"
-                            >
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-                    
-                    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                            </svg>
-                            <div class="flex-1">
-                                <p class="text-sm text-blue-800 font-semibold">How it works:</p>
-                                <ul class="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
-                                    <li>Parents receive email notifications when their child enters campus</li>
-                                    <li>Rate limited to 1 notification per 10 minutes per student</li>
-                                    <li>Only primary guardians with email on file receive notifications</li>
-                                    <li>Guardians can manage their preferences individually</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notification Statistics -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Notification Statistics (Last 7 Days)</h3>
-                    
-                    <?php
-                    // Get notification statistics
-                    $stats = $pdo->query("
-                        SELECT 
-                            COUNT(*) as total_sent,
-                            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as successful,
-                            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
-                        FROM notification_logs
-                        WHERE sent_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                    ")->fetch();
-                    
-                    $totalSent = $stats['total_sent'] ?? 0;
-                    $successful = $stats['successful'] ?? 0;
-                    $failed = $stats['failed'] ?? 0;
-                    $successRate = $totalSent > 0 ? round(($successful / $totalSent) * 100) : 0;
-                    ?>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p class="text-sm text-blue-600 font-semibold">Total Sent</p>
-                            <p class="text-3xl font-bold text-blue-700 mt-2"><?php echo $totalSent; ?></p>
-                        </div>
-                        
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <p class="text-sm text-green-600 font-semibold">Successful</p>
-                            <p class="text-3xl font-bold text-green-700 mt-2"><?php echo $successful; ?></p>
-                        </div>
-                        
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <p class="text-sm text-red-600 font-semibold">Failed</p>
-                            <p class="text-3xl font-bold text-red-700 mt-2"><?php echo $failed; ?></p>
-                        </div>
-                        
-                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                            <p class="text-sm text-purple-600 font-semibold">Success Rate</p>
-                            <p class="text-3xl font-bold text-purple-700 mt-2"><?php echo $successRate; ?>%</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Notifications -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Recent Notifications</h3>
-                    
-                    <?php
-                    $recentNotifications = $pdo->query("
-                        SELECT 
-                            nl.sent_at,
-                            nl.status,
-                            nl.notification_type,
-                            u.first_name AS student_first_name,
-                            u.last_name AS student_last_name,
-                            u.student_id,
-                            g.first_name AS guardian_first_name,
-                            g.last_name AS guardian_last_name,
-                            g.email AS guardian_email
-                        FROM notification_logs nl
-                        JOIN users u ON nl.student_id = u.id
-                        JOIN guardians g ON nl.guardian_id = g.id
-                        ORDER BY nl.sent_at DESC
-                        LIMIT 20
-                    ")->fetchAll();
-                    ?>
-                    
-                    <?php if (empty($recentNotifications)): ?>
-                        <div class="text-center py-8">
-                            <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                            </svg>
-                            <p class="text-slate-600">No notifications sent yet</p>
-                            <p class="text-sm text-slate-500 mt-1">Notifications will appear here when guardians are notified</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-slate-50 border-b border-slate-200">
-                                    <tr>
-                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Date & Time</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Student</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Guardian</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Type</th>
-                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($recentNotifications as $notif): ?>
-                                    <tr class="border-b border-slate-100 hover:bg-slate-50">
-                                        <td class="py-3 px-4 text-slate-600">
-                                            <?php echo date('M d, Y h:i A', strtotime($notif['sent_at'])); ?>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <div class="font-medium text-slate-800">
-                                                <?php echo htmlspecialchars($notif['student_first_name'] . ' ' . $notif['student_last_name']); ?>
-                                            </div>
-                                            <div class="text-xs text-slate-500">
-                                                ID: <?php echo htmlspecialchars($notif['student_id']); ?>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <div class="font-medium text-slate-700">
-                                                <?php echo htmlspecialchars($notif['guardian_first_name'] . ' ' . $notif['guardian_last_name']); ?>
-                                            </div>
-                                            <div class="text-xs text-slate-500">
-                                                <?php echo htmlspecialchars($notif['guardian_email']); ?>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                                                <?php echo ucfirst($notif['notification_type']); ?>
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <?php if ($notif['status'] === 'sent'): ?>
-                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    Sent
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    Failed
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <h1 class="text-2xl font-bold text-slate-800">Violation Analytics</h1>
+                <p class="text-slate-600 mt-1">Track student card scan violations over time</p>
             </div>
 
         <?php elseif ($activeSection === 'analytics'): ?>
