@@ -1675,16 +1675,18 @@ function initializeStudentDropzone() {
         dictRemoveFile: "Remove",
         dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
         dictInvalidFileType: "Invalid file type. Only JPG and PNG are allowed.",
-        headers: {
-            'X-CSRF-Token': csrfToken
-        },
         init: function() {
+            // Add CSRF token to every request
             this.on("sending", function(file, xhr, formData) {
                 const studentId = document.getElementById('dropzoneStudentId').value;
                 formData.append("student_id", studentId);
                 
+                // Manually set CSRF token header
+                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+                
                 // Log for debugging
                 console.log('Uploading for student ID:', studentId);
+                console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing');
             });
             
             this.on("success", function(file, response) {
