@@ -548,17 +548,27 @@ $activeSection = $_GET['section'] ?? 'students';
                         <div class="grid gap-4">
                         <?php foreach ($registeredStudents as $student): 
                             // Get RFID card details including lost status
-                            $cardStmt = $pdo->prepare("
-                                SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason, rc.status,
-                                       admin.first_name AS reported_by_first_name, admin.last_name AS reported_by_last_name
-                                FROM rfid_cards rc
-                                LEFT JOIN users admin ON rc.lost_reported_by = admin.id
-                                WHERE rc.user_id = ?
-                                LIMIT 1
-                            ");
-                            $cardStmt->execute([$student['id']]);
-                            $cardInfo = $cardStmt->fetch();
-                            $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
+                            $cardInfo = null;
+                            $isLost = false;
+                            
+                            try {
+                                $cardStmt = $pdo->prepare("
+                                    SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason, rc.status,
+                                           admin.first_name AS reported_by_first_name, admin.last_name AS reported_by_last_name
+                                    FROM rfid_cards rc
+                                    LEFT JOIN users admin ON rc.lost_reported_by = admin.id
+                                    WHERE rc.user_id = ?
+                                    LIMIT 1
+                                ");
+                                $cardStmt->execute([$student['id']]);
+                                $cardInfo = $cardStmt->fetch();
+                                $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
+                            } catch (PDOException $e) {
+                                // If rfid_cards table doesn't exist or query fails, use basic info from users table
+                                error_log("RFID card query error: " . $e->getMessage());
+                                $cardInfo = ['card_id' => null, 'is_lost' => 0];
+                                $isLost = false;
+                            }
                         ?>
                             <div class="border <?php echo $isLost ? 'border-red-300 bg-red-50/50' : 'border-green-200 bg-green-50/50'; ?> rounded-lg p-4 fade-in">
                                 <!-- Desktop: side-by-side layout, Mobile: centered layout -->
