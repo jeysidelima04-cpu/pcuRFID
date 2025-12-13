@@ -1678,9 +1678,7 @@ function initializeStudentDropzone() {
         dictInvalidFileType: "Invalid file type. Only JPG and PNG are allowed.",
         init: function() {
             this.on("sending", function(file, xhr, formData) {
-                const studentId = document.getElementById('dropzoneStudentId').value;
-                formData.append("student_id", studentId);
-                formData.append("csrf_token", csrfToken);
+                formData.append("student_id", document.getElementById('dropzoneStudentId').value);
             });
             
             this.on("success", function(file, response) {
