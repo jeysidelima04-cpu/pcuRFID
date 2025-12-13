@@ -1695,9 +1695,12 @@ function initializeStudentDropzone() {
                         // Show success message
                         alert('Profile picture uploaded successfully!');
                         
-                        // Remove the file from dropzone after 1 second
+                        // Remove the file from dropzone
+                        this.removeFile(file);
+                        
+                        // Reload page after short delay to update all student info displays
                         setTimeout(() => {
-                            this.removeFile(file);
+                            location.reload();
                         }, 1000);
                     } else {
                         alert('Upload failed: ' + (data.error || 'Unknown error'));
@@ -1765,7 +1768,14 @@ async function saveStudentInfo() {
             closeEditStudentModal();
             location.reload(); // Reload to show updated info
         } else {
-            alert('Update failed: ' + (data.error || 'Unknown error'));
+            // Check if it's just "no changes" error - this is OK if only picture was uploaded
+            if (data.error && data.error.includes('no changes made')) {
+                alert('Information saved. No changes were made to name or student ID.');
+                closeEditStudentModal();
+                location.reload(); // Still reload to show any picture updates
+            } else {
+                alert('Update failed: ' + (data.error || 'Unknown error'));
+            }
         }
     } catch (error) {
         console.error('Error:', error);
