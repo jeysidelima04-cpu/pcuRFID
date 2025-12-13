@@ -1508,3 +1508,26 @@ Stack trace:
 [07-Dec-2025 16:23:56 Europe/Berlin] [PCU RFID] Database connection successful
 [07-Dec-2025 16:27:42 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
 [07-Dec-2025 16:27:42 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:35:39 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:35:39 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:35:39 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:35:40 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:35:45 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:35:45 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:35:45 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'u.first_name' in 'field list' in C:\xampp\htdocs\pcuRFID2\admin\homepage.php:849
+Stack trace:
+#0 C:\xampp\htdocs\pcuRFID2\admin\homepage.php(849): PDO->query('\r\n             ...')
+#1 {main}
+  thrown in C:\xampp\htdocs\pcuRFID2\admin\homepage.php on line 849
+[12-Dec-2025 17:36:00 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:00 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:36:02 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:02 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:36:05 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:05 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:36:06 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:06 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:36:17 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:17 Europe/Berlin] [PCU RFID] Database connection successful
+[12-Dec-2025 17:36:21 Europe/Berlin] [PCU RFID] Attempting database connection to pcu_rfid2
+[12-Dec-2025 17:36:21 Europe/Berlin] [PCU RFID] Database connection successful

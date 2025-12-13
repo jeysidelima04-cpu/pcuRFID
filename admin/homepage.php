@@ -147,6 +147,9 @@ $activeSection = $_GET['section'] ?? 'students';
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <!-- Dropzone.js for image upload -->
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <style type="text/tailwindcss">
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -501,6 +504,12 @@ $activeSection = $_GET['section'] ?? 'students';
                                     <?php endif; ?>
                                 </div>
                                 <div class="flex gap-2">
+                                    <button 
+                                        onclick="openEditStudentModal('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['student_id']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
+                                        class="px-4 py-2 bg-indigo-500 text-white rounded-lg btn-hover text-sm"
+                                    >
+                                        Edit
+                                    </button>
                                     <?php if (!$student['rfid_uid']): ?>
                                         <button 
                                             onclick="openCardRegistration('<?php echo htmlspecialchars($student['id']); ?>')"
@@ -615,6 +624,12 @@ $activeSection = $_GET['section'] ?? 'students';
                                         </div>
                                     </div>
                                     <div class="flex flex-row md:flex-col gap-2 mt-4 md:mt-0 md:ml-4">
+                                        <button 
+                                            onclick="openEditStudentModal('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['student_id']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
+                                            class="px-4 py-2 bg-indigo-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
+                                        >
+                                            Edit
+                                        </button>
                                         <button 
                                             onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
                                             class="px-4 py-2 bg-blue-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
@@ -1104,6 +1119,79 @@ $activeSection = $_GET['section'] ?? 'students';
             </button>
         </div>
         <div id="violationDetailsContent"></div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div id="editStudentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-semibold text-slate-800">Edit Student Information</h3>
+            <button onclick="closeEditStudentModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div id="editStudentForm">
+            <input type="hidden" id="editStudentUserId" />
+            
+            <!-- Current Profile Picture -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Current Profile Picture</label>
+                <div class="flex items-center gap-4">
+                    <img id="currentProfilePicture" src="../assets/images/avatars/default-avatar.png" 
+                         alt="Profile" class="w-20 h-20 rounded-full object-cover border-2 border-slate-200">
+                    <button type="button" id="deleteProfilePictureBtn" onclick="deleteStudentProfilePicture()" 
+                            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
+                        Delete Picture
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Upload New Profile Picture -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Upload New Profile Picture</label>
+                <form action="upload_student_picture.php" class="dropzone" id="studentPictureDropzone">
+                    <input type="hidden" id="dropzoneStudentId" name="student_id" />
+                </form>
+            </div>
+            
+            <!-- Student Information -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    <input type="text" id="editStudentName" 
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
+                    <input type="text" id="editStudentId" 
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none">
+                    <p class="text-xs text-slate-500 mt-1">For temp IDs (e.g., TEMP-1702425600), enter the real student ID here</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email (Read-only)</label>
+                    <input type="email" id="editStudentEmail" readonly
+                           class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-slate-100 text-slate-600 cursor-not-allowed">
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-6">
+                <button type="button" onclick="saveStudentInfo()" 
+                        class="flex-1 h-11 bg-indigo-600 text-white text-base font-medium rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    Save Changes
+                </button>
+                <button type="button" onclick="closeEditStudentModal()" 
+                        class="flex-1 h-11 bg-slate-200 text-slate-700 text-base font-medium rounded-lg shadow-md hover:bg-slate-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1724,6 +1812,198 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 250);
     });
 });
+
+// ========================================
+// EDIT STUDENT FUNCTIONS
+// ========================================
+
+let studentPictureDropzone = null;
+
+function openEditStudentModal(userId, name, studentId, email, profilePicture) {
+    // Set form values
+    document.getElementById('editStudentUserId').value = userId;
+    document.getElementById('editStudentName').value = name;
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editStudentEmail').value = email;
+    document.getElementById('dropzoneStudentId').value = userId;
+    
+    // Set profile picture
+    const imgElement = document.getElementById('currentProfilePicture');
+    if (profilePicture && profilePicture !== '') {
+        imgElement.src = '../assets/images/profiles/' + profilePicture;
+        document.getElementById('deleteProfilePictureBtn').style.display = 'block';
+    } else {
+        imgElement.src = '../assets/images/avatars/default-avatar.png';
+        document.getElementById('deleteProfilePictureBtn').style.display = 'none';
+    }
+    
+    // Show modal
+    document.getElementById('editStudentModal').classList.remove('hidden');
+    document.getElementById('editStudentModal').classList.add('flex');
+    
+    // Initialize Dropzone if not already initialized
+    if (!studentPictureDropzone) {
+        initializeStudentDropzone();
+    }
+}
+
+function closeEditStudentModal() {
+    document.getElementById('editStudentModal').classList.add('hidden');
+    document.getElementById('editStudentModal').classList.remove('flex');
+    
+    // Remove all files from dropzone
+    if (studentPictureDropzone) {
+        studentPictureDropzone.removeAllFiles();
+    }
+}
+
+function initializeStudentDropzone() {
+    // Disable auto-discover
+    Dropzone.autoDiscover = false;
+    
+    studentPictureDropzone = new Dropzone("#studentPictureDropzone", {
+        url: "upload_student_picture.php",
+        maxFiles: 1,
+        maxFilesize: 5, // MB
+        acceptedFiles: "image/jpeg,image/png,image/jpg",
+        addRemoveLinks: true,
+        dictDefaultMessage: "Drop student photo here or click to upload",
+        dictRemoveFile: "Remove",
+        dictFileTooBig: "File is too big ({{filesize}}MB). Max filesize: {{maxFilesize}}MB.",
+        dictInvalidFileType: "Invalid file type. Only JPG and PNG are allowed.",
+        headers: {
+            'X-CSRF-Token': csrfToken
+        },
+        init: function() {
+            this.on("sending", function(file, xhr, formData) {
+                const studentId = document.getElementById('dropzoneStudentId').value;
+                formData.append("student_id", studentId);
+            });
+            
+            this.on("success", function(file, response) {
+                try {
+                    const data = typeof response === 'string' ? JSON.parse(response) : response;
+                    
+                    if (data.success) {
+                        // Update the current profile picture
+                        document.getElementById('currentProfilePicture').src = '../assets/images/profiles/' + data.filename;
+                        document.getElementById('deleteProfilePictureBtn').style.display = 'block';
+                        
+                        // Show success message
+                        alert('Profile picture uploaded successfully!');
+                        
+                        // Remove the file from dropzone after 1 second
+                        setTimeout(() => {
+                            this.removeFile(file);
+                        }, 1000);
+                    } else {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        this.removeFile(file);
+                    }
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                    alert('Upload failed. Please try again.');
+                    this.removeFile(file);
+                }
+            });
+            
+            this.on("error", function(file, errorMessage) {
+                alert('Upload error: ' + (typeof errorMessage === 'string' ? errorMessage : 'Unknown error'));
+                this.removeFile(file);
+            });
+            
+            this.on("maxfilesexceeded", function(file) {
+                this.removeAllFiles();
+                this.addFile(file);
+            });
+        }
+    });
+}
+
+async function saveStudentInfo() {
+    const userId = document.getElementById('editStudentUserId').value;
+    const name = document.getElementById('editStudentName').value.trim();
+    const studentId = document.getElementById('editStudentId').value.trim();
+    
+    // Validation
+    if (!name) {
+        alert('Please enter student name');
+        return;
+    }
+    
+    if (!studentId) {
+        alert('Please enter student ID');
+        return;
+    }
+    
+    if (studentId.length < 3) {
+        alert('Student ID must be at least 3 characters');
+        return;
+    }
+    
+    try {
+        const response = await fetch('update_student_info.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                name: name,
+                student_id: studentId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Student information updated successfully!');
+            closeEditStudentModal();
+            location.reload(); // Reload to show updated info
+        } else {
+            alert('Update failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update student information. Please try again.');
+    }
+}
+
+async function deleteStudentProfilePicture() {
+    const userId = document.getElementById('editStudentUserId').value;
+    
+    if (!confirm('Are you sure you want to delete this student\'s profile picture?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('delete_student_picture.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                user_id: userId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Reset to default avatar
+            document.getElementById('currentProfilePicture').src = '../assets/images/avatars/default-avatar.png';
+            document.getElementById('deleteProfilePictureBtn').style.display = 'none';
+            alert('Profile picture deleted successfully!');
+        } else {
+            alert('Delete failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to delete profile picture. Please try again.');
+    }
+}
 </script>
 
 </body>

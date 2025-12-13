@@ -66,9 +66,6 @@ try {
     <link rel="stylesheet" href="assets/css/styles.css">
     <!-- Heroicons -->
     <script src="https://unpkg.com/@heroicons/v2/24/outline/esm/index.js"></script>
-    <!-- Dropzone.js for image upload -->
-    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
-    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
     <style>
         .bg-pcu {
             position: relative;
@@ -512,13 +509,7 @@ try {
                                     <div class="font-medium text-slate-700 break-words"><?= htmlspecialchars($user['email']) ?></div>
                                 </div>
                                 <div class="border-t border-slate-200"></div>
-                                <button type="button" onclick="toggleEditProfile(); closeUserMenu();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
-                                    Edit Profile
-                                </button>
-                                <a href="digital_id.php" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 block" role="menuitem">
+                                <a href="digital_id.php" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                                     </svg>
@@ -714,42 +705,6 @@ try {
         </main>
     </div>
 
-    <!-- Edit Profile Modal (Hidden by default) -->
-    <div id="editProfileForm" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <h4 class="text-xl font-semibold text-slate-700 mb-6">Edit Profile</h4>
-            <form id="profileForm" onsubmit="return updateProfile(event)">
-                <?= csrf_input() ?>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                        <input 
-                            type="text" 
-                            id="editName" 
-                            name="name" 
-                            value="<?= htmlspecialchars($user['name']) ?>"
-                            required
-                            class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-base text-slate-800 placeholder-slate-400 shadow-sm transition duration-150 hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 focus:outline-none"
-                        >
-                    </div>
-                    <div class="flex gap-3">
-                        <button 
-                            type="submit" 
-                            class="flex-1 h-11 bg-sky-600 text-white text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-sky-700 active:transform active:scale-[0.98]">
-                            Apply
-                        </button>
-                        <button 
-                            type="button" 
-                            onclick="toggleEditProfile()" 
-                            class="flex-1 h-11 bg-slate-200 text-slate-700 text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-slate-300 active:transform active:scale-[0.98]">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Contact Support Modal (Hidden by default) -->
     <div id="contactSupportModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl relative">
@@ -794,47 +749,6 @@ try {
                 </svg>
                 Send Email
             </button>
-        </div>
-    </div>
-
-    <!-- Profile Picture Upload Modal -->
-    <div id="profilePictureModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
-        <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
-            <!-- Close button -->
-            <button onclick="closeProfilePictureModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-            
-            <!-- Title -->
-            <h4 class="text-2xl font-bold text-slate-800 mb-6 text-center">Upload Profile Picture</h4>
-            
-            <!-- Dropzone Upload Area -->
-            <form action="upload_profile_picture.php" class="dropzone" id="profilePictureDropzone">
-                <div class="dz-message" data-dz-message>
-                    <div class="flex flex-col items-center justify-center py-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-sky-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <p class="text-lg font-semibold text-slate-700 mb-2">Drop your photo here</p>
-                        <p class="text-sm text-slate-500">or click to browse</p>
-                        <p class="text-xs text-slate-400 mt-3">JPG, PNG, GIF or WebP (max 5MB)</p>
-                    </div>
-                </div>
-            </form>
-            
-            <!-- Delete Button (only show if user has profile picture) -->
-            <?php if ($hasProfilePicture): ?>
-            <div class="mt-6 pt-6 border-t border-slate-200">
-                <button onclick="deleteProfilePicture()" class="w-full h-11 bg-red-50 text-red-600 text-base font-medium rounded-lg border-2 border-red-200 hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Remove Profile Picture
-                </button>
-            </div>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -921,211 +835,8 @@ try {
                 }, 300);
             }
         }
-
-        // Update profile
-        async function updateProfile(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const submitButton = event.target.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton.textContent;
-            
-            // Disable button and show loading state
-            submitButton.disabled = true;
-            submitButton.textContent = 'Applying...';
-            
-            try {
-                const response = await fetch('update_profile.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Step 1: Fade out modal (300ms)
-                    const modal = document.getElementById('editProfileForm');
-                    const modalContent = modal.querySelector('div');
-                    
-                    modalContent.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-                    modalContent.style.opacity = '0';
-                    modalContent.style.transform = 'scale(0.95)';
-                    modal.style.transition = 'opacity 0.3s ease-out';
-                    modal.style.opacity = '0';
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    // Step 2: Show checkmark animation (1.5s)
-                    const successOverlay = document.createElement('div');
-                    successOverlay.className = 'success-overlay';
-                    successOverlay.innerHTML = `
-                        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                            <path class="checkmark-check" fill="none" stroke="#fff" stroke-width="3" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                        </svg>
-                        <div class="success-text">Changes Applied!</div>
-                    `;
-                    document.body.appendChild(successOverlay);
-                    
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // Step 3: Fade out entire page (400ms)
-                    document.body.style.transition = 'opacity 0.4s ease-out';
-                    document.body.style.opacity = '0';
-                    
-                    await new Promise(resolve => setTimeout(resolve, 400));
-                    
-                    // Force reload
-                    window.location.href = window.location.href;
-                    
-                } else {
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalButtonText;
-                    showToast(result.message || 'Failed to update profile', 'error');
-                }
-            } catch (error) {
-                submitButton.disabled = false;
-                submitButton.textContent = originalButtonText;
-                showToast('An error occurred while updating profile', 'error');
-                console.error('Update profile error:', error);
-            }
-        }
-
-        // Profile Picture Upload Functions
-        let profileDropzone = null;
-
-        function openProfilePictureModal() {
-            const modal = document.getElementById('profilePictureModal');
-            modal.classList.remove('hidden');
-            modal.style.display = 'flex';
-            
-            // Initialize Dropzone if not already initialized
-            if (!profileDropzone) {
-                initializeDropzone();
-            }
-        }
-
-        function closeProfilePictureModal() {
-            const modal = document.getElementById('profilePictureModal');
-            modal.classList.add('hidden');
-            modal.style.display = 'none';
-            
-            // Remove all files from dropzone
-            if (profileDropzone) {
-                profileDropzone.removeAllFiles();
-            }
-        }
-
-        function initializeDropzone() {
-            // Disable auto-discover
-            Dropzone.autoDiscover = false;
-            
-            profileDropzone = new Dropzone("#profilePictureDropzone", {
-                url: "upload_profile_picture.php",
-                maxFiles: 1,
-                maxFilesize: 5, // MB
-                acceptedFiles: "image/jpeg,image/jpg,image/png,image/gif,image/webp",
-                addRemoveLinks: true,
-                dictDefaultMessage: "Drop your photo here or click to browse",
-                dictRemoveFile: "Remove",
-                dictCancelUpload: "Cancel",
-                dictMaxFilesExceeded: "Only one file allowed",
-                thumbnailWidth: 200,
-                thumbnailHeight: 200,
-                
-                init: function() {
-                    this.on("maxfilesexceeded", function(file) {
-                        this.removeAllFiles();
-                        this.addFile(file);
-                    });
-                    
-                    this.on("success", function(file, response) {
-                        console.log('Upload success:', response);
-                        
-                        // Parse response if it's a string
-                        let data = response;
-                        if (typeof response === 'string') {
-                            try {
-                                data = JSON.parse(response);
-                            } catch (e) {
-                                console.error('Failed to parse response:', e);
-                                data = response;
-                            }
-                        }
-                        
-                        // Close modal immediately
-                        closeProfilePictureModal();
-                        
-                        // Show success animation
-                        const successOverlay = document.createElement('div');
-                        successOverlay.className = 'success-overlay';
-                        successOverlay.innerHTML = `
-                            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                                <path class="checkmark-check" fill="none" stroke="#fff" stroke-width="3" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                            </svg>
-                            <div class="success-text">Profile Picture Updated!</div>
-                        `;
-                        document.body.appendChild(successOverlay);
-                        
-                        // Reload page after animation
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1800);
-                    });
-                    
-                    this.on("error", function(file, errorMessage) {
-                        console.error('Upload error:', errorMessage);
-                        
-                        let message = 'Failed to upload profile picture';
-                        if (typeof errorMessage === 'object' && errorMessage.error) {
-                            message = errorMessage.error;
-                        } else if (typeof errorMessage === 'string') {
-                            message = errorMessage;
-                        }
-                        
-                        showToast(message, 'error');
-                        
-                        // Remove the file from dropzone
-                        this.removeFile(file);
-                    });
-                    
-                    this.on("sending", function(file, xhr, formData) {
-                        console.log('Uploading file:', file.name);
-                    });
-                }
-            });
-        }
-
-        async function deleteProfilePicture() {
-            if (!confirm('Are you sure you want to remove your profile picture?')) {
-                return;
-            }
-            
-            try {
-                const response = await fetch('delete_profile_picture.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast('Profile picture removed successfully', 'success');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    showToast(result.error || 'Failed to remove profile picture', 'error');
-                }
-            } catch (error) {
-                console.error('Delete error:', error);
-                showToast('An error occurred while removing profile picture', 'error');
-            }
-        }
     </script>
     <script src="assets/js/app.js"></script>
 </body>
 </html>
+
