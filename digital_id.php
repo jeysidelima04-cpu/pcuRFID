@@ -101,6 +101,8 @@ try {
             .qr-code-size {
                 width: 260px !important;
                 height: 260px !important;
+                display: block !important;
+                margin: 0 auto !important;
             }
         }
         
@@ -109,6 +111,8 @@ try {
             .qr-code-size {
                 width: 300px !important;
                 height: 300px !important;
+                display: block !important;
+                margin: 0 auto !important;
             }
         }
         
@@ -117,7 +121,15 @@ try {
             .qr-code-size {
                 width: 320px !important;
                 height: 320px !important;
+                display: block !important;
+                margin: 0 auto !important;
             }
+        }
+        
+        /* Ensure QR code is always centered */
+        #qr-code {
+            display: block;
+            margin: 0 auto;
         }
         
         /* Ensure images are responsive */
@@ -200,9 +212,9 @@ try {
                 <!-- QR Code Section -->
                 <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-inner border border-blue-100">
                     <p class="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4 font-semibold">Scan QR Code for Verification</p>
-                    <div class="flex justify-center mb-3">
-                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg">
-                            <canvas id="qr-code" class="qr-code-size mx-auto"></canvas>
+                    <div class="flex justify-center items-center mb-3">
+                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg flex justify-center items-center">
+                            <canvas id="qr-code" class="qr-code-size"></canvas>
                         </div>
                     </div>
                     <div class="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500 bg-white/60 rounded-full px-3 py-2 mx-auto w-fit">
