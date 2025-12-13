@@ -678,20 +678,55 @@ try {
                         </div>
 
                         <!-- RFID Card Status -->
-                        <div class="bg-gradient-to-br from-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-50 to-white rounded-xl p-4 border border-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-100 shadow-sm">
+                        <?php
+                        // Check if RFID is marked as lost
+                        $rfidIsLost = false;
+                        $rfidLostReason = '';
+                        if (!empty($user['rfid_uid'])) {
+                            try {
+                                $lostStmt = $pdo->prepare("SELECT is_lost, lost_reason FROM rfid_cards WHERE user_id = ? LIMIT 1");
+                                $lostStmt->execute([$user['id']]);
+                                $rfidStatus = $lostStmt->fetch();
+                                $rfidIsLost = $rfidStatus && $rfidStatus['is_lost'] == 1;
+                                $rfidLostReason = $rfidStatus['lost_reason'] ?? '';
+                            } catch (PDOException $e) {
+                                // rfid_cards table might not exist
+                                $rfidIsLost = false;
+                            }
+                        }
+                        
+                        $cardBgColor = !empty($user['rfid_uid']) ? ($rfidIsLost ? 'red' : 'green') : 'amber';
+                        $cardStatus = !empty($user['rfid_uid']) ? ($rfidIsLost ? 'LOST - Use Digital ID' : 'Active') : 'Not Active';
+                        ?>
+                        <div class="bg-gradient-to-br from-<?= $cardBgColor ?>-50 to-white rounded-xl p-4 border border-<?= $cardBgColor ?>-100 shadow-sm">
                             <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-<?= !empty($user['rfid_uid']) ? 'green' : 'amber' ?>-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div class="p-2 bg-<?= $cardBgColor ?>-100 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-<?= $cardBgColor ?>-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <?php if ($rfidIsLost): ?>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        <?php else: ?>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                                        <?php endif; ?>
                                     </svg>
                                 </div>
-                                <div>
+                                <div class="flex-1">
                                     <div class="text-sm font-medium text-slate-500">RFID Card</div>
                                     <div class="text-lg">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium <?= !empty($user['rfid_uid']) ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' ?>">
-                                            <?= !empty($user['rfid_uid']) ? 'Active' : 'Not Active' ?>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-<?= $cardBgColor ?>-100 text-<?= $cardBgColor ?>-700">
+                                            <?php if ($rfidIsLost): ?>
+                                                🔴 <?= htmlspecialchars($cardStatus) ?>
+                                            <?php else: ?>
+                                                <?= htmlspecialchars($cardStatus) ?>
+                                            <?php endif; ?>
                                         </span>
                                     </div>
+                                    <?php if ($rfidIsLost): ?>
+                                    <div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                                        <strong>⚠️ Important:</strong> Your RFID card is temporarily disabled.<br>
+                                        Please use your <strong>Digital ID QR Code</strong> for entry.<br>
+                                        Contact Student Services: <a href="mailto:studentservices@pcu.edu.ph" class="underline">studentservices@pcu.edu.ph</a>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>

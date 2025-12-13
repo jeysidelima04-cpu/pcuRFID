@@ -85,6 +85,53 @@ try {
         )
     ");
     
+    // Auto-setup: Create rfid_cards table if it doesn't exist (for lost/found tracking)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS rfid_cards (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            rfid_uid VARCHAR(50) NOT NULL,
+            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_lost TINYINT(1) DEFAULT 0,
+            lost_at TIMESTAMP NULL,
+            lost_reason TEXT NULL,
+            lost_reported_by INT NULL,
+            found_at TIMESTAMP NULL,
+            found_by INT NULL,
+            status ENUM('active', 'inactive', 'lost', 'replaced') DEFAULT 'active',
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_user (user_id),
+            INDEX idx_rfid_uid (rfid_uid),
+            INDEX idx_is_lost (is_lost)
+        )
+    ");
+    
+    // Auto-setup: Create rfid_status_history table if it doesn't exist
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS rfid_status_history (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            rfid_card_id INT NOT NULL,
+            user_id INT NOT NULL,
+            status_change VARCHAR(50) NOT NULL,
+            changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            changed_by INT NULL,
+            reason TEXT NULL,
+            notes TEXT NULL,
+            ip_address VARCHAR(45) NULL,
+            INDEX idx_rfid_card (rfid_card_id),
+            INDEX idx_user (user_id)
+        )
+    ");
+    
+    // Auto-populate rfid_cards table with existing RFID registrations
+    $stmt = $pdo->query("
+        INSERT IGNORE INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+        SELECT id, rfid_uid, rfid_registered_at, 'active'
+        FROM users 
+        WHERE role = 'Student' AND rfid_uid IS NOT NULL
+        AND id NOT IN (SELECT user_id FROM rfid_cards)
+    ");
+    
     // Get students who reached maximum violations (3 or more)
     $maxViolationLimit = 3;
     $stmt = $pdo->prepare('SELECT id, student_id, name, email, rfid_uid, violation_count 

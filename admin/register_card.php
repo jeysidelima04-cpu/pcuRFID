@@ -64,6 +64,19 @@ try {
     if (!$success || $stmt->rowCount() === 0) {
         throw new Exception('Student not found or failed to update record');
     }
+    
+    // Also insert into rfid_cards table for lost/found tracking
+    try {
+        $stmt = $pdo->prepare('
+            INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
+            VALUES (?, ?, NOW(), "active")
+            ON DUPLICATE KEY UPDATE rfid_uid = VALUES(rfid_uid), registered_at = NOW(), status = "active"
+        ');
+        $stmt->execute([$data['student_id'], $rfid_uid]);
+    } catch (PDOException $e) {
+        // Table might not exist yet, log but don't fail the registration
+        error_log('Failed to insert into rfid_cards table: ' . $e->getMessage());
+    }
 
     echo json_encode(['success' => true]);
 
