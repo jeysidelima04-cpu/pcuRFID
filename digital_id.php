@@ -105,6 +105,15 @@ try {
             display: inline-block !important;
             margin: 0 !important;
         }
+
+        /* QR wrapper centers the canvas at all widths */
+        .qr-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: max-content;
+            margin: 0 auto;
+        }
         
         /* Ensure images are responsive */
         .profile-photo {
@@ -187,7 +196,7 @@ try {
                 <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-inner border border-blue-100">
                     <p class="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4 font-semibold text-center">Scan QR Code for Verification</p>
                     <div class="flex justify-center items-center mb-3">
-                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg text-center">
+                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg qr-wrapper">
                             <canvas id="qr-code"></canvas>
                         </div>
                     </div>
