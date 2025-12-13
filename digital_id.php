@@ -99,9 +99,24 @@ try {
                 min-height: 100vh;
             }
             .qr-code-size {
-                width: 100%;
-                max-width: 280px;
-                height: auto;
+                width: 260px !important;
+                height: 260px !important;
+            }
+        }
+        
+        /* Tablet optimization */
+        @media (min-width: 641px) and (max-width: 1023px) {
+            .qr-code-size {
+                width: 300px !important;
+                height: 300px !important;
+            }
+        }
+        
+        /* Desktop optimization */
+        @media (min-width: 1024px) {
+            .qr-code-size {
+                width: 320px !important;
+                height: 320px !important;
             }
         }
         
@@ -232,10 +247,17 @@ try {
         function generateQR() {
             // Determine QR size based on screen width
             const screenWidth = window.innerWidth;
-            let qrSize = 240; // Default for desktop
+            let qrSize;
             
             if (screenWidth < 640) {
-                qrSize = Math.min(screenWidth - 120, 280); // Mobile: fill available space
+                // Mobile: Medium size for easy scanning
+                qrSize = 260;
+            } else if (screenWidth < 1024) {
+                // Tablet: Larger size
+                qrSize = 300;
+            } else {
+                // Desktop: Maximum scannable size
+                qrSize = 320;
             }
             
             var qr = new QRious({
