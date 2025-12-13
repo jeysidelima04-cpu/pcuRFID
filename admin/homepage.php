@@ -634,17 +634,23 @@ $activeSection = $_GET['section'] ?? 'students';
                                         </button>
                                         <?php if ($isLost): ?>
                                             <button 
-                                                onclick="markRfidFound(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>')"
-                                                class="px-4 py-2 bg-green-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
+                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', false)"
+                                                class="px-4 py-2 bg-green-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
                                             >
-                                                ✓ Mark Found
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                Disable Mark Lost ID
                                             </button>
                                         <?php else: ?>
                                             <button 
-                                                onclick="markRfidLost(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>')"
-                                                class="px-4 py-2 bg-orange-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
+                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', true)"
+                                                class="px-4 py-2 bg-orange-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
                                             >
-                                                ⚠ Mark Lost
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                                Enable Mark Lost ID
                                             </button>
                                         <?php endif; ?>
                                         <button 
@@ -1206,16 +1212,37 @@ function unregisterCard(studentId) {
     }
 }
 
-// PHASE 1: Mark RFID as Lost
-function markRfidLost(cardId, studentName) {
-    const reason = prompt(`Mark RFID card as LOST for ${studentName}\n\nPlease enter the reason:`, 'Student reported card as lost');
+// Toggle RFID Lost Status (Enable/Disable Mark Lost ID)
+function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
+    let confirmMessage, actionText;
     
-    if (reason === null) return; // User cancelled
+    if (markAsLost) {
+        confirmMessage = `Enable Mark Lost ID for ${studentName}?\n\n` +
+                        `This will:\n` +
+                        `✉️  Send email notification to student\n` +
+                        `🚫 Temporarily disable their RFID card\n` +
+                        `📱 Student must use Digital ID QR code for entry\n` +
+                        `📧 Student must email Student Services about lost card\n\n` +
+                        `Student Email: ${studentEmail}`;
+        actionText = 'mark_lost';
+    } else {
+        confirmMessage = `Disable Mark Lost ID for ${studentName}?\n\n` +
+                        `This will:\n` +
+                        `✅ Re-enable their RFID card\n` +
+                        `✉️  Send confirmation email to student\n` +
+                        `📱 RFID card can be used for entry again`;
+        actionText = 'mark_found';
+    }
     
-    if (reason.trim() === '') {
-        alert('Please provide a reason for marking the card as lost.');
+    if (!confirm(confirmMessage)) {
         return;
     }
+    
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
     
     fetch('mark_lost_rfid.php', {
         method: 'POST',
@@ -1225,55 +1252,29 @@ function markRfidLost(cardId, studentName) {
         },
         body: JSON.stringify({
             card_id: cardId,
-            action: 'mark_lost',
-            reason: reason.trim(),
+            action: actionText,
+            student_email: studentEmail,
+            student_name: studentName,
             csrf_token: csrfToken
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('✓ RFID card marked as LOST successfully');
+            alert(data.message || '✓ Status updated successfully');
             location.reload();
         } else {
-            alert('Error: ' + (data.error || 'Failed to mark card as lost'));
+            alert('Error: ' + (data.error || 'Unknown error'));
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Network error. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
     });
-}
-
-// PHASE 1: Mark RFID as Found
-function markRfidFound(cardId, studentName) {
-    if (confirm(`Mark RFID card as FOUND for ${studentName}?\n\nThis will allow the card to be used again.`)) {
-        fetch('mark_lost_rfid.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
-            body: JSON.stringify({
-                card_id: cardId,
-                action: 'mark_found',
-                csrf_token: csrfToken
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('✓ RFID card marked as FOUND successfully');
-                location.reload();
-            } else {
-                alert('Error: ' + (data.error || 'Failed to mark card as found'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Network error. Please try again.');
-        });
-    }
 }
 
 // PHASE 2: Toggle Guardian Notifications
