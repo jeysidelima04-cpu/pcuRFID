@@ -98,38 +98,12 @@ try {
                 border-radius: 0;
                 min-height: 100vh;
             }
-            .qr-code-size {
-                width: 260px !important;
-                height: 260px !important;
-                display: block !important;
-                margin: 0 auto !important;
-            }
         }
         
-        /* Tablet optimization */
-        @media (min-width: 641px) and (max-width: 1023px) {
-            .qr-code-size {
-                width: 300px !important;
-                height: 300px !important;
-                display: block !important;
-                margin: 0 auto !important;
-            }
-        }
-        
-        /* Desktop optimization */
-        @media (min-width: 1024px) {
-            .qr-code-size {
-                width: 320px !important;
-                height: 320px !important;
-                display: block !important;
-                margin: 0 auto !important;
-            }
-        }
-        
-        /* Ensure QR code is always centered */
+        /* Ensure QR code canvas is always centered */
         #qr-code {
-            display: block;
-            margin: 0 auto;
+            display: block !important;
+            margin: 0 auto !important;
         }
         
         /* Ensure images are responsive */
@@ -210,11 +184,11 @@ try {
                 </div>
 
                 <!-- QR Code Section -->
-                <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center shadow-inner border border-blue-100">
-                    <p class="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4 font-semibold">Scan QR Code for Verification</p>
-                    <div class="flex justify-center items-center mb-3">
-                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg flex justify-center items-center">
-                            <canvas id="qr-code" class="qr-code-size"></canvas>
+                <div class="bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-inner border border-blue-100">
+                    <p class="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4 font-semibold text-center">Scan QR Code for Verification</p>
+                    <div class="w-full flex justify-center items-center mb-3">
+                        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-lg inline-flex justify-center items-center">
+                            <canvas id="qr-code"></canvas>
                         </div>
                     </div>
                     <div class="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500 bg-white/60 rounded-full px-3 py-2 mx-auto w-fit">
