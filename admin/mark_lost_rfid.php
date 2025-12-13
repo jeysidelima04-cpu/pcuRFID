@@ -109,6 +109,7 @@ function sendLostRfidEmail($studentEmail, $studentName) {
         $mail->addAddress($studentEmail, $studentName);
         
         // Content
+        $mail->CharSet = 'UTF-8';
         $mail->isHTML(true);
         $mail->Subject = '⚠️ RFID Card Temporarily Disabled - PCU GateWatch';
         $mail->Body = "
@@ -212,6 +213,7 @@ function sendFoundRfidEmail($studentEmail, $studentName) {
         $mail->addAddress($studentEmail, $studentName);
         
         // Content
+        $mail->CharSet = 'UTF-8';
         $mail->isHTML(true);
         $mail->Subject = '✅ RFID Card Re-Enabled - PCU GateWatch';
         $mail->Body = "
