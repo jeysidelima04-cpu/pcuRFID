@@ -1099,9 +1099,185 @@ $activeSection = $_GET['section'] ?? 'students';
     </div>
 </div>
 
+<!-- Custom Confirmation Modal -->
+<div id="customConfirmModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60]" style="display: none;">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0" id="customConfirmContent">
+        <div class="p-6">
+            <div class="flex items-start gap-4">
+                <div id="confirmIcon" class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"></div>
+                <div class="flex-1">
+                    <h3 id="confirmTitle" class="text-lg font-semibold text-slate-800 mb-2"></h3>
+                    <div id="confirmMessage" class="text-sm text-slate-600 space-y-1"></div>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-slate-200 p-4 flex gap-3">
+            <button id="confirmCancelBtn" class="flex-1 h-11 px-4 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors">
+                Cancel
+            </button>
+            <button id="confirmOkBtn" class="flex-1 h-11 px-4 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 transition-colors shadow-sm">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-[70] space-y-3 pointer-events-none"></div>
+
 <script>
 // CSRF Token for JavaScript fetch requests
 const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
+
+// ========================================
+// CUSTOM MODAL & NOTIFICATION SYSTEM
+// ========================================
+
+// Custom Confirm Dialog
+function showCustomConfirm(title, message, options = {}) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customConfirmModal');
+        const content = document.getElementById('customConfirmContent');
+        const titleEl = document.getElementById('confirmTitle');
+        const messageEl = document.getElementById('confirmMessage');
+        const iconEl = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('confirmOkBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        
+        // Set content
+        titleEl.textContent = title;
+        
+        // Handle message (can be string or array of items)
+        if (Array.isArray(message)) {
+            messageEl.innerHTML = message.map(item => `<div class="flex items-start gap-2"><span>${item}</span></div>`).join('');
+        } else {
+            messageEl.textContent = message;
+        }
+        
+        // Set icon based on type
+        const type = options.type || 'warning';
+        if (type === 'warning') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-orange-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors shadow-sm';
+        } else if (type === 'success') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-green-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm';
+        } else if (type === 'danger') {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-red-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors shadow-sm';
+        } else {
+            iconEl.className = 'flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center bg-sky-100';
+            iconEl.innerHTML = '<svg class="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            okBtn.className = 'flex-1 h-11 px-4 bg-sky-600 text-white rounded-lg font-medium hover:bg-sky-700 transition-colors shadow-sm';
+        }
+        
+        // Set button text
+        okBtn.textContent = options.okText || 'OK';
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        
+        // Show modal with animation
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.classList.remove('hidden');
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        // Handle buttons
+        const handleOk = () => {
+            closeCustomConfirm();
+            resolve(true);
+        };
+        
+        const handleCancel = () => {
+            closeCustomConfirm();
+            resolve(false);
+        };
+        
+        okBtn.onclick = handleOk;
+        cancelBtn.onclick = handleCancel;
+        
+        // Close on backdrop click
+        modal.onclick = (e) => {
+            if (e.target === modal) handleCancel();
+        };
+    });
+}
+
+function closeCustomConfirm() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('customConfirmContent');
+    
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }, 200);
+}
+
+// Toast Notification System
+function showToast(message, type = 'success', duration = 5000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'pointer-events-auto transform transition-all duration-300 translate-x-full opacity-0';
+    
+    let bgClass, iconSvg, iconBg;
+    
+    if (type === 'success') {
+        bgClass = 'bg-white border-l-4 border-green-500';
+        iconBg = 'bg-green-100';
+        iconSvg = '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+    } else if (type === 'error') {
+        bgClass = 'bg-white border-l-4 border-red-500';
+        iconBg = 'bg-red-100';
+        iconSvg = '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+    } else if (type === 'warning') {
+        bgClass = 'bg-white border-l-4 border-orange-500';
+        iconBg = 'bg-orange-100';
+        iconSvg = '<svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+    } else {
+        bgClass = 'bg-white border-l-4 border-sky-500';
+        iconBg = 'bg-sky-100';
+        iconSvg = '<svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+    }
+    
+    toast.innerHTML = `
+        <div class="${bgClass} rounded-lg shadow-lg p-4 flex items-start gap-3 min-w-[320px] max-w-md">
+            <div class="${iconBg} rounded-full p-2 flex-shrink-0">
+                ${iconSvg}
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-slate-800">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full', 'opacity-0');
+        toast.classList.add('translate-x-0', 'opacity-100');
+    }, 10);
+    
+    // Auto remove
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+}
 
 let currentStudentId = null;
 let rfidInputListener = null;
@@ -1308,43 +1484,51 @@ function unregisterCard(studentId) {
 }
 
 // Toggle RFID Lost Status (Enable/Disable Mark Lost ID)
-function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
+async function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
     console.log('toggleRfidLostStatus called:', { cardId, studentName, studentEmail, markAsLost });
     
     if (!cardId) {
-        alert('Error: Card ID is missing. Please refresh the page and try again.');
+        showToast('Card ID is missing. Please refresh the page and try again.', 'error');
         return;
     }
     
-    let confirmMessage, actionText;
+    let confirmTitle, confirmMessages, actionText;
     
     if (markAsLost) {
-        confirmMessage = `Enable Mark Lost ID for ${studentName}?\n\n` +
-                        `This will:\n` +
-                        `✉️  Send email notification to student\n` +
-                        `🚫 Temporarily disable their RFID card\n` +
-                        `📱 Student must use Digital ID QR code for entry\n` +
-                        `📧 Student must email Student Services about lost card\n\n` +
-                        `Student Email: ${studentEmail}`;
+        confirmTitle = `Enable Mark Lost ID for ${studentName}?`;
+        confirmMessages = [
+            '✉️ Send email notification to student',
+            '🚫 Temporarily disable their RFID card',
+            '📱 Student must use Digital ID QR code for entry',
+            `📧 Student must email Student Services about lost card`,
+            '',
+            `<strong>Student Email:</strong> ${studentEmail}`
+        ];
         actionText = 'mark_lost';
     } else {
-        confirmMessage = `Disable Mark Lost ID for ${studentName}?\n\n` +
-                        `This will:\n` +
-                        `✅ Re-enable their RFID card\n` +
-                        `✉️  Send confirmation email to student\n` +
-                        `📱 RFID card can be used for entry again`;
+        confirmTitle = `Disable Mark Lost ID for ${studentName}?`;
+        confirmMessages = [
+            '✅ Re-enable their RFID card',
+            '✉️ Send confirmation email to student',
+            '📱 RFID card can be used for entry again'
+        ];
         actionText = 'mark_found';
     }
     
-    if (!confirm(confirmMessage)) {
-        return;
-    }
+    const confirmed = await showCustomConfirm(confirmTitle, confirmMessages, {
+        type: markAsLost ? 'warning' : 'success',
+        okText: markAsLost ? 'Enable Mark Lost ID' : 'Disable Mark Lost ID',
+        cancelText: 'Cancel'
+    });
     
-    // Show loading state
-    const btn = event.target.closest('button');
-    const originalContent = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+    if (!confirmed) return;
+    
+    // Show loading toast
+    const loadingToast = showToast(
+        markAsLost ? 'Marking RFID as lost...' : 'Re-enabling RFID card...',
+        'info',
+        0 // Don't auto-dismiss
+    );
     
     const payload = {
         card_id: cardId,
@@ -1356,35 +1540,48 @@ function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
     
     console.log('Sending request:', payload);
     
-    fetch('mark_lost_rfid.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(response => {
+    try {
+        const response = await fetch('mark_lost_rfid.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
+        
         console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
+        const data = await response.json();
         console.log('Response data:', data);
+        
+        // Remove loading toast
+        const toastContainer = document.getElementById('toastContainer');
+        toastContainer.innerHTML = '';
+        
         if (data.success) {
-            alert(data.message || '✓ Status updated successfully');
-            location.reload();
+            showToast(
+                data.message || '✓ Status updated successfully',
+                'success',
+                3000
+            );
+            
+            // Reload after toast is visible
+            setTimeout(() => location.reload(), 1000);
         } else {
-            alert('Error: ' + (data.error || 'Unknown error'));
-            btn.disabled = false;
-            btn.innerHTML = originalContent;
+            showToast(
+                'Error: ' + (data.error || 'Unknown error occurred'),
+                'error'
+            );
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
-        alert('Network error. Please try again.');
-        btn.disabled = false;
-        btn.innerHTML = originalContent;
-    });
+        
+        // Remove loading toast
+        const toastContainer = document.getElementById('toastContainer');
+        toastContainer.innerHTML = '';
+        
+        showToast('Network error. Please try again.', 'error');
+    }
 }
 
 // PHASE 2: Toggle Guardian Notifications
