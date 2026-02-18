@@ -3,12 +3,10 @@
 require_once __DIR__ . '/../db.php';
 require __DIR__ . '/../vendor/autoload.php';
 
-use PDO;
-use PDOException;
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 header('Content-Type: application/json');
+ob_start(); // Enable output buffering for deferred email sending
 
 // Security: Prevent caching of sensitive data
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -43,45 +41,48 @@ if (!$rfid_uid) {
     exit;
 }
 
+// Helper: flush JSON response to client immediately, then continue for background work
+function flushJsonResponse($data) {
+    $json = json_encode($data);
+    ignore_user_abort(true);
+    header('Content-Length: ' . strlen($json));
+    echo $json;
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        ob_end_flush();
+        flush();
+    }
+}
+
 try {
     $pdo = pdo();
     
-    // First, let's see ALL registered RFIDs in the database
-    $debugStmt = $pdo->query('SELECT id, student_id, name, rfid_uid, CHAR_LENGTH(rfid_uid) as uid_length FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL');
-    $allCards = $debugStmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Find student with this RFID card - try exact match first
+    // Find student with this RFID card - exact match (fast indexed query)
     $stmt = $pdo->prepare('
-        SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture, CHAR_LENGTH(rfid_uid) as uid_length
+        SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture, course
         FROM users 
         WHERE rfid_uid = ? AND role = "Student"
     ');
     $stmt->execute([$rfid_uid]);
-    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    $student = $stmt->fetch(\PDO::FETCH_ASSOC);
     
     if (!$student) {
-        // Try case-insensitive match
+        // Try case-insensitive match as fallback
         $stmt = $pdo->prepare('
-            SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture
+            SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture, course
             FROM users 
             WHERE LOWER(rfid_uid) = LOWER(?) AND role = "Student"
         ');
         $stmt->execute([$rfid_uid]);
-        $student = $stmt->fetch(PDO::FETCH_ASSOC);
+        $student = $stmt->fetch(\PDO::FETCH_ASSOC);
     }
     
     if (!$student) {
-        // Return detailed debug info
         echo json_encode([
             'success' => false, 
             'error' => 'Unknown RFID card',
-            'message' => 'This card is not registered in the system',
-            'debug' => [
-                'scanned_uid' => $rfid_uid,
-                'scanned_length' => strlen($rfid_uid),
-                'registered_cards' => $allCards,
-                'total_registered' => count($allCards)
-            ]
+            'message' => 'This card is not registered in the system'
         ]);
         exit;
     }
@@ -110,7 +111,6 @@ try {
     }
     
     // ✅ RECORD THE VIOLATION (student forgot physical ID, using RFID backup)
-    // Only record violations if RFID is NOT lost
     $stmt = $pdo->prepare('
         INSERT INTO violations (user_id, rfid_uid, scanned_at) 
         VALUES (?, ?, NOW())
@@ -127,19 +127,12 @@ try {
     
     // Get updated violation count
     $newViolationCount = $student['violation_count'] + 1;
-    
-    // 📧 PHASE 2: SEND GUARDIAN ENTRY NOTIFICATION
-    // This runs asynchronously - doesn't block gate scanning
     $entryTime = date('Y-m-d H:i:s');
-    send_guardian_entry_notification($student['id'], $entryTime);
     
     // ⛔ CHECK IF STUDENT HAS REACHED MAXIMUM VIOLATIONS (3 strikes)
     if ($newViolationCount > 3) {
-        // Send email notification for access denial
-        sendViolationEmail($student, $newViolationCount, 'denied');
-        
-        // Deny entry - maximum limit exceeded
-        echo json_encode([
+        // Send response FIRST, emails after
+        flushJsonResponse([
             'success' => false,
             'access_denied' => true,
             'error' => 'ACCESS DENIED',
@@ -152,33 +145,35 @@ try {
                 'severity' => 'blocked'
             ],
             'message' => 'MAXIMUM VIOLATION LIMIT REACHED - Entry to school is DENIED. Contact administration office.',
-            'timestamp' => date('Y-m-d H:i:s')
+            'timestamp' => $entryTime
         ]);
+        // Background: send emails after response is already delivered
+        sendViolationEmail($student, $newViolationCount, 'denied');
+        send_guardian_entry_notification($student['id'], $entryTime);
         exit;
     }
     
     // Determine severity level
     $severity = 'low';
     $severityMessage = 'First warning';
+    $emailSeverity = 'first';
     
     if ($newViolationCount === 3) {
         $severity = 'critical';
         $severityMessage = 'FINAL WARNING - Next violation will result in entry denial';
-        // Send critical warning email
-        sendViolationEmail($student, $newViolationCount, 'critical');
+        $emailSeverity = 'critical';
     } elseif ($newViolationCount === 2) {
         $severity = 'medium';
         $severityMessage = 'Second strike - One more violation will trigger restriction';
-        // Send warning email
-        sendViolationEmail($student, $newViolationCount, 'warning');
+        $emailSeverity = 'warning';
     } else {
         $severity = 'low';
         $severityMessage = 'First warning - Remember to bring physical ID';
-        // Send first warning email
-        sendViolationEmail($student, $newViolationCount, 'first');
+        $emailSeverity = 'first';
     }
     
-    echo json_encode([
+    // 🚀 Send JSON response IMMEDIATELY — emails sent AFTER client receives response
+    flushJsonResponse([
         'success' => true,
         'student' => [
             'id' => $student['id'],
@@ -189,13 +184,18 @@ try {
             'violation_count' => $newViolationCount,
             'severity' => $severity,
             'severity_message' => $severityMessage,
-            'profile_picture' => $student['profile_picture'] ?? null
+            'profile_picture' => $student['profile_picture'] ?? null,
+            'course' => $student['course'] ?? null
         ],
         'message' => 'Entry allowed - Student forgot physical ID',
-        'timestamp' => date('Y-m-d H:i:s')
+        'timestamp' => $entryTime
     ]);
     
-} catch (PDOException $e) {
+    // 📧 Background: send emails AFTER response is delivered to client
+    sendViolationEmail($student, $newViolationCount, $emailSeverity);
+    send_guardian_entry_notification($student['id'], $entryTime);
+    
+} catch (\PDOException $e) {
     error_log('Gate scan error: ' . $e->getMessage());
     echo json_encode([
         'success' => false, 
@@ -219,6 +219,8 @@ function sendViolationEmail($student, $violationCount, $severity) {
         $mail->Password = 'epbiboyqhgtnlzoo'; // Your App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
+        $mail->Timeout = 10;       // 10 second connection timeout
+        $mail->SMTPKeepAlive = true; // Reuse connection if multiple sends
         
         // Recipients
         $mail->setFrom('mrk.briones118@gmail.com', 'PCU RFID Security System');
@@ -421,7 +423,7 @@ function sendViolationEmail($student, $violationCount, $severity) {
         $mail->send();
         error_log("Violation email sent to {$student['email']} - Strike #{$violationCount} ({$severity})");
         
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         error_log("Failed to send violation email: {$mail->ErrorInfo}");
     }
 }

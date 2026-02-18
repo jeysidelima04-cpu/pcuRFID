@@ -1,7 +1,5 @@
 <?php
 
-use Exception;
-
 /**
  * Send approval email - called asynchronously after approval
  */
@@ -76,7 +74,7 @@ try {
     
     echo json_encode(['success' => true]);
     
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Email error: ' . $e->getMessage());
     echo json_encode(['success' => false]);
 }

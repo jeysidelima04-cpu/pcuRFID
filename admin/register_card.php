@@ -1,8 +1,5 @@
 <?php
 
-use PDOException;
-use Exception;
-
 require_once __DIR__ . '/../db.php';
 
 // Check if admin is logged in
@@ -31,7 +28,7 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     
     if (!isset($data['student_id']) || !isset($data['rfid_uid'])) {
-        throw new Exception('Missing required fields');
+        throw new \Exception('Missing required fields');
     }
 
     // Sanitize UID - remove spaces, keep as-is (R20XC outputs decimal numbers)
@@ -42,12 +39,12 @@ try {
     
     // Validate format - R20XC-USB outputs 10-digit decimal numbers
     if (strlen($rfid_uid) < 4 || strlen($rfid_uid) > 20) {
-        throw new Exception('Invalid RFID length. Received: ' . strlen($rfid_uid) . ' characters. Expected: 4-20 characters.');
+        throw new \Exception('Invalid RFID length. Received: ' . strlen($rfid_uid) . ' characters. Expected: 4-20 characters.');
     }
     
     // Allow alphanumeric characters (covers both decimal and hex formats)
     if (!preg_match('/^[0-9A-Fa-f]+$/', $rfid_uid)) {
-        throw new Exception('Invalid RFID format. Received: "' . $rfid_uid . '". Only numbers and letters (0-9, A-F) are allowed.');
+        throw new \Exception('Invalid RFID format. Received: "' . $rfid_uid . '". Only numbers and letters (0-9, A-F) are allowed.');
     }
 
     $pdo = pdo();
@@ -58,7 +55,7 @@ try {
     $existing = $stmt->fetch();
     
     if ($existing) {
-        throw new Exception('This card is already registered to ' . $existing['name']);
+        throw new \Exception('This card is already registered to ' . $existing['name']);
     }
 
     // Update user record with RFID UID, set registration timestamp, and status to Active
@@ -66,7 +63,7 @@ try {
     $success = $stmt->execute([$rfid_uid, $data['student_id']]);
 
     if (!$success || $stmt->rowCount() === 0) {
-        throw new Exception('Student not found or failed to update record');
+        throw new \Exception('Student not found or failed to update record');
     }
     
     // Also insert into rfid_cards table for lost/found tracking
@@ -77,14 +74,14 @@ try {
             ON DUPLICATE KEY UPDATE rfid_uid = VALUES(rfid_uid), registered_at = NOW(), status = "active"
         ');
         $stmt->execute([$data['student_id'], $rfid_uid]);
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         // Table might not exist yet, log but don't fail the registration
         error_log('Failed to insert into rfid_cards table: ' . $e->getMessage());
     }
 
     echo json_encode(['success' => true]);
 
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('RFID registration error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

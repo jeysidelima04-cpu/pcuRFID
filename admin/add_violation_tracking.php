@@ -1,8 +1,5 @@
 <?php
 
-use PDOException;
-use Exception;
-
 require_once __DIR__ . '/../db.php';
 
 try {
@@ -49,10 +46,10 @@ try {
     echo "- Maximum violation limit is set to 3 strikes\n";
     echo "- Admins can clear violations from the Notifications section\n";
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     echo "✗ Database error: " . $e->getMessage() . "\n";
     exit(1);
-} catch (Exception $e) {
+} catch (\Exception $e) {
     echo "✗ Error: " . $e->getMessage() . "\n";
     exit(1);
 }

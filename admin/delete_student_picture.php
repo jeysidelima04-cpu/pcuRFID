@@ -1,8 +1,5 @@
 <?php
 
-use PDOException;
-use Exception;
-
 /**
  * Delete Student Profile Picture (Admin Only)
  * Allows admins to delete student profile pictures
@@ -68,11 +65,11 @@ try {
         'message' => 'Profile picture deleted successfully'
     ]);
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Delete student picture error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Database error occurred']);
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Delete error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'An error occurred while deleting']);

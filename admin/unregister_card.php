@@ -1,7 +1,5 @@
 <?php
 
-use Exception;
-
 require_once __DIR__ . '/../db.php';
 
 header('Content-Type: application/json');
@@ -60,10 +58,10 @@ try {
             echo json_encode(['success' => false, 'error' => 'Student not found']);
         }
     } else {
-        throw new Exception('Failed to update database');
+        throw new \Exception('Failed to update database');
     }
     
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Error unregistering RFID card: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Failed to unregister RFID card']);

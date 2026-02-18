@@ -1,7 +1,5 @@
 <?php
 
-use PDOException;
-
 /**
  * Update Student Information (Admin Only)
  * Allows admins to update student name and student ID
@@ -31,6 +29,7 @@ if (!isset($_SERVER['HTTP_X_CSRF_TOKEN']) || $_SERVER['HTTP_X_CSRF_TOKEN'] !== $
 $userId = $data['user_id'] ?? null;
 $name = trim($data['name'] ?? '');
 $studentId = trim($data['student_id'] ?? '');
+$course = trim($data['course'] ?? '');
 
 if (!$userId || !$name || !$studentId) {
     http_response_code(400);
@@ -60,11 +59,11 @@ try {
     // Update student information
     $updateStmt = $pdo->prepare('
         UPDATE users 
-        SET name = ?, student_id = ? 
+        SET name = ?, student_id = ?, course = ? 
         WHERE id = ? AND role = "Student"
     ');
     
-    $updateStmt->execute([$name, $studentId, $userId]);
+    $updateStmt->execute([$name, $studentId, $course ?: null, $userId]);
     
     if ($updateStmt->rowCount() > 0) {
         echo json_encode([
@@ -76,7 +75,7 @@ try {
         echo json_encode(['success' => false, 'error' => 'Student not found or no changes made']);
     }
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Update student info error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Database error occurred']);

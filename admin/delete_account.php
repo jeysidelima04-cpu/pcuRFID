@@ -1,7 +1,5 @@
 <?php
 
-use Exception;
-
 require_once __DIR__ . '/../db.php';
 
 // Check if admin is logged in
@@ -30,7 +28,7 @@ try {
     $data = json_decode(file_get_contents('php://input'), true);
     
     if (!isset($data['student_id'])) {
-        throw new Exception('Missing student ID');
+        throw new \Exception('Missing student ID');
     }
 
     $pdo = pdo();
@@ -40,12 +38,12 @@ try {
     $success = $stmt->execute([$data['student_id']]);
 
     if (!$success) {
-        throw new Exception('Failed to delete user record');
+        throw new \Exception('Failed to delete user record');
     }
 
     echo json_encode(['success' => true]);
 
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Delete account error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

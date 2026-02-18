@@ -1,8 +1,5 @@
 <?php
 
-use PDOException;
-use Exception;
-
 /**
  * Upload Student Profile Picture (Admin Only)
  * Allows admins to upload profile pictures for students
@@ -108,11 +105,11 @@ try {
         'filename' => $filename
     ]);
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Upload student picture error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Database error occurred']);
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Upload error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'An error occurred while uploading']);

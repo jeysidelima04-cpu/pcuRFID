@@ -1,7 +1,5 @@
 <?php
 
-use PDOException;
-
 require_once __DIR__ . '/../db.php';
 
 // ============================================
@@ -118,12 +116,12 @@ try {
         try {
             $stmt = $pdo->query("SELECT COUNT(*) FROM face_entry_logs WHERE DATE(created_at) = CURDATE()");
             $faceEntriesToday = $stmt->fetchColumn();
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             $faceEntriesToday = 0;
         }
     }
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Stats error: ' . $e->getMessage());
     $todayScans = 0;
     $uniqueStudents = 0;
@@ -139,6 +137,7 @@ try {
     <title>PCU RFID Security | Gate Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
+    <script src="../assets/js/digital-id-card.js?v=11"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
     <!-- Face Recognition: face-api.js (pre-trained TensorFlow.js models) -->
     <?php if ($faceRecEnabled): ?>
@@ -499,32 +498,47 @@ try {
         
         document.getElementById('scanStatus').innerHTML = `
             <div class="fade-in w-full">
-                <div class="${severityBg} border-4 ${severityBorder} rounded-2xl p-6 md:p-8">
-                    <div class="text-5xl md:text-6xl mb-4">${severityIcon}</div>
-                    <h2 class="text-2xl md:text-3xl font-bold text-${severityColor}-800 mb-3">NO PHYSICAL ID</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    <!-- Digital ID Card -->
+                    <div id="gateDigitalIdContainer" class="flex justify-center"></div>
                     
-                    ${student.profile_picture ? `
-                        <div class="flex justify-center mb-4">
-                            <img src="../assets/images/profiles/${escHtml(student.profile_picture)}" 
-                                 alt="${escHtml(student.name)}" 
-                                 class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg">
+                    <!-- Violation Info -->
+                    <div class="${severityBg} border-4 ${severityBorder} rounded-2xl p-6 md:p-8">
+                        <div class="text-5xl md:text-6xl mb-4">${severityIcon}</div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-${severityColor}-800 mb-3">NO PHYSICAL ID</h2>
+                        
+                        <div class="bg-white rounded-lg p-4 md:p-6 mb-4">
+                            <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name)}</p>
+                            <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id)}</p>
+                            ${student.course ? `<p class="text-slate-500 text-sm mb-1">${escHtml(student.course)}</p>` : ''}
+                            <p class="text-slate-500 text-sm">${escHtml(student.email)}</p>
                         </div>
-                    ` : ''}
-                    
-                    <div class="bg-white rounded-lg p-4 md:p-6 mb-4">
-                        <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name)}</p>
-                        <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id)}</p>
-                        <p class="text-slate-500 text-sm">${escHtml(student.email)}</p>
+                        <div class="bg-${severityColor}-100 rounded-lg p-4 mb-3">
+                            <p class="text-${severityColor}-900 font-bold text-2xl md:text-3xl mb-1">Violation #${escHtml(String(student.violation_count))}</p>
+                            <p class="text-${severityColor}-700 text-sm md:text-base">${escHtml(student.severity_message)}</p>
+                        </div>
+                        <p class="text-slate-600 text-sm md:text-base">${escHtml(data.message)}</p>
+                        ${student.violation_count === 3 ? '<p class="text-red-600 font-bold mt-3 text-sm md:text-base animate-pulse">🚨 FINAL WARNING - Next time entry will be DENIED!</p>' : ''}
                     </div>
-                    <div class="bg-${severityColor}-100 rounded-lg p-4 mb-3">
-                        <p class="text-${severityColor}-900 font-bold text-2xl md:text-3xl mb-1">Violation #${escHtml(String(student.violation_count))}</p>
-                        <p class="text-${severityColor}-700 text-sm md:text-base">${escHtml(student.severity_message)}</p>
-                    </div>
-                    <p class="text-slate-600 text-sm md:text-base">${escHtml(data.message)}</p>
-                    ${student.violation_count === 3 ? '<p class="text-red-600 font-bold mt-3 text-sm md:text-base animate-pulse">🚨 FINAL WARNING - Next time entry will be DENIED!</p>' : ''}
                 </div>
             </div>
         `;
+
+        // Render Digital ID Card in the gate monitor
+        const gateIdCard = new DigitalIdCard('#gateDigitalIdContainer', {
+            templateSrc: '../assets/images/id-card-template.png',
+            student: {
+                name: student.name || '',
+                studentId: student.student_id || '',
+                course: student.course || '',
+                email: student.email || '',
+                profilePicture: student.profile_picture 
+                    ? '../assets/images/profiles/' + student.profile_picture 
+                    : null
+            }
+        });
+        gateIdCard.render();
+        gateIdCard.animateEntrance();
 
         // Add to log
         addToScanLog(student, data.timestamp);

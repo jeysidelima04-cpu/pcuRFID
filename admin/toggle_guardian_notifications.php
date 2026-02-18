@@ -1,7 +1,5 @@
 <?php
 
-use PDOException;
-
 // admin/toggle_guardian_notifications.php
 require_once __DIR__ . '/../db.php';
 
@@ -46,7 +44,7 @@ try {
         'message' => $enabled ? 'Guardian notifications enabled' : 'Guardian notifications disabled'
     ]);
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Error toggling guardian notifications: ' . $e->getMessage());
     echo json_encode([
         'success' => false,

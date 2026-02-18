@@ -1,8 +1,5 @@
 <?php
 
-use PDO;
-use Exception;
-
 /**
  * API: Delete Face Descriptors for a Student
  * Endpoint: POST /api/delete_face.php

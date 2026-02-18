@@ -1,8 +1,5 @@
 <?php
 
-use PDO;
-use Exception;
-
 /**
  * API: Log Face-Based Gate Entry
  * Endpoint: POST /api/log_face_entry.php

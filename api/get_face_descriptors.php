@@ -1,9 +1,5 @@
 <?php
 
-use PDO;
-use RuntimeException;
-use Exception;
-
 /**
  * API: Get Face Descriptors (Decrypted)
  * Endpoint: GET /api/get_face_descriptors.php

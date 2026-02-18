@@ -1,8 +1,5 @@
 <?php
 
-use PDO;
-use Exception;
-
 /**
  * Filter Audit Logs API
  * Returns filtered audit log entries based on criteria
@@ -53,7 +50,7 @@ try {
     
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
-    $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $logs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     
     echo json_encode([
         'success' => true,
@@ -61,7 +58,7 @@ try {
         'count' => count($logs)
     ]);
     
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log("Audit filter error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([

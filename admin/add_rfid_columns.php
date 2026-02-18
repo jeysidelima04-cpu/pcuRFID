@@ -1,9 +1,5 @@
 <?php
 
-use PDO;
-use PDOException;
-use Exception;
-
 require_once __DIR__ . '/../db.php';
 
 try {
@@ -23,7 +19,7 @@ try {
     $stmt->execute();
     if ($stmt->fetchColumn() == 0) {
         // ensure there are no duplicate non-null rfid_uids
-        $dup = $pdo->query("SELECT rfid_uid, COUNT(*) c FROM users WHERE rfid_uid IS NOT NULL GROUP BY rfid_uid HAVING c>1")->fetch(PDO::FETCH_ASSOC);
+        $dup = $pdo->query("SELECT rfid_uid, COUNT(*) c FROM users WHERE rfid_uid IS NOT NULL GROUP BY rfid_uid HAVING c>1")->fetch(\PDO::FETCH_ASSOC);
         if ($dup) {
             echo "Found duplicate RFID values, cannot create unique index 'unique_rfid'\n";
         } else {
@@ -46,8 +42,8 @@ try {
 
     echo "RFID migration completed\n";
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     echo "Database error: " . $e->getMessage() . "\n";
-} catch (Exception $e) {
+} catch (\Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }

@@ -1,9 +1,5 @@
 <?php
 
-use PDO;
-use PDOException;
-use Exception;
-
 // Enable error reporting
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -56,7 +52,7 @@ try {
     // Verify the student exists first
     $stmt = $pdo->prepare('SELECT id, name, violation_count FROM users WHERE id = ?');
     $stmt->execute([$studentId]);
-    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    $student = $stmt->fetch(\PDO::FETCH_ASSOC);
     
     if (!$student) {
         echo json_encode(['success' => false, 'error' => 'Student not found']);
@@ -87,21 +83,21 @@ try {
                 'previous_violation_count' => $student['violation_count'],
                 'violations_deleted' => $deletedViolations
             ])]);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             error_log('Audit log error: ' . $e->getMessage());
         }
         
         echo json_encode(['success' => true, 'message' => 'Violations cleared successfully (' . $deletedViolations . ' records removed)']);
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         $pdo->rollBack();
         throw $e;
     }
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Error clearing violations: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Failed to clear violations']);

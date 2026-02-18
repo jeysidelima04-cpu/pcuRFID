@@ -1,9 +1,5 @@
 <?php
 
-use PDO;
-use RuntimeException;
-use Exception;
-
 /**
  * API: Register Face Descriptor
  * Endpoint: POST /api/register_face.php

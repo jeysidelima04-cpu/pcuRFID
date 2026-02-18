@@ -1,7 +1,5 @@
 <?php
 
-use PDOException;
-
 /**
  * Admin endpoint to approve or deny student account verification
  */
@@ -180,7 +178,7 @@ try {
         ]);
     }
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Verification error: ' . $e->getMessage());
     error_log('SQL Error Code: ' . $e->getCode());
     error_log('SQL State: ' . ($e->errorInfo[0] ?? 'N/A'));
