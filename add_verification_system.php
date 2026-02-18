@@ -1,4 +1,8 @@
 <?php
+
+use PDOException;
+use Exception;
+
 /**
  * Add account verification system to database
  * Run this once to enable admin verification for new accounts

@@ -1,4 +1,5 @@
 <?php
+
 require_once 'db.php';
 
 // Enhanced session security check
@@ -62,7 +63,7 @@ try {
     // Update user data with complete information from database
     $user = $userData;
     
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Database verification failed in homepage: ' . $e->getMessage());
     
     session_unset();
@@ -689,7 +690,7 @@ try {
                                 $rfidStatus = $lostStmt->fetch();
                                 $rfidIsLost = $rfidStatus && $rfidStatus['is_lost'] == 1;
                                 $rfidLostReason = $rfidStatus['lost_reason'] ?? '';
-                            } catch (PDOException $e) {
+                            } catch (\PDOException $e) {
                                 // rfid_cards table might not exist
                                 $rfidIsLost = false;
                             }

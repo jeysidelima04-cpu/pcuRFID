@@ -1,4 +1,5 @@
 <?php
+
 // Enable error reporting
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -18,9 +19,9 @@ if (!isset($_SESSION['admin_id'])) {
         $pdo = pdo();
         $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
         $stmt->execute();
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
         $_SESSION['admin_id'] = $admin['id'] ?? 1;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("Auto-fix admin_id error: " . $e->getMessage());
         $_SESSION['admin_id'] = 1; // Fallback
     }
@@ -51,7 +52,7 @@ try {
             INDEX idx_created_at (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Audit table setup error: ' . $e->getMessage());
 }
 
@@ -69,19 +70,19 @@ try {
     ';
     $stmt = $pdo->prepare($query);
     $stmt->execute();
-    $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $students = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     
     // Get ALL students including those with RFID (for Registered Cards panel)
     // Only show Active students (exclude Pending students awaiting verification)
     $queryAll = '
-        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture
+        SELECT id, student_id, name, email, status, role, rfid_uid, rfid_registered_at, profile_picture, face_registered, face_registered_at
         FROM users 
         WHERE role = "Student" AND status = "Active"
         ORDER BY created_at DESC
     ';
     $stmtAll = $pdo->prepare($queryAll);
     $stmtAll->execute();
-    $allStudents = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+    $allStudents = $stmtAll->fetchAll(\PDO::FETCH_ASSOC);
     
     // Get registered cards count (only Active students)
     $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL AND status = "Active"');
@@ -163,6 +164,73 @@ try {
         )
     ");
     
+    // Auto-setup: Face recognition tables
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS face_descriptors (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            descriptor_data TEXT NOT NULL,
+            descriptor_iv VARCHAR(48) NOT NULL,
+            descriptor_tag VARCHAR(48) NOT NULL,
+            label VARCHAR(100) DEFAULT NULL,
+            quality_score FLOAT DEFAULT NULL,
+            registered_by INT DEFAULT NULL,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_is_active (is_active)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS face_entry_logs (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            confidence_score FLOAT NOT NULL,
+            match_threshold FLOAT NOT NULL,
+            gate_location VARCHAR(100) DEFAULT NULL,
+            security_guard_id INT DEFAULT NULL,
+            entry_type ENUM('face_match', 'face_violation', 'face_denied') NOT NULL DEFAULT 'face_match',
+            snapshot_path VARCHAR(255) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_created_at (created_at),
+            INDEX idx_entry_type (entry_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS face_registration_log (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            user_id INT NOT NULL,
+            action ENUM('registered', 'deactivated', 'reactivated', 'deleted') NOT NULL,
+            descriptor_count INT DEFAULT 0,
+            performed_by INT DEFAULT NULL,
+            ip_address VARCHAR(45) DEFAULT NULL,
+            user_agent TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_user_id (user_id),
+            INDEX idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    
+    // Auto-setup: Add face_registered columns to users table
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS 
+                               WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'face_registered'");
+        $stmt->execute();
+        if ($stmt->fetchColumn() == 0) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN face_registered TINYINT(1) NOT NULL DEFAULT 0");
+            $pdo->exec("ALTER TABLE users ADD COLUMN face_registered_at TIMESTAMP NULL DEFAULT NULL");
+        }
+    } catch (\PDOException $e) {
+        error_log("Face columns auto-setup: " . $e->getMessage());
+    }
+    
     // Auto-populate rfid_cards table with existing RFID registrations
     // Use a safer approach to avoid trigger conflicts
     try {
@@ -175,7 +243,7 @@ try {
             AND u.rfid_uid IS NOT NULL 
             AND rc.user_id IS NULL
         ");
-        $missingCards = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $missingCards = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         
         // Insert each missing entry individually to avoid trigger conflicts
         if (!empty($missingCards)) {
@@ -191,13 +259,13 @@ try {
                         $card['rfid_uid'],
                         $card['rfid_registered_at'] ?? date('Y-m-d H:i:s')
                     ]);
-                } catch (PDOException $e) {
+                } catch (\PDOException $e) {
                     // Skip duplicates or conflicts
                     error_log("Skipping rfid_cards insert for user {$card['id']}: " . $e->getMessage());
                 }
             }
         }
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         // Log but don't fail - table population is optional
         error_log("Failed to auto-populate rfid_cards: " . $e->getMessage());
     }
@@ -209,7 +277,7 @@ try {
                            WHERE role = "Student" AND violation_count >= ? 
                            ORDER BY violation_count DESC, name ASC');
     $stmt->execute([$maxViolationLimit]);
-    $violationAlerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $violationAlerts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     $violationAlertCount = count($violationAlerts);
     
     // Get violation analytics
@@ -241,13 +309,13 @@ try {
         WHERE role = "Student" AND status = "Pending"
         ORDER BY created_at DESC
     ');
-    $pendingStudents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pendingStudents = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     $pendingCount = count($pendingStudents);
     
-} catch (PDOException $e) {
+} catch (\PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
     $error = 'Database error: ' . $e->getMessage();
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Error fetching students: ' . $e->getMessage());
     $error = 'Failed to load student data: ' . $e->getMessage();
 }
@@ -257,8 +325,8 @@ $auditLogs = [];
 if (($_GET['section'] ?? 'students') === 'audit') {
     try {
         $auditStmt = $pdo->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100");
-        $auditLogs = $auditStmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+        $auditLogs = $auditStmt->fetchAll(\PDO::FETCH_ASSOC);
+    } catch (\PDOException $e) {
         error_log('Audit logs fetch error: ' . $e->getMessage());
         $auditLogs = [];
     }
@@ -444,6 +512,32 @@ $activeSection = $_GET['section'] ?? 'students';
                     </svg>
                     <span class="font-medium">Audit Log</span>
                 </a>
+
+                <?php if (filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
+                <?php
+                // Count students eligible for face enrollment (have RFID but no face registered)
+                $faceEnrollCount = 0;
+                foreach ($allStudents as $s) {
+                    if (!empty($s['rfid_uid']) && empty($s['face_registered'])) $faceEnrollCount++;
+                }
+                ?>
+                <a href="?section=face_enroll" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'face_enroll' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                    <span class="font-medium">Face Enroll</span>
+                    <?php if ($faceEnrollCount > 0): ?>
+                        <span class="ml-auto bg-[#0056b3] text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold"><?php echo $faceEnrollCount; ?></span>
+                    <?php endif; ?>
+                </a>
+                <a href="?section=face" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'face' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    <span class="font-medium">Face Management</span>
+                </a>
+                <?php endif; ?>
             </nav>
 
             <!-- Gate Monitor Link -->
@@ -734,7 +828,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                 }
                                 
                                 $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
-                            } catch (PDOException $e) {
+                            } catch (\PDOException $e) {
                                 // If rfid_cards table doesn't exist or query fails, use basic info from users table
                                 error_log("RFID card query error: " . $e->getMessage());
                                 $cardInfo = ['card_id' => $student['id'], 'is_lost' => 0]; // Use user_id as fallback
@@ -1008,7 +1102,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                 ORDER BY v.scanned_at DESC
                                 LIMIT 20
                             ");
-                            $recentViolations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            $recentViolations = $stmt->fetchAll(\PDO::FETCH_ASSOC);
                             
                             if (!empty($recentViolations)):
                     ?>
@@ -1050,7 +1144,7 @@ $activeSection = $_GET['section'] ?? 'students';
                             echo '<p class="text-yellow-800">Violations table not created yet. Violations will be tracked once students scan their cards.</p>';
                             echo '</div>';
                         }
-                    } catch (Exception $e) {
+                    } catch (\Exception $e) {
                         echo '<p class="text-red-600 text-center py-8">Error loading violations: ' . htmlspecialchars($e->getMessage()) . '</p>';
                     }
                     ?>
@@ -1181,6 +1275,307 @@ $activeSection = $_GET['section'] ?? 'students';
                     </table>
                 </div>
             </div>
+
+        <?php elseif ($activeSection === 'face_enroll'): ?>
+            <!-- Face Enrollment Section -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">Face Enrollment</h1>
+                <p class="text-slate-600 mt-1">Enroll student faces for gate recognition. Only students with a registered RFID card are shown.</p>
+            </div>
+
+            <?php if (!filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+                    <p class="text-yellow-800 font-medium">Face recognition is currently disabled.</p>
+                    <p class="text-yellow-600 text-sm mt-1">Set FACE_RECOGNITION_ENABLED=true in your .env file.</p>
+                </div>
+            <?php else: ?>
+
+            <?php
+            // Get students with RFID registered but face NOT yet enrolled
+            $enrollEligible = [];
+            foreach ($allStudents as $s) {
+                if (!empty($s['rfid_uid']) && empty($s['face_registered'])) {
+                    $enrollEligible[] = $s;
+                }
+            }
+            // Also get recently enrolled (last 7 days) for the "recently enrolled" section
+            try {
+                $recentEnrolled = $pdo->query("
+                    SELECT u.id, u.name, u.student_id, u.email, u.profile_picture, u.face_registered_at,
+                           (SELECT COUNT(*) FROM face_descriptors fd WHERE fd.user_id = u.id AND fd.is_active = 1) AS descriptor_count
+                    FROM users u
+                    WHERE u.role = 'Student' AND u.status = 'Active' AND u.face_registered = 1
+                      AND u.face_registered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    ORDER BY u.face_registered_at DESC
+                    LIMIT 10
+                ")->fetchAll(\PDO::FETCH_ASSOC);
+            } catch (\PDOException $e) {
+                $recentEnrolled = [];
+            }
+            ?>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#0056b3]">
+                    <p class="text-sm text-slate-500">Pending Enrollment</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo count($enrollEligible); ?></p>
+                    <p class="text-xs text-slate-400 mt-1">Students with RFID, no face</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+                    <p class="text-sm text-slate-500">Recently Enrolled</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo count($recentEnrolled); ?></p>
+                    <p class="text-xs text-slate-400 mt-1">Last 7 days</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+                    <p class="text-sm text-slate-500">Total RFID Registered</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $registeredCount; ?></p>
+                    <p class="text-xs text-slate-400 mt-1">Active students with cards</p>
+                </div>
+            </div>
+
+            <!-- Pending Enrollment Table -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800">📷 Pending Face Enrollment</h3>
+                        <p class="text-sm text-slate-600">Students who have RFID cards but no face registered yet</p>
+                    </div>
+                    <input type="text" id="enrollSearchInput" placeholder="Search by name or ID..." 
+                           class="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           onkeyup="filterEnrollStudents()">
+                </div>
+
+                <?php if (empty($enrollEligible)): ?>
+                    <div class="text-center py-16 px-6">
+                        <svg class="w-20 h-20 mx-auto text-green-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <h4 class="text-xl font-semibold text-slate-700 mb-2">All Caught Up!</h4>
+                        <p class="text-slate-500">All students with RFID cards have been enrolled in face recognition.</p>
+                        <p class="text-slate-400 text-sm mt-1">New students will appear here after their RFID card is registered.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="grid gap-4 p-6" id="enrollStudentGrid">
+                        <?php foreach ($enrollEligible as $es): ?>
+                        <div class="border border-slate-200 rounded-xl p-5 hover:border-[#0056b3] hover:shadow-md transition-all enroll-student-card"
+                             data-search="<?php echo strtolower(e($es['name']) . ' ' . e($es['student_id']) . ' ' . e($es['email'])); ?>">
+                            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                                <!-- Profile Picture -->
+                                <div class="flex-shrink-0">
+                                    <?php if (!empty($es['profile_picture'])): ?>
+                                        <img src="../assets/images/profiles/<?php echo e($es['profile_picture']); ?>" 
+                                             class="w-16 h-16 rounded-full object-cover border-2 border-slate-200">
+                                    <?php else: ?>
+                                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                                            <?php echo strtoupper(substr($es['name'], 0, 1)); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Student Info -->
+                                <div class="flex-1 text-center sm:text-left">
+                                    <h4 class="font-semibold text-slate-800 text-lg"><?php echo e($es['name']); ?></h4>
+                                    <p class="text-sm text-slate-600">ID: <?php echo e($es['student_id']); ?></p>
+                                    <p class="text-sm text-slate-500"><?php echo e($es['email']); ?></p>
+                                    <div class="flex items-center gap-2 mt-2 justify-center sm:justify-start">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                            RFID: <?php echo e($es['rfid_uid']); ?>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                            ⏳ Face Not Enrolled
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Enroll Button -->
+                                <div class="flex-shrink-0">
+                                    <button onclick="openFaceEnrollModal(<?php echo (int)$es['id']; ?>, <?php echo e(json_encode($es['name'])); ?>, <?php echo e(json_encode($es['student_id'])); ?>)" 
+                                            class="px-5 py-2.5 bg-[#0056b3] hover:bg-blue-700 text-white rounded-xl transition-colors font-medium text-sm shadow-sm hover:shadow-md flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        Enroll Face
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if (!empty($recentEnrolled)): ?>
+            <!-- Recently Enrolled -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-800">✅ Recently Enrolled</h3>
+                    <p class="text-sm text-slate-600">Faces enrolled in the last 7 days</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <?php foreach ($recentEnrolled as $re): ?>
+                    <div class="px-6 py-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <?php if (!empty($re['profile_picture'])): ?>
+                                <img src="../assets/images/profiles/<?php echo e($re['profile_picture']); ?>" class="w-10 h-10 rounded-full object-cover">
+                            <?php else: ?>
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold">
+                                    <?php echo strtoupper(substr($re['name'], 0, 1)); ?>
+                                </div>
+                            <?php endif; ?>
+                            <div>
+                                <p class="font-medium text-slate-800"><?php echo e($re['name']); ?></p>
+                                <p class="text-xs text-slate-500"><?php echo e($re['student_id']); ?> • <?php echo e($re['email']); ?></p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                ✅ <?php echo (int)$re['descriptor_count']; ?> face(s)
+                            </span>
+                            <p class="text-xs text-slate-400 mt-1"><?php echo date('M d, Y h:i A', strtotime($re['face_registered_at'])); ?></p>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php endif; ?>
+
+        <?php elseif ($activeSection === 'face'): ?>
+            <!-- Face Recognition Management Section -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">Face Recognition Management</h1>
+                <p class="text-slate-600 mt-1">Register and manage student face recognition data</p>
+            </div>
+
+            <?php if (!filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+                    <p class="text-yellow-800 font-medium">Face recognition is currently disabled.</p>
+                    <p class="text-yellow-600 text-sm mt-1">Set FACE_RECOGNITION_ENABLED=true in your .env file.</p>
+                </div>
+            <?php else: ?>
+
+            <!-- Face Stats -->
+            <?php
+            try {
+                $faceRegCount = $pdo->query("SELECT COUNT(DISTINCT user_id) FROM face_descriptors WHERE is_active = 1")->fetchColumn();
+                $faceTotalDesc = $pdo->query("SELECT COUNT(*) FROM face_descriptors WHERE is_active = 1")->fetchColumn();
+                $faceEntriesToday = $pdo->query("SELECT COUNT(*) FROM face_entry_logs WHERE DATE(created_at) = CURDATE()")->fetchColumn();
+            } catch (\PDOException $e) {
+                $faceRegCount = 0;
+                $faceTotalDesc = 0;
+                $faceEntriesToday = 0;
+            }
+            ?>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <p class="text-sm text-slate-500">Students with Face ID</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceRegCount; ?></p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <p class="text-sm text-slate-500">Total Descriptors</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceTotalDesc; ?></p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <p class="text-sm text-slate-500">Face Entries Today</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceEntriesToday; ?></p>
+                </div>
+            </div>
+
+            <!-- Student List for Face Registration -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-800">Active Students</h3>
+                        <p class="text-sm text-slate-600">Click "Register Face" to capture face data via webcam</p>
+                    </div>
+                    <input type="text" id="faceSearchInput" placeholder="Search students..." 
+                           class="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           onkeyup="filterFaceStudents()">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="faceStudentTable">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Student ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Face Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Descriptors</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <?php
+                            // Get all active students with face registration status
+                            try {
+                                $faceStudents = $pdo->query("
+                                    SELECT u.id, u.student_id, u.name, u.email, u.profile_picture, u.face_registered,
+                                           (SELECT COUNT(*) FROM face_descriptors fd WHERE fd.user_id = u.id AND fd.is_active = 1) as descriptor_count
+                                    FROM users u
+                                    WHERE u.role = 'Student' AND u.status = 'Active'
+                                    ORDER BY u.face_registered ASC, u.name ASC
+                                ")->fetchAll(\PDO::FETCH_ASSOC);
+                            } catch (\PDOException $e) {
+                                $faceStudents = [];
+                            }
+                            
+                            if (empty($faceStudents)): ?>
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No active students found.</td></tr>
+                            <?php else:
+                                foreach ($faceStudents as $fs): ?>
+                                <tr class="hover:bg-slate-50 face-student-row">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <?php if (!empty($fs['profile_picture'])): ?>
+                                                <img src="../assets/images/profiles/<?php echo e($fs['profile_picture']); ?>" class="w-10 h-10 rounded-full object-cover">
+                                            <?php else: ?>
+                                                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
+                                                    <?php echo strtoupper(substr($fs['name'], 0, 1)); ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div>
+                                                <p class="font-medium text-slate-800"><?php echo e($fs['name']); ?></p>
+                                                <p class="text-xs text-slate-500"><?php echo e($fs['email']); ?></p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600"><?php echo e($fs['student_id']); ?></td>
+                                    <td class="px-6 py-4">
+                                        <?php if ($fs['face_registered']): ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                Registered
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                                                Not Registered
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-slate-600"><?php echo (int)$fs['descriptor_count']; ?> / <?php echo env('FACE_MAX_DESCRIPTORS_PER_STUDENT', '5'); ?></td>
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button onclick="openFaceRegModal(<?php echo $fs['id']; ?>, <?php echo e(json_encode($fs['name'])); ?>, <?php echo e(json_encode($fs['student_id'])); ?>)" 
+                                                    class="px-3 py-1.5 bg-[#0056b3] hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium">
+                                                📷 Register Face
+                                            </button>
+                                            <?php if ($fs['face_registered']): ?>
+                                            <button onclick="deleteFaceData(<?php echo $fs['id']; ?>, <?php echo e(json_encode($fs['name'])); ?>)" 
+                                                    class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition-colors font-medium">
+                                                🗑 Delete
+                                            </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
 
         <?php endif; ?>
     </main>
@@ -1354,7 +1749,12 @@ function showCustomConfirm(title, message, options = {}) {
         if (Array.isArray(message)) {
             messageEl.innerHTML = message.map(item => `<div class="flex items-start gap-2"><span>${item}</span></div>`).join('');
         } else {
-            messageEl.textContent = message;
+            // Check if message contains HTML tags, if so use innerHTML, otherwise textContent for safety
+            if (message.includes('<') && message.includes('>')) {
+                messageEl.innerHTML = message;
+            } else {
+                messageEl.textContent = message;
+            }
         }
         
         // Set icon based on type
@@ -2703,6 +3103,555 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 </script>
+
+<!-- Face Registration Modal -->
+<div id="faceRegModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" style="display:none;">
+    <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-xl font-semibold text-slate-800">Register Face</h3>
+                <p class="text-slate-600 text-sm" id="faceRegStudentName"></p>
+            </div>
+            <button onclick="closeFaceRegModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Status indicator -->
+        <div id="faceRegStatus" class="bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4">
+            Initializing camera...
+        </div>
+
+        <!-- Webcam container -->
+        <div class="relative mx-auto mb-4 bg-black rounded-lg overflow-hidden" style="max-width:640px;">
+            <video id="faceRegVideo" class="w-full" autoplay muted playsinline></video>
+            <canvas id="faceRegCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+        </div>
+
+        <!-- Angle selector -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Face Angle</label>
+            <div class="flex gap-2">
+                <button onclick="selectFaceLabel('front')" id="lblFront" class="px-4 py-2 rounded-lg text-sm font-medium bg-[#0056b3] text-white">Front</button>
+                <button onclick="selectFaceLabel('left')" id="lblLeft" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Left</button>
+                <button onclick="selectFaceLabel('right')" id="lblRight" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Right</button>
+                <button onclick="selectFaceLabel('up')" id="lblUp" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Up</button>
+                <button onclick="selectFaceLabel('down')" id="lblDown" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Down</button>
+            </div>
+        </div>
+
+        <!-- Capture controls -->
+        <div class="flex gap-3">
+            <button onclick="captureFace()" id="btnCaptureFace" class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                📷 Capture & Register
+            </button>
+            <button onclick="closeFaceRegModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Face Enroll Modal -->
+<div id="faceEnrollModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" style="display:none;">
+    <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-xl font-semibold text-slate-800">Enroll Student Face</h3>
+                <p class="text-slate-600 text-sm" id="faceEnrollStudentName"></p>
+            </div>
+            <button onclick="closeFaceEnrollModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="flex items-center justify-center gap-2 mb-4">
+            <div id="enrollStep1" class="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-[#0056b3] text-white">
+                <span>1</span> Front
+            </div>
+            <div class="w-4 h-0.5 bg-slate-300"></div>
+            <div id="enrollStep2" class="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-500">
+                <span>2</span> Left
+            </div>
+            <div class="w-4 h-0.5 bg-slate-300"></div>
+            <div id="enrollStep3" class="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-500">
+                <span>3</span> Right
+            </div>
+        </div>
+
+        <!-- Status indicator -->
+        <div id="faceEnrollStatus" class="bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4">
+            Initializing camera...
+        </div>
+
+        <!-- Captured faces preview -->
+        <div id="enrollCapturedPreview" class="hidden mb-4">
+            <p class="text-xs font-medium text-slate-500 mb-2">Captured Angles:</p>
+            <div class="flex gap-2" id="enrollCapturedThumbs"></div>
+        </div>
+
+        <!-- Webcam container -->
+        <div class="relative mx-auto mb-4 bg-black rounded-lg overflow-hidden" style="max-width:640px;">
+            <video id="faceEnrollVideo" class="w-full" autoplay muted playsinline></video>
+            <canvas id="faceEnrollCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+        </div>
+
+        <!-- Instruction -->
+        <div id="enrollInstruction" class="text-center mb-4">
+            <p class="text-slate-700 font-medium" id="enrollAngleInstruction">Position the student facing the camera <strong>directly (front)</strong></p>
+        </div>
+
+        <!-- Capture controls -->
+        <div class="flex gap-3">
+            <button onclick="captureEnrollFace()" id="btnEnrollCapture" class="flex-1 px-4 py-3 bg-[#0056b3] hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                📷 Capture Front View
+            </button>
+            <button onclick="closeFaceEnrollModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<?php if (filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
+<!-- Face Recognition Scripts (Admin) -->
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script defer src="../assets/js/face-recognition.js"></script>
+<script>
+// Face Registration Logic for Admin
+const CSRF_TOKEN_FACE = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>;
+let faceRegSystem = null;
+let faceRegStudentId = null;
+let faceRegLabel = 'front';
+let faceRegModelsLoaded = false;
+
+function selectFaceLabel(label) {
+    faceRegLabel = label;
+    ['front','left','right','up','down'].forEach(l => {
+        const btn = document.getElementById('lbl' + l.charAt(0).toUpperCase() + l.slice(1));
+        if (btn) {
+            btn.className = l === label 
+                ? 'px-4 py-2 rounded-lg text-sm font-medium bg-[#0056b3] text-white'
+                : 'px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200';
+        }
+    });
+}
+
+async function openFaceRegModal(studentId, studentName, studentSid) {
+    faceRegStudentId = studentId;
+    document.getElementById('faceRegStudentName').textContent = studentName + ' (' + studentSid + ')';
+    
+    const modal = document.getElementById('faceRegModal');
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    
+    const statusEl = document.getElementById('faceRegStatus');
+    const captureBtn = document.getElementById('btnCaptureFace');
+    captureBtn.disabled = true;
+
+    // Initialize system if not yet done
+    if (!faceRegSystem) {
+        faceRegSystem = new FaceRecognitionSystem({
+            modelPath: '../assets/models',
+            minConfidence: 0.5,
+            csrfToken: CSRF_TOKEN_FACE,
+            onStatusChange: (s, msg) => { statusEl.textContent = msg; },
+            onError: (msg) => { statusEl.textContent = '❌ ' + msg; statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4'; }
+        });
+    }
+
+    // Load models if not loaded
+    if (!faceRegModelsLoaded) {
+        statusEl.textContent = 'Loading face recognition models (first time may take a moment)...';
+        statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
+        const ok = await faceRegSystem.loadModels();
+        if (!ok) {
+            statusEl.textContent = '❌ Failed to load models. Ensure model files are in assets/models/';
+            statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+            return;
+        }
+        faceRegModelsLoaded = true;
+    }
+
+    // Start camera
+    statusEl.textContent = 'Starting camera...';
+    const camOk = await faceRegSystem.startCamera(
+        document.getElementById('faceRegVideo'),
+        document.getElementById('faceRegCanvas')
+    );
+
+    if (camOk) {
+        statusEl.textContent = '✅ Camera ready. Position the student\'s face in the frame and click Capture.';
+        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        
+        // Start live face detection preview
+        startLiveDetectionPreview();
+    } else {
+        statusEl.textContent = '❌ Camera failed. Check browser permissions.';
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+    }
+}
+
+let liveDetectionTimer = null;
+function startLiveDetectionPreview() {
+    if (liveDetectionTimer) clearInterval(liveDetectionTimer);
+    liveDetectionTimer = setInterval(async () => {
+        if (!faceRegSystem) return;
+        await faceRegSystem.detectSingleFace();
+    }, 300);
+}
+
+function closeFaceRegModal() {
+    if (liveDetectionTimer) {
+        clearInterval(liveDetectionTimer);
+        liveDetectionTimer = null;
+    }
+    if (faceRegSystem) {
+        faceRegSystem.stopCamera();
+    }
+    const modal = document.getElementById('faceRegModal');
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+}
+
+async function captureFace() {
+    if (!faceRegSystem || !faceRegStudentId) return;
+    
+    const statusEl = document.getElementById('faceRegStatus');
+    const captureBtn = document.getElementById('btnCaptureFace');
+    captureBtn.disabled = true;
+    
+    statusEl.textContent = '📸 Capturing face...';
+    statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
+    
+    // Detect face
+    const detection = await faceRegSystem.detectSingleFace();
+    
+    if (!detection) {
+        statusEl.textContent = '❌ No face detected. Please position the face clearly in the frame.';
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        return;
+    }
+    
+    if (detection.score < 0.5) {
+        statusEl.textContent = '⚠️ Low confidence (' + (detection.score * 100).toFixed(1) + '%). Try better lighting or positioning.';
+        statusEl.className = 'bg-yellow-50 text-yellow-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        return;
+    }
+    
+    // Register the descriptor
+    statusEl.textContent = '⬆️ Registering face descriptor (' + faceRegLabel + ')...';
+    
+    const result = await faceRegSystem.registerFace(
+        faceRegStudentId,
+        detection.descriptor,
+        faceRegLabel,
+        detection.score,
+        '../api/register_face.php'
+    );
+    
+    if (result.success) {
+        statusEl.textContent = '✅ ' + result.message + ' (Total: ' + result.total_descriptors + ')';
+        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
+        
+        // Show toast notification
+        if (typeof showToast === 'function') {
+            showToast(result.message, 'success');
+        }
+        
+        // Re-enable after 2 sec for next capture
+        setTimeout(() => { captureBtn.disabled = false; }, 2000);
+    } else {
+        statusEl.textContent = '❌ ' + (result.error || 'Registration failed');
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+    }
+}
+
+async function deleteFaceData(studentId, studentName) {
+    if (!confirm('Delete all face recognition data for ' + studentName + '? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('../api/delete_face.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN_FACE
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ student_id: studentId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success');
+            }
+            // Reload page to refresh table
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete'));
+        }
+    } catch (error) {
+        alert('Network error: ' + error.message);
+    }
+}
+
+function filterFaceStudents() {
+    const filter = document.getElementById('faceSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.face-student-row');
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+
+// ================================================================
+// FACE ENROLLMENT (face_enroll section)
+// ================================================================
+let faceEnrollSystem = null;
+let faceEnrollStudentId = null;
+let faceEnrollModelsLoaded = false;
+let enrollLiveTimer = null;
+const enrollAngles = ['front', 'left', 'right'];
+let enrollCurrentStep = 0; // 0=front, 1=left, 2=right
+let enrollCapturedCount = 0;
+
+function filterEnrollStudents() {
+    const filter = (document.getElementById('enrollSearchInput')?.value || '').toLowerCase();
+    const cards = document.querySelectorAll('.enroll-student-card');
+    cards.forEach(card => {
+        const searchText = card.getAttribute('data-search') || '';
+        card.style.display = searchText.includes(filter) ? '' : 'none';
+    });
+}
+
+async function openFaceEnrollModal(studentId, studentName, studentSid) {
+    faceEnrollStudentId = studentId;
+    enrollCurrentStep = 0;
+    enrollCapturedCount = 0;
+    
+    document.getElementById('faceEnrollStudentName').textContent = studentName + ' (' + studentSid + ')';
+    document.getElementById('enrollCapturedPreview').classList.add('hidden');
+    document.getElementById('enrollCapturedThumbs').innerHTML = '';
+    updateEnrollSteps(0);
+    updateEnrollInstruction('front');
+    
+    const modal = document.getElementById('faceEnrollModal');
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    
+    const statusEl = document.getElementById('faceEnrollStatus');
+    const captureBtn = document.getElementById('btnEnrollCapture');
+    captureBtn.disabled = true;
+    captureBtn.textContent = '📷 Capture Front View';
+
+    // Initialize face system (reuse faceRegSystem if already loaded)
+    if (!faceRegSystem) {
+        faceRegSystem = new FaceRecognitionSystem({
+            modelPath: '../assets/models',
+            minConfidence: 0.5,
+            csrfToken: CSRF_TOKEN_FACE,
+            onStatusChange: (s, msg) => { statusEl.textContent = msg; },
+            onError: (msg) => { statusEl.textContent = '❌ ' + msg; statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4'; }
+        });
+    }
+
+    if (!faceRegModelsLoaded) {
+        statusEl.textContent = 'Loading face recognition models (first time may take a moment)...';
+        statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
+        const ok = await faceRegSystem.loadModels();
+        if (!ok) {
+            statusEl.textContent = '❌ Failed to load models. Ensure model files are in assets/models/';
+            statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+            return;
+        }
+        faceRegModelsLoaded = true;
+    }
+
+    statusEl.textContent = 'Starting camera...';
+    const camOk = await faceRegSystem.startCamera(
+        document.getElementById('faceEnrollVideo'),
+        document.getElementById('faceEnrollCanvas')
+    );
+
+    if (camOk) {
+        statusEl.textContent = '✅ Camera ready. Position the student\'s face FRONT and click Capture.';
+        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        startEnrollLivePreview();
+    } else {
+        statusEl.textContent = '❌ Camera failed. Check browser permissions.';
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+    }
+}
+
+function startEnrollLivePreview() {
+    if (enrollLiveTimer) clearInterval(enrollLiveTimer);
+    enrollLiveTimer = setInterval(async () => {
+        if (!faceRegSystem) return;
+        await faceRegSystem.detectSingleFace();
+    }, 300);
+}
+
+function closeFaceEnrollModal() {
+    if (enrollLiveTimer) { clearInterval(enrollLiveTimer); enrollLiveTimer = null; }
+    if (faceRegSystem) { faceRegSystem.stopCamera(); }
+    const modal = document.getElementById('faceEnrollModal');
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+}
+
+function updateEnrollSteps(activeIndex) {
+    for (let i = 0; i < 3; i++) {
+        const el = document.getElementById('enrollStep' + (i + 1));
+        if (i < activeIndex) {
+            el.className = 'flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white';
+        } else if (i === activeIndex) {
+            el.className = 'flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-[#0056b3] text-white';
+        } else {
+            el.className = 'flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-500';
+        }
+    }
+}
+
+function updateEnrollInstruction(angle) {
+    const instructions = {
+        'front': 'Position the student facing the camera <strong>directly (front)</strong>',
+        'left': 'Ask the student to turn their head slightly to the <strong>left</strong>',
+        'right': 'Ask the student to turn their head slightly to the <strong>right</strong>'
+    };
+    document.getElementById('enrollAngleInstruction').innerHTML = instructions[angle] || '';
+    
+    const captureBtn = document.getElementById('btnEnrollCapture');
+    captureBtn.textContent = '📷 Capture ' + angle.charAt(0).toUpperCase() + angle.slice(1) + ' View';
+}
+
+async function captureEnrollFace() {
+    if (!faceRegSystem || !faceEnrollStudentId) return;
+    
+    const statusEl = document.getElementById('faceEnrollStatus');
+    const captureBtn = document.getElementById('btnEnrollCapture');
+    captureBtn.disabled = true;
+    
+    const currentAngle = enrollAngles[enrollCurrentStep];
+    statusEl.textContent = '📸 Capturing ' + currentAngle + ' view...';
+    statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
+    
+    const detection = await faceRegSystem.detectSingleFace();
+    
+    if (!detection) {
+        statusEl.textContent = '❌ No face detected. Ensure the face is clearly visible.';
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        return;
+    }
+    
+    if (detection.score < 0.5) {
+        statusEl.textContent = '⚠️ Low confidence (' + (detection.score * 100).toFixed(1) + '%). Try better lighting.';
+        statusEl.className = 'bg-yellow-50 text-yellow-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        return;
+    }
+    
+    // Register this angle
+    statusEl.textContent = '⬆️ Saving ' + currentAngle + ' face descriptor...';
+    
+    const result = await faceRegSystem.registerFace(
+        faceEnrollStudentId,
+        detection.descriptor,
+        currentAngle,
+        detection.score,
+        '../api/register_face.php'
+    );
+    
+    if (!result.success) {
+        statusEl.textContent = '❌ ' + (result.error || 'Failed to save face.');
+        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
+        captureBtn.disabled = false;
+        return;
+    }
+    
+    // Success for this angle - add thumbnail
+    enrollCapturedCount++;
+    const thumbContainer = document.getElementById('enrollCapturedThumbs');
+    const preview = document.getElementById('enrollCapturedPreview');
+    preview.classList.remove('hidden');
+    
+    // Capture thumbnail from video
+    const video = document.getElementById('faceEnrollVideo');
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 60;
+    thumbCanvas.height = 60;
+    const ctx = thumbCanvas.getContext('2d');
+    const size = Math.min(video.videoWidth, video.videoHeight);
+    const sx = (video.videoWidth - size) / 2;
+    const sy = (video.videoHeight - size) / 2;
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, 60, 60);
+    
+    thumbContainer.innerHTML += `
+        <div class="text-center">
+            <img src="${thumbCanvas.toDataURL('image/jpeg', 0.7)}" class="w-14 h-14 rounded-lg object-cover border-2 border-green-400">
+            <p class="text-xs text-green-600 mt-1">✅ ${currentAngle}</p>
+        </div>
+    `;
+    
+    // Move to next step
+    enrollCurrentStep++;
+    
+    if (enrollCurrentStep >= enrollAngles.length) {
+        // All 3 angles captured - enrollment complete!
+        if (enrollLiveTimer) { clearInterval(enrollLiveTimer); enrollLiveTimer = null; }
+        
+        statusEl.textContent = '🎉 Face enrollment complete! All 3 angles captured successfully.';
+        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4 font-medium';
+        
+        updateEnrollSteps(3); // All green
+        
+        captureBtn.textContent = '✅ Enrollment Complete';
+        captureBtn.disabled = true;
+        captureBtn.className = 'flex-1 px-4 py-3 bg-green-500 text-white rounded-lg font-medium cursor-default';
+        
+        showToast('Face enrolled successfully for ' + document.getElementById('faceEnrollStudentName').textContent, 'success');
+        
+        // Remove the student card from the grid with animation
+        const card = document.querySelector(`.enroll-student-card button[onclick*="openFaceEnrollModal(${faceEnrollStudentId}"]`);
+        if (card) {
+            const cardEl = card.closest('.enroll-student-card');
+            if (cardEl) {
+                cardEl.style.transition = 'all 0.5s ease';
+                cardEl.style.opacity = '0';
+                cardEl.style.transform = 'scale(0.95)';
+                setTimeout(() => cardEl.remove(), 500);
+            }
+        }
+        
+        // Close modal after delay and reload to update counts
+        setTimeout(() => {
+            closeFaceEnrollModal();
+            window.location.reload();
+        }, 2500);
+    } else {
+        // Move to next angle
+        const nextAngle = enrollAngles[enrollCurrentStep];
+        updateEnrollSteps(enrollCurrentStep);
+        updateEnrollInstruction(nextAngle);
+        
+        statusEl.textContent = '✅ ' + currentAngle + ' captured! Now position for ' + nextAngle + ' view.';
+        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
+        
+        captureBtn.disabled = false;
+    }
+}
+</script>
+<?php endif; ?>
 
 </body>
 </html>

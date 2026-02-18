@@ -1,4 +1,7 @@
 <?php
+
+use Exception;
+
 require_once 'db.php';
 
 // Check if user is logged in

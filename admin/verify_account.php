@@ -1,4 +1,7 @@
 <?php
+
+use PDOException;
+
 /**
  * Admin endpoint to approve or deny student account verification
  */

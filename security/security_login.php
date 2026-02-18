@@ -9,6 +9,11 @@ if (isset($_SESSION['security_logged_in']) && $_SESSION['security_logged_in'] ==
 
 $error = '';
 
+// Check for session timeout
+if (isset($_GET['timeout']) && $_GET['timeout'] == '1') {
+    $error = 'Your session has expired due to inactivity. Please login again.';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Rate limiting: 5 attempts per 15 minutes
     if (!check_rate_limit('security_login', 5, 900)) {
@@ -26,8 +31,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Security credentials not configured. Please contact administrator.';
         } elseif ($username === $valid_username && $password === $valid_password) {
             reset_rate_limit('security_login');
+            
+            // Regenerate session ID to prevent session fixation attacks
+            session_regenerate_id(true);
+            
+            // Set session variables
             $_SESSION['security_logged_in'] = true;
             $_SESSION['security_username'] = $username;
+            $_SESSION['last_activity'] = time();  // Initialize activity timestamp
+            $_SESSION['created_at'] = time();  // Initialize creation timestamp
+            
             header('Location: gate_monitor.php');
             exit();
         } else {

@@ -1,4 +1,8 @@
 <?php
+
+use PDO;
+use PDOException;
+
 /**
  * Check QR Token Status API
  * Used by Digital ID page to check if QR code has been scanned

@@ -1,4 +1,8 @@
 <?php
+
+use PDO;
+use PDOException;
+
 require_once __DIR__ . '/../db.php';
 
 // Auto-setup: Create super admin tables if they don't exist

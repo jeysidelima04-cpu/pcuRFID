@@ -1,4 +1,5 @@
-<?php require_once __DIR__ . '/db.php'; ?>
+<?php
+require_once __DIR__ . '/db.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,7 +106,7 @@
                   $google_login_url = $google_client->createAuthUrl();
                   $show_google_button = true;
               }
-          } catch (Exception $e) {
+          } catch (\Exception $e) {
               // Google library not available, hide button
               $show_google_button = false;
           }

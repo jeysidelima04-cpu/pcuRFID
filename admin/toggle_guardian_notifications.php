@@ -1,4 +1,7 @@
 <?php
+
+use PDOException;
+
 // admin/toggle_guardian_notifications.php
 require_once __DIR__ . '/../db.php';
 

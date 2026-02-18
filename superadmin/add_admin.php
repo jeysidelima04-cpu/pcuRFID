@@ -1,4 +1,7 @@
 <?php
+
+use PDOException;
+
 require_once __DIR__ . '/../db.php';
 
 // Set JSON response header

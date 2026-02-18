@@ -8,6 +8,9 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use PDO;
+use PDOException;
+use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\ExpiredException;
@@ -15,7 +18,9 @@ use Firebase\JWT\ExpiredException;
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 // Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -25,8 +30,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Check if security guard is logged in
 if (!isset($_SESSION['security_logged_in'])) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
     exit;
+}
+
+// CSRF Protection for POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $headers = getallheaders();
+    $csrfHeader = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    
+    if (empty($sessionToken) || !hash_equals($sessionToken, $csrfHeader)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+        exit;
+    }
 }
 
 // Get the JWT token from request

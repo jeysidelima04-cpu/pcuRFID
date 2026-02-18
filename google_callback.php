@@ -10,6 +10,8 @@ require_once 'db.php';
 
 use Google\Client as Google_Client;
 use Google\Service\Oauth2 as Google_Service_Oauth2;
+use PDOException;
+use Exception;
 
 // Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {

@@ -58,7 +58,7 @@ try {
         $initials .= strtoupper(substr(end($nameParts), 0, 1));
     }
     
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Digital ID error: ' . $e->getMessage());
     header('Location: homepage.php?error=' . urlencode('Unable to generate digital ID'));
     exit;

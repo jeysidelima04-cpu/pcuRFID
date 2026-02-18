@@ -24,14 +24,14 @@ if (!function_exists('env')) {
 }
 
 // Google OAuth Client ID (from .env)
-define('GOOGLE_CLIENT_ID', env('GOOGLE_CLIENT_ID', '1036942169198-5cd08d6doa4vb4r6442g9k9vdnjgfs7j.apps.googleusercontent.com'));
+define('GOOGLE_CLIENT_ID', env('GOOGLE_CLIENT_ID'));
 
 // Google OAuth Client Secret (from .env)
-define('GOOGLE_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET', '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'));
+define('GOOGLE_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET'));
 
 // Redirect URI (from .env)
-define('GOOGLE_REDIRECT_URI', env('GOOGLE_REDIRECT_URI', 'http://localhost/pcuRFID2/google_callback.php'));
+define('GOOGLE_REDIRECT_URI', env('GOOGLE_REDIRECT_URI'));
 
 // Application name (from .env)
-define('GOOGLE_APP_NAME', env('GOOGLE_APP_NAME', 'GateWatchProject'));
+define('GOOGLE_APP_NAME', env('GOOGLE_APP_NAME'));
 ?>

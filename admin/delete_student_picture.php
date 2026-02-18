@@ -1,4 +1,8 @@
 <?php
+
+use PDOException;
+use Exception;
+
 /**
  * Delete Student Profile Picture (Admin Only)
  * Allows admins to delete student profile pictures

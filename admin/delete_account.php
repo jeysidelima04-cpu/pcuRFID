@@ -1,4 +1,7 @@
 <?php
+
+use Exception;
+
 require_once __DIR__ . '/../db.php';
 
 // Check if admin is logged in

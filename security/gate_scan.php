@@ -1,16 +1,37 @@
 <?php
+
 require_once __DIR__ . '/../db.php';
+require __DIR__ . '/../vendor/autoload.php';
+
+use PDO;
+use PDOException;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require __DIR__ . '/../vendor/autoload.php';
-
 header('Content-Type: application/json');
+
+// Security: Prevent caching of sensitive data
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 // Check if security guard is logged in
 if (!isset($_SESSION['security_logged_in'])) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
     exit;
+}
+
+// CSRF Protection - Validate CSRF token for all POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $providedToken = $data['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    
+    if (empty($sessionToken) || !hash_equals($sessionToken, $providedToken)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
+        exit;
+    }
 }
 
 // Receive RFID tap from scanner

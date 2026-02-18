@@ -1,6 +1,9 @@
 <?php
 // auth.php
 declare(strict_types=1);
+
+use Throwable;
+
 require_once __DIR__ . '/db.php';
 
 header('X-Content-Type-Options: nosniff');

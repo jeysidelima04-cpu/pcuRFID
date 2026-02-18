@@ -1,4 +1,7 @@
 <?php
+
+use Exception;
+
 /**
  * Send approval email - called asynchronously after approval
  */

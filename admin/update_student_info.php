@@ -1,4 +1,7 @@
 <?php
+
+use PDOException;
+
 /**
  * Update Student Information (Admin Only)
  * Allows admins to update student name and student ID

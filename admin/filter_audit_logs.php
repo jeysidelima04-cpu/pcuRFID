@@ -1,4 +1,8 @@
 <?php
+
+use PDO;
+use Exception;
+
 /**
  * Filter Audit Logs API
  * Returns filtered audit log entries based on criteria

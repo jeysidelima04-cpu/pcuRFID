@@ -11,12 +11,12 @@ USE pcu_rfid2;
 
 -- Step 1: Add lost tracking columns to rfid_cards table
 ALTER TABLE rfid_cards 
-ADD COLUMN is_lost TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether RFID is marked as lost' AFTER status,
-ADD COLUMN lost_at DATETIME NULL COMMENT 'When RFID was marked as lost' AFTER is_lost,
-ADD COLUMN lost_reason VARCHAR(255) NULL COMMENT 'Reason for marking as lost' AFTER lost_at,
-ADD COLUMN lost_reported_by INT NULL COMMENT 'Admin who marked it as lost' AFTER lost_reason,
-ADD COLUMN found_at DATETIME NULL COMMENT 'When RFID was found/unmarked' AFTER lost_reported_by,
-ADD COLUMN found_by INT NULL COMMENT 'Admin who unmarked it' AFTER found_at,
+ADD COLUMN is_lost TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Whether RFID is marked as lost',
+ADD COLUMN lost_at DATETIME NULL COMMENT 'When RFID was marked as lost',
+ADD COLUMN lost_reason VARCHAR(255) NULL COMMENT 'Reason for marking as lost',
+ADD COLUMN lost_reported_by INT NULL COMMENT 'Admin who marked it as lost',
+ADD COLUMN found_at DATETIME NULL COMMENT 'When RFID was found/unmarked',
+ADD COLUMN found_by INT NULL COMMENT 'Admin who unmarked it',
 ADD INDEX idx_is_lost (is_lost),
 ADD CONSTRAINT fk_rfid_lost_reported_by FOREIGN KEY (lost_reported_by) REFERENCES users(id) ON DELETE SET NULL,
 ADD CONSTRAINT fk_rfid_found_by FOREIGN KEY (found_by) REFERENCES users(id) ON DELETE SET NULL;

@@ -1,4 +1,7 @@
 <?php
+
+use PDOException;
+
 /**
  * Script to add google_id column to users table
  * Run this once to enable Google Sign-In functionality

@@ -1,4 +1,8 @@
 <?php
+
+use PDOException;
+use Exception;
+
 /**
  * Upload Student Profile Picture (Admin Only)
  * Allows admins to upload profile pictures for students

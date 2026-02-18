@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../db.php';
 
 // If already logged in, redirect to homepage
@@ -24,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Detect which columns exist in the users table
                 $columnsStmt = $pdo->query("SHOW COLUMNS FROM users");
-                $columns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
+                $columns = $columnsStmt->fetchAll(\PDO::FETCH_COLUMN);
                 $hasFirstName = in_array('first_name', $columns);
                 
                 // Query admin user from database with correct columns
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $pdo->prepare("SELECT id, email, password, name FROM users WHERE email = :email AND role = 'Admin' LIMIT 1");
                 }
                 $stmt->execute([':email' => $email]);
-                $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+                $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
                 
                 if ($admin && password_verify($password, $admin['password'])) {
                     // Valid admin credentials - reset rate limit
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $error = 'Invalid email or password';
                 }
-            } catch (PDOException $e) {
+            } catch (\PDOException $e) {
                 error_log("Admin login error: " . $e->getMessage());
                 $error = 'Login system error. Please try again.';
             }

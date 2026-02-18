@@ -1,4 +1,8 @@
 <?php
+
+use PDOException;
+use Exception;
+
 require_once __DIR__ . '/../db.php';
 
 try {

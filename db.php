@@ -90,20 +90,20 @@ define('SMTP_PASS', env('SMTP_PASS', ''));
 define('SMTP_FROM', env('SMTP_FROM', 'jeysidelima04@gmail.com'));
 define('SMTP_FROM_NAME', env('SMTP_FROM_NAME', 'PCU RFID System'));
 
-function pdo(): PDO {
+function pdo(): \PDO {
     static $pdo;
-    if ($pdo instanceof PDO) return $pdo;
+    if ($pdo instanceof \PDO) return $pdo;
 
     try {
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
         $options = [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_EMULATE_PREPARES   => false,
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
         ];
         
         error_log("[PCU RFID] Attempting database connection to " . DB_NAME);
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        $pdo = new \PDO($dsn, DB_USER, DB_PASS, $options);
         error_log("[PCU RFID] Database connection successful");
         
         // Test if tables exist
@@ -111,14 +111,14 @@ function pdo(): PDO {
         foreach ($tables as $table) {
             $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
             if ($stmt->rowCount() === 0) {
-                throw new Exception("Required table '$table' does not exist");
+                throw new \Exception("Required table '$table' does not exist");
             }
         }
         // Auto-setup admin account if configured in .env
         setup_admin_account($pdo);
         
         return $pdo;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("[PCU RFID] Database error: " . $e->getMessage());
         throw $e;
     }
@@ -128,7 +128,7 @@ function pdo(): PDO {
  * Auto-setup admin account from .env configuration
  * Creates or updates admin user if credentials are provided in .env
  */
-function setup_admin_account(PDO $pdo): void {
+function setup_admin_account(\PDO $pdo): void {
     try {
         $adminEmail = env('ADMIN_EMAIL', '');
         $adminPassword = env('ADMIN_PASSWORD', '');
@@ -159,7 +159,7 @@ function setup_admin_account(PDO $pdo): void {
             
             // Check which columns exist in users table
             $columnsStmt = $pdo->query("SHOW COLUMNS FROM users");
-            $columns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
+            $columns = $columnsStmt->fetchAll(\PDO::FETCH_COLUMN);
             $hasFirstName = in_array('first_name', $columns);
             
             if ($hasFirstName) {
@@ -183,7 +183,7 @@ function setup_admin_account(PDO $pdo): void {
             }
             error_log("[PCU RFID] Admin account created from .env configuration");
         }
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         // Silently fail - don't break the application if admin setup fails
         error_log("[PCU RFID] Admin setup error: " . $e->getMessage());
     }
@@ -227,7 +227,7 @@ function sendMail(string $to, string $subject, string $htmlBody, bool $returnErr
 
         $mail->send();
         return true;
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         $msg = 'Mail error: ' . $e->getMessage();
         error_log($msg);
         return $returnError ? $msg : false;
@@ -331,7 +331,7 @@ function is_rfid_active_for_student(int $studentId, string $rfidUid): bool {
         
         // Card must be Active AND not lost
         return ($card['status'] === 'Active' && $card['is_lost'] == 0);
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("Error checking RFID status: " . $e->getMessage());
         return false;
     }
@@ -360,7 +360,7 @@ function is_rfid_lost(string $rfidUid): ?array {
         $card = $stmt->fetch();
         
         return $card ?: null;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("Error checking if RFID is lost: " . $e->getMessage());
         return null;
     }
@@ -401,7 +401,7 @@ function mark_rfid_lost(int $cardId, int $adminId, string $reason): bool {
         
         $pdo->commit();
         return true;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         $pdo->rollBack();
         error_log("Error marking RFID as lost: " . $e->getMessage());
         return false;
@@ -446,7 +446,7 @@ function mark_rfid_found(int $cardId, int $adminId): bool {
         
         $pdo->commit();
         return true;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         $pdo->rollBack();
         error_log("Error marking RFID as found: " . $e->getMessage());
         return false;
@@ -468,7 +468,7 @@ function are_guardian_notifications_enabled(): bool {
         $stmt = $pdo->query("SELECT value FROM system_settings WHERE setting_key = 'guardian_notifications_enabled' LIMIT 1");
         $result = $stmt->fetchColumn();
         return $result === '1' || $result === 'true';
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         // If table doesn't exist yet (before Phase 2 migration), return false
         return false;
     }
@@ -504,7 +504,7 @@ function can_send_guardian_notification(int $studentId, string $type = 'entry'):
         $timeDiff = $currentTime - $lastSentTime;
         
         return $timeDiff >= 600; // 10 minutes = 600 seconds
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("Error checking notification rate limit: " . $e->getMessage());
         return false; // Fail safe - don't send if error
     }
@@ -631,7 +631,7 @@ function send_guardian_entry_notification(int $studentId, string $entryTime): bo
         }
         
         return $sentCount > 0;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log("Error sending guardian notification: " . $e->getMessage());
         return false;
     }
