@@ -108,7 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-md bg-white/95 rounded-2xl shadow-2xl p-8 fade-in">
             <div class="text-center mb-8">
-                <img src="../pcu-logo.png" alt="PCU Logo" class="w-24 h-24 mx-auto mb-6">
+                <a href="admin_login.php" class="inline-block hover:opacity-80 transition-opacity">
+                    <img src="../pcu-logo.png" alt="PCU Logo" class="w-24 h-24 mx-auto mb-6">
+                </a>
                 <h1 class="text-3xl font-semibold text-[#0056b3] mb-2">Admin Login</h1>
                 <p class="text-slate-600">RFID System Administration</p>
             </div>

@@ -685,8 +685,8 @@ try {
                         $rfidLostReason = '';
                         if (!empty($user['rfid_uid'])) {
                             try {
-                                $lostStmt = $pdo->prepare("SELECT is_lost, lost_reason FROM rfid_cards WHERE user_id = ? LIMIT 1");
-                                $lostStmt->execute([$user['id']]);
+                                $lostStmt = $pdo->prepare("SELECT is_lost, lost_reason FROM rfid_cards WHERE user_id = ? AND rfid_uid = ? ORDER BY id DESC LIMIT 1");
+                                $lostStmt->execute([$user['id'], $user['rfid_uid']]);
                                 $rfidStatus = $lostStmt->fetch();
                                 $rfidIsLost = $rfidStatus && $rfidStatus['is_lost'] == 1;
                                 $rfidLostReason = $rfidStatus['lost_reason'] ?? '';

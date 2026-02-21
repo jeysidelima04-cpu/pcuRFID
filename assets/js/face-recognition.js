@@ -31,6 +31,9 @@ class FaceRecognitionSystem {
         this.ssdInputSize = options.ssdInputSize || 224;
         // Cached SSD options (avoid recreating every frame)
         this._ssdOptions = null;
+        this._isWarmedUp = false;
+        // Selected camera device ID (null = browser default)
+        this.selectedDeviceId = null;
     }
 
     /**
@@ -50,6 +53,7 @@ class FaceRecognitionSystem {
             this.modelsLoaded = true;
             // Pre-create SSD options for reuse (avoids object creation every frame)
             this._ssdOptions = new faceapi.SsdMobilenetv1Options({
+                inputSize: this.ssdInputSize,
                 minConfidence: this.minConfidence,
                 maxResults: 1
             });
@@ -62,29 +66,59 @@ class FaceRecognitionSystem {
     }
 
     /**
+     * Return list of available video input devices.
+     * Note: Device labels are only populated after getUserMedia permission is granted.
+     * @returns {Promise<Array<{deviceId: string, label: string}>>}
+     */
+    async getAvailableCameras() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices
+                .filter(device => device.kind === 'videoinput')
+                .map((device, index) => ({
+                    deviceId: device.deviceId,
+                    label: device.label || `Camera ${index + 1}`
+                }));
+        } catch (err) {
+            return [];
+        }
+    }
+
+    /**
      * Start webcam video stream
      * @param {HTMLVideoElement} videoEl - Video element for camera preview
      * @param {HTMLCanvasElement} canvasEl - Canvas for drawing detection boxes
+     * @param {string|null} deviceId - Specific camera deviceId, or null for default
      */
-    async startCamera(videoEl, canvasEl) {
+    async startCamera(videoEl, canvasEl, deviceId = null) {
         this.videoElement = videoEl;
         this.canvasElement = canvasEl;
+        if (deviceId !== null) this.selectedDeviceId = deviceId;
 
         try {
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: {
+            let videoConstraints;
+            if (this.selectedDeviceId) {
+                videoConstraints = { deviceId: { exact: this.selectedDeviceId } };
+            } else {
+                videoConstraints = {
                     width: { ideal: 480 },
                     height: { ideal: 360 },
                     facingMode: 'user',
                     frameRate: { ideal: 15, max: 30 }
-                },
+                };
+            }
+
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: videoConstraints,
                 audio: false
             });
 
             this.videoElement.srcObject = this.stream;
             await this.videoElement.play();
 
-            // Set canvas dimensions to match video
+            // Warm up the model in background so camera preview appears immediately.
+            this._warmUpDetector();
+
             const displaySize = {
                 width: this.videoElement.videoWidth,
                 height: this.videoElement.videoHeight
@@ -94,6 +128,39 @@ class FaceRecognitionSystem {
             this._setStatus('camera_active', 'Camera active - ready for face detection');
             return true;
         } catch (error) {
+            // If specific camera selection fails, retry once with default camera.
+            // This prevents Start from appearing broken when the selected device
+            // is disconnected, locked by another app, or returns stale IDs.
+            if (this.selectedDeviceId) {
+                try {
+                    this.selectedDeviceId = null;
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 480 },
+                            height: { ideal: 360 },
+                            facingMode: 'user',
+                            frameRate: { ideal: 15, max: 30 }
+                        },
+                        audio: false
+                    });
+
+                    this.videoElement.srcObject = this.stream;
+                    await this.videoElement.play();
+                    this._warmUpDetector();
+
+                    const displaySize = {
+                        width: this.videoElement.videoWidth,
+                        height: this.videoElement.videoHeight
+                    };
+                    faceapi.matchDimensions(this.canvasElement, displaySize);
+
+                    this._setStatus('camera_active', 'Camera active (fallback default camera)');
+                    return true;
+                } catch (fallbackError) {
+                    error = fallbackError;
+                }
+            }
+
             if (error.name === 'NotAllowedError') {
                 this._handleError('Camera access denied. Please allow camera permission.', error);
             } else if (error.name === 'NotFoundError') {
@@ -103,6 +170,120 @@ class FaceRecognitionSystem {
             }
             return false;
         }
+    }
+
+    /**
+     * Run one throwaway inference after camera starts to warm up TF.js graph/JIT.
+     * This removes the multi-second delay on the very first face scan.
+     */
+    async _warmUpDetector() {
+        if (this._isWarmedUp || !this.videoElement || !this.modelsLoaded) return;
+        try {
+            const options = this._ssdOptions || new faceapi.SsdMobilenetv1Options({
+                inputSize: this.ssdInputSize,
+                minConfidence: this.minConfidence,
+                maxResults: 1
+            });
+            await faceapi
+                .detectSingleFace(this.videoElement, options)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            this._isWarmedUp = true;
+        } catch (e) {
+            // Non-fatal: warmup failure should not block camera usage
+        }
+    }
+
+    /**
+     * Switch to a different camera device.
+     *
+     * Chrome on Windows can occasionally return a stream from the previous camera
+     * even when a different deviceId was requested. This method verifies the
+     * actual active device from track settings and retries before reporting success.
+     *
+     * @param {string} newDeviceId - deviceId of the camera to switch to
+     * @returns {Promise<boolean>} true if switched successfully
+     */
+    async switchCamera(newDeviceId) {
+        if (!this.videoElement || !this.canvasElement || !newDeviceId) return false;
+
+        this._continuousRunning = false;
+        if (this.detectionInterval) {
+            clearTimeout(this.detectionInterval);
+            this.detectionInterval = null;
+        }
+
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => {
+                track.enabled = false;
+                track.stop();
+            });
+            this.stream = null;
+        }
+
+        const parent = this.videoElement.parentNode;
+        const oldVideo = this.videoElement;
+        const marker = oldVideo.nextSibling;
+
+        const newVideo = document.createElement('video');
+        newVideo.id = oldVideo.id;
+        newVideo.className = oldVideo.className;
+        newVideo.autoplay = true;
+        newVideo.muted = true;
+        newVideo.playsInline = true;
+        newVideo.setAttribute('playsinline', '');
+
+        oldVideo.pause();
+        oldVideo.srcObject = null;
+        oldVideo.remove();
+        if (marker) {
+            parent.insertBefore(newVideo, marker);
+        } else {
+            parent.appendChild(newVideo);
+        }
+        this.videoElement = newVideo;
+
+        const maxAttempts = 3;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const candidateStream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: newDeviceId } },
+                    audio: false
+                });
+
+                const track = candidateStream.getVideoTracks()[0];
+                const actualId = track?.getSettings?.().deviceId || '';
+
+                if (actualId && actualId !== newDeviceId) {
+                    candidateStream.getTracks().forEach(t => t.stop());
+                    await new Promise(resolve => setTimeout(resolve, 250 * attempt));
+                    continue;
+                }
+
+                this.stream = candidateStream;
+                this.selectedDeviceId = newDeviceId;
+                this.videoElement.srcObject = this.stream;
+                await this.videoElement.play();
+
+                const displaySize = {
+                    width: this.videoElement.videoWidth,
+                    height: this.videoElement.videoHeight
+                };
+                faceapi.matchDimensions(this.canvasElement, displaySize);
+
+                this._setStatus('camera_active', 'Camera switched successfully');
+                return true;
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    this._handleError('Failed to switch camera: ' + error.message, error);
+                    return false;
+                }
+                await new Promise(resolve => setTimeout(resolve, 250 * attempt));
+            }
+        }
+
+        this._handleError('Failed to switch camera: browser returned a different device than requested.');
+        return false;
     }
 
     /**
@@ -121,6 +302,11 @@ class FaceRecognitionSystem {
         }
 
         if (this.videoElement) {
+            // Stop playback and clear the source — do NOT call video.load() here.
+            // load() triggers an async internal reset that races with any subsequent
+            // srcObject assignment in startCamera(), causing the browser to reuse
+            // the old device instead of opening the newly requested one.
+            this.videoElement.pause();
             this.videoElement.srcObject = null;
         }
 

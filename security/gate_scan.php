@@ -19,9 +19,11 @@ if (!isset($_SESSION['security_logged_in'])) {
     exit;
 }
 
+// Read input once and reuse
+$data = json_decode(file_get_contents('php://input'), true);
+
 // CSRF Protection - Validate CSRF token for all POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
     $providedToken = $data['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $sessionToken = $_SESSION['csrf_token'] ?? '';
     
@@ -33,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Receive RFID tap from scanner
-$data = json_decode(file_get_contents('php://input'), true);
 $rfid_uid = trim($data['rfid_uid'] ?? '');
 
 if (!$rfid_uid) {
@@ -46,37 +47,27 @@ function flushJsonResponse($data) {
     $json = json_encode($data);
     ignore_user_abort(true);
     header('Content-Length: ' . strlen($json));
+    header('Connection: close');
+    while (ob_get_level() > 0) { ob_end_flush(); }
     echo $json;
+    flush();
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();
-    } else {
-        ob_end_flush();
-        flush();
     }
 }
 
 try {
     $pdo = pdo();
     
-    // Find student with this RFID card - exact match (fast indexed query)
+    // Find student with this RFID card - single fast query with LIMIT 1
     $stmt = $pdo->prepare('
         SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture, course
         FROM users 
         WHERE rfid_uid = ? AND role = "Student"
+        LIMIT 1
     ');
     $stmt->execute([$rfid_uid]);
     $student = $stmt->fetch(\PDO::FETCH_ASSOC);
-    
-    if (!$student) {
-        // Try case-insensitive match as fallback
-        $stmt = $pdo->prepare('
-            SELECT id, student_id, name, email, rfid_uid, violation_count, profile_picture, course
-            FROM users 
-            WHERE LOWER(rfid_uid) = LOWER(?) AND role = "Student"
-        ');
-        $stmt->execute([$rfid_uid]);
-        $student = $stmt->fetch(\PDO::FETCH_ASSOC);
-    }
     
     if (!$student) {
         echo json_encode([
@@ -102,7 +93,7 @@ try {
             'lost_info' => [
                 'lost_at' => $lostCard['lost_at'],
                 'lost_reason' => $lostCard['lost_reason'],
-                'reported_by' => ($lostCard['reported_by_first_name'] ?? '') . ' ' . ($lostCard['reported_by_last_name'] ?? '')
+                'reported_by' => $lostCard['reported_by_name'] ?? ''
             ],
             'message' => 'This RFID card has been reported as LOST. Please contact the administration office.',
             'timestamp' => date('Y-m-d H:i:s')
@@ -142,6 +133,8 @@ try {
                 'student_id' => $student['student_id'],
                 'email' => $student['email'],
                 'violation_count' => $student['violation_count'],
+                'profile_picture' => $student['profile_picture'] ?? null,
+                'course' => $student['course'] ?? null,
                 'severity' => 'blocked'
             ],
             'message' => 'MAXIMUM VIOLATION LIMIT REACHED - Entry to school is DENIED. Contact administration office.',

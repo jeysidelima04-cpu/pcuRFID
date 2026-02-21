@@ -104,20 +104,7 @@ function pdo(): \PDO {
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
         ];
         
-        error_log("[PCU RFID] Attempting database connection to " . DB_NAME);
         $pdo = new \PDO($dsn, DB_USER, DB_PASS, $options);
-        error_log("[PCU RFID] Database connection successful");
-        
-        // Test if tables exist
-        $tables = ['users', 'twofactor_codes'];
-        foreach ($tables as $table) {
-            $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
-            if ($stmt->rowCount() === 0) {
-                throw new \Exception("Required table '$table' does not exist");
-            }
-        }
-        // Auto-setup admin account if configured in .env
-        setup_admin_account($pdo);
         
         return $pdo;
     } catch (\PDOException $e) {
@@ -319,7 +306,7 @@ function is_rfid_active_for_student(int $studentId, string $rfidUid): bool {
     try {
         $pdo = pdo();
         $stmt = $pdo->prepare("
-            SELECT status, is_lost 
+            SELECT is_active, is_lost 
             FROM rfid_cards 
             WHERE user_id = ? AND rfid_uid = ?
             LIMIT 1
@@ -331,8 +318,8 @@ function is_rfid_active_for_student(int $studentId, string $rfidUid): bool {
             return false;
         }
         
-        // Card must be Active AND not lost
-        return ($card['status'] === 'Active' && $card['is_lost'] == 0);
+        // Card must be active AND not lost
+        return ($card['is_active'] == 1 && $card['is_lost'] == 0);
     } catch (\PDOException $e) {
         error_log("Error checking RFID status: " . $e->getMessage());
         return false;
@@ -349,9 +336,8 @@ function is_rfid_lost(string $rfidUid): ?array {
     try {
         $pdo = pdo();
         $stmt = $pdo->prepare("
-            SELECT r.*, u.student_id, u.first_name, u.last_name,
-                   admin.first_name AS reported_by_first_name,
-                   admin.last_name AS reported_by_last_name
+            SELECT r.*, u.student_id, u.name,
+                   admin.name AS reported_by_name
             FROM rfid_cards r
             JOIN users u ON r.user_id = u.id
             LEFT JOIN users admin ON r.lost_reported_by = admin.id
@@ -391,6 +377,11 @@ function mark_rfid_lost(int $cardId, int $adminId, string $reason): bool {
             WHERE id = ?
         ");
         $stmt->execute([$reason, $adminId, $cardId]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            return false;
+        }
         
         // Log to audit history
         $stmt = $pdo->prepare("
@@ -436,6 +427,11 @@ function mark_rfid_found(int $cardId, int $adminId): bool {
             WHERE id = ?
         ");
         $stmt->execute([$adminId, $cardId]);
+
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollBack();
+            return false;
+        }
         
         // Log to audit history
         $stmt = $pdo->prepare("

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -33,6 +34,13 @@ try {
 
     $pdo = pdo();
     
+    // Fetch student info BEFORE deleting (for audit log)
+    $infoStmt = $pdo->prepare('SELECT name, student_id, email, rfid_uid, course FROM users WHERE id = ? AND role = "Student"');
+    $infoStmt->execute([$data['student_id']]);
+    $studentInfo = $infoStmt->fetch(\PDO::FETCH_ASSOC);
+    $studentName = $studentInfo['name'] ?? 'Unknown';
+    $studentIdStr = $studentInfo['student_id'] ?? '';
+    
     // Delete user record
     $stmt = $pdo->prepare('DELETE FROM users WHERE id = ? AND role = "Student"');
     $success = $stmt->execute([$data['student_id']]);
@@ -40,6 +48,14 @@ try {
     if (!$success) {
         throw new \Exception('Failed to delete user record');
     }
+
+    // Audit log
+    $adminId = $_SESSION['admin_id'] ?? 0;
+    $adminName = $_SESSION['admin_name'] ?? 'Admin';
+    logAuditAction($pdo, $adminId, $adminName, 'DELETE_STUDENT', 'student', $data['student_id'], $studentName,
+        "Deleted student account: {$studentName} ({$studentIdStr})",
+        ['student_id' => $studentIdStr, 'email' => $studentInfo['email'] ?? '', 'rfid_uid' => $studentInfo['rfid_uid'] ?? '', 'course' => $studentInfo['course'] ?? '']
+    );
 
     echo json_encode(['success' => true]);
 

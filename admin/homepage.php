@@ -528,6 +528,13 @@ $activeSection = $_GET['section'] ?? 'students';
                     <span class="font-medium">Audit Log</span>
                 </a>
 
+                <a href="?section=rfid_checker" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'rfid_checker' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span class="font-medium">RFID Checker</span>
+                </a>
+
                 <?php if (filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
                 <?php
                 // Count students eligible for face enrollment (have RFID but no face registered)
@@ -815,21 +822,21 @@ $activeSection = $_GET['section'] ?? 'students';
                             
                             try {
                                 $cardStmt = $pdo->prepare("
-                                    SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason, rc.status,
-                                           admin.name AS reported_by_name
+                                    SELECT rc.id AS card_id, rc.is_lost, rc.lost_at, rc.lost_reason,
+                                           '' AS reported_by_name
                                     FROM rfid_cards rc
-                                    LEFT JOIN users admin ON rc.lost_reported_by = admin.id
-                                    WHERE rc.user_id = ?
+                                    WHERE rc.user_id = ? AND rc.rfid_uid = ?
+                                    ORDER BY rc.id DESC
                                     LIMIT 1
                                 ");
-                                $cardStmt->execute([$student['id']]);
+                                $cardStmt->execute([$student['id'], $student['rfid_uid']]);
                                 $cardInfo = $cardStmt->fetch();
                                 
                                 // If card not found in rfid_cards table, create it now
                                 if (!$cardInfo && !empty($student['rfid_uid'])) {
                                     $insertStmt = $pdo->prepare("
-                                        INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
-                                        VALUES (?, ?, ?, 'active')
+                                        INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, is_active)
+                                        VALUES (?, ?, ?, 1)
                                     ");
                                     $insertStmt->execute([
                                         $student['id'],
@@ -838,15 +845,52 @@ $activeSection = $_GET['section'] ?? 'students';
                                     ]);
                                     
                                     // Fetch the newly created card
-                                    $cardStmt->execute([$student['id']]);
+                                    $cardStmt->execute([$student['id'], $student['rfid_uid']]);
                                     $cardInfo = $cardStmt->fetch();
+                                }
+
+                                // Fallback: if UID-specific row not found, use latest card row for this student
+                                if (!$cardInfo) {
+                                    $fallbackStmt = $pdo->prepare("
+                                        SELECT rc.id AS card_id,
+                                               COALESCE(rc.is_lost, 0) AS is_lost,
+                                               rc.lost_at,
+                                               rc.lost_reason,
+                                               '' AS reported_by_name
+                                        FROM rfid_cards rc
+                                        WHERE rc.user_id = ?
+                                        ORDER BY rc.id DESC
+                                        LIMIT 1
+                                    ");
+                                    $fallbackStmt->execute([$student['id']]);
+                                    $cardInfo = $fallbackStmt->fetch();
                                 }
                                 
                                 $isLost = $cardInfo && $cardInfo['is_lost'] == 1;
                             } catch (\PDOException $e) {
                                 // If rfid_cards table doesn't exist or query fails, use basic info from users table
                                 error_log("RFID card query error: " . $e->getMessage());
-                                $cardInfo = ['card_id' => $student['id'], 'is_lost' => 0]; // Use user_id as fallback
+
+                                // Minimal fallback query for legacy/partial schemas
+                                try {
+                                    $fallbackStmt = $pdo->prepare("
+                                        SELECT id AS card_id,
+                                               0 AS is_lost,
+                                               NULL AS lost_at,
+                                               NULL AS lost_reason,
+                                               '' AS reported_by_name
+                                        FROM rfid_cards
+                                        WHERE user_id = ?
+                                        ORDER BY id DESC
+                                        LIMIT 1
+                                    ");
+                                    $fallbackStmt->execute([$student['id']]);
+                                    $cardInfo = $fallbackStmt->fetch();
+                                } catch (\PDOException $fallbackErr) {
+                                    error_log("RFID fallback query error: " . $fallbackErr->getMessage());
+                                    $cardInfo = ['card_id' => 0, 'is_lost' => 0, 'lost_at' => null, 'lost_reason' => null, 'reported_by_name' => ''];
+                                }
+
                                 $isLost = false;
                             }
                         ?>
@@ -916,7 +960,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                         </button>
                                         <?php if ($isLost): ?>
                                             <button 
-                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', false)"
+                                                onclick="toggleRfidLostStatus(<?php echo (int)($cardInfo['card_id'] ?? 0); ?>, '<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', false)"
                                                 class="px-4 py-2 bg-green-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -926,7 +970,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                             </button>
                                         <?php else: ?>
                                             <button 
-                                                onclick="toggleRfidLostStatus(<?php echo $cardInfo['card_id']; ?>, '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', true)"
+                                                onclick="toggleRfidLostStatus(<?php echo (int)($cardInfo['card_id'] ?? 0); ?>, '<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['email']); ?>', true)"
                                                 class="px-4 py-2 bg-orange-600 text-white rounded-lg btn-hover text-sm whitespace-nowrap flex items-center gap-2"
                                             >
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1168,9 +1212,26 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'audit'): ?>
             <!-- Audit Log Section -->
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-slate-800">Audit Log</h1>
-                <p class="text-slate-600 mt-1">Track all administrative actions and changes</p>
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">Audit Log</h1>
+                    <p class="text-slate-600 mt-1">Track all administrative actions and changes</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="auditLiveIndicator" class="hidden items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-sm text-green-700">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                        </span>
+                        Live
+                    </span>
+                    <button id="auditLiveToggle" onclick="toggleAuditLiveRefresh()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-green-100 hover:text-green-700 transition-colors font-medium text-sm border border-slate-300 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span id="auditLiveToggleText">Enable Live</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Filter Options -->
@@ -1592,6 +1653,39 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
             <?php endif; ?>
 
+        <?php elseif ($activeSection === 'rfid_checker'): ?>
+            <!-- RFID ID Checker Section -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">RFID ID Checker</h1>
+                <p class="text-slate-600 mt-1">Scan or enter an RFID UID to look up card status, student info, violations, and last scan</p>
+            </div>
+
+            <div class="max-w-3xl">
+                <!-- Scan Input Area -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">RFID Card UID</label>
+                            <input type="text" id="rfidCheckerInput" placeholder="Tap RFID card or type UID here..." 
+                                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-mono tracking-wider"
+                                   autocomplete="off" autofocus>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="lookupRfidCard()" class="px-6 py-3 bg-[#0056b3] text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                Check
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Tip: Place cursor in the field and tap the RFID card on the reader. The UID will auto-populate.</p>
+                </div>
+
+                <!-- Result Area -->
+                <div id="rfidCheckerResult"></div>
+            </div>
+
         <?php endif; ?>
     </main>
 </div>
@@ -1666,7 +1760,7 @@ $activeSection = $_GET['section'] ?? 'students';
                     
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
-                        <input type="text" id="editStudentId" oninput="updateDigitalIdPreview()"
+                        <input type="text" id="editStudentId" inputmode="numeric" pattern="[0-9]*" oninput="enforceNumericStudentId(this); updateDigitalIdPreview()"
                                class="w-full h-11 px-4 rounded-lg border-2 border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none">
                         <p class="text-xs text-slate-500 mt-1">For temp IDs (e.g., TEMP-1702425600), enter the real student ID here</p>
                     </div>
@@ -1818,7 +1912,17 @@ function showCustomConfirm(title, message, options = {}) {
         
         // Set button text
         okBtn.textContent = options.okText || 'OK';
-        cancelBtn.textContent = options.cancelText || 'Cancel';
+        const showCancelButton = options.cancelText !== null;
+        if (showCancelButton) {
+            cancelBtn.textContent = options.cancelText || 'Cancel';
+            cancelBtn.classList.remove('hidden');
+            okBtn.classList.remove('w-full');
+            okBtn.classList.add('flex-1');
+        } else {
+            cancelBtn.classList.add('hidden');
+            okBtn.classList.remove('flex-1');
+            okBtn.classList.add('w-full');
+        }
         
         // Show modal with animation
         modal.style.display = 'flex';
@@ -1840,7 +1944,7 @@ function showCustomConfirm(title, message, options = {}) {
         };
         
         okBtn.onclick = handleOk;
-        cancelBtn.onclick = handleCancel;
+        cancelBtn.onclick = showCancelButton ? handleCancel : null;
         
         // Close on backdrop click
         modal.onclick = (e) => {
@@ -2126,11 +2230,11 @@ function unregisterCard(studentId) {
 }
 
 // Toggle RFID Lost Status (Enable/Disable Mark Lost ID)
-async function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLost) {
-    console.log('toggleRfidLostStatus called:', { cardId, studentName, studentEmail, markAsLost });
+async function toggleRfidLostStatus(cardId, studentId, rfidUid, studentName, studentEmail, markAsLost) {
+    console.log('toggleRfidLostStatus called:', { cardId, studentId, rfidUid, studentName, studentEmail, markAsLost });
     
-    if (!cardId) {
-        showToast('Card ID is missing. Please refresh the page and try again.', 'error');
+    if (!cardId && !studentId) {
+        showToast('Card reference is missing. Please refresh the page and try again.', 'error');
         return;
     }
     
@@ -2174,6 +2278,8 @@ async function toggleRfidLostStatus(cardId, studentName, studentEmail, markAsLos
     
     const payload = {
         card_id: cardId,
+        student_id: studentId,
+        rfid_uid: rfidUid,
         action: actionText,
         student_email: studentEmail,
         student_name: studentName,
@@ -2678,6 +2784,11 @@ function updateDigitalIdPreview() {
     });
 }
 
+function enforceNumericStudentId(inputEl) {
+    if (!inputEl) return;
+    inputEl.value = inputEl.value.replace(/\D/g, '');
+}
+
 function closeEditStudentModal() {
     document.getElementById('editStudentModal').classList.add('hidden');
     document.getElementById('editStudentModal').classList.remove('flex');
@@ -2719,11 +2830,14 @@ async function removeIdCardPhoto() {
 async function saveStudentInfo() {
     var userId = document.getElementById('editStudentUserId').value;
     var name = document.getElementById('editStudentName').value.trim();
-    var studentId = document.getElementById('editStudentId').value.trim();
+    var studentIdInput = document.getElementById('editStudentId');
+    enforceNumericStudentId(studentIdInput);
+    var studentId = studentIdInput.value.trim();
     var course = document.getElementById('editStudentCourse').value;
     
     if (!name) { alert('Please enter student name'); return; }
     if (!studentId) { alert('Please enter student ID'); return; }
+    if (!/^\d+$/.test(studentId)) { alert('Student ID must contain numbers only'); return; }
     if (studentId.length < 3) { alert('Student ID must be at least 3 characters'); return; }
     
     try {
@@ -2778,8 +2892,225 @@ async function saveStudentInfo() {
 }
 
 // ========================================
+// ========================================
 // REGISTERED CARDS SEARCH FUNCTIONALITY
 // ========================================
+
+// ========================================
+// RFID CHECKER FUNCTIONS
+// ========================================
+
+// RFID Checker – scanner listener + lookup
+(function() {
+    const checkerInput = document.getElementById('rfidCheckerInput');
+    if (!checkerInput) return;
+
+    let checkerBuffer = '';
+    let checkerTimeout = null;
+
+    // Listen for RFID scanner keyboard emulation on the input
+    checkerInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            lookupRfidCard();
+            return;
+        }
+    });
+
+    // Also listen globally for fast scanner input when page is focused
+    document.addEventListener('keydown', function(e) {
+        // Only capture when rfid_checker section is active and no modal is open
+        if (!document.getElementById('rfidCheckerInput')) return;
+        const activeEl = document.activeElement;
+        // If already focused on the checker input, let the input handler deal with it
+        if (activeEl && activeEl.id === 'rfidCheckerInput') return;
+        // Skip if user is typing in another input/textarea
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) return;
+
+        if (e.key === 'Enter' && checkerBuffer.length >= 4) {
+            e.preventDefault();
+            checkerInput.value = checkerBuffer;
+            checkerBuffer = '';
+            clearTimeout(checkerTimeout);
+            lookupRfidCard();
+            return;
+        }
+        if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            checkerBuffer += e.key;
+            clearTimeout(checkerTimeout);
+            checkerTimeout = setTimeout(() => { checkerBuffer = ''; }, 300);
+        }
+    });
+})();
+
+function lookupRfidCard() {
+    const input = document.getElementById('rfidCheckerInput');
+    const uid = (input ? input.value.trim() : '');
+    const resultDiv = document.getElementById('rfidCheckerResult');
+
+    if (!uid) {
+        resultDiv.innerHTML = `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+                <p class="text-yellow-700 font-medium">Please enter or scan an RFID UID first.</p>
+            </div>`;
+        return;
+    }
+
+    resultDiv.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p class="text-slate-500">Looking up RFID card...</p>
+        </div>`;
+
+    fetch('check_rfid.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+        body: JSON.stringify({ rfid_uid: uid, csrf_token: csrfToken })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            resultDiv.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-3xl">❌</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-red-800">Not Found</h3>
+                            <p class="text-red-600 text-sm">${escapeHtml(data.error || 'This RFID UID is not registered to any student.')}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 bg-white rounded-lg p-3 border border-red-100">
+                        <p class="text-slate-500 text-sm">Scanned UID: <code class="bg-slate-100 px-2 py-1 rounded font-mono">${escapeHtml(uid)}</code></p>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        const s = data.student;
+        const card = data.card;
+
+        // Status badge
+        let statusBadge = '';
+        if (card && card.is_lost == 1) {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700">🚫 LOST / DISABLED</span>';
+        } else if (card) {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700">✅ Active</span>';
+        } else {
+            statusBadge = '<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">📋 Registered (no card record)</span>';
+        }
+
+        // Violation severity
+        let violationColor = 'green';
+        let violationLabel = 'No violations';
+        if (s.violation_count >= 4) {
+            violationColor = 'red'; violationLabel = 'BLOCKED — Max violations exceeded';
+        } else if (s.violation_count === 3) {
+            violationColor = 'orange'; violationLabel = 'FINAL WARNING — 3 strikes';
+        } else if (s.violation_count === 2) {
+            violationColor = 'yellow'; violationLabel = 'Warning — 2 strikes';
+        } else if (s.violation_count === 1) {
+            violationColor = 'blue'; violationLabel = '1 strike';
+        }
+
+        const lastScan = data.last_scan
+            ? new Date(data.last_scan).toLocaleString()
+            : '<span class="text-slate-400">Never scanned</span>';
+
+        const lostDate = (card && card.is_lost == 1 && card.lost_at)
+            ? new Date(card.lost_at).toLocaleString()
+            : null;
+
+        resultDiv.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        ${s.profile_picture
+                            ? '<img src="../assets/images/profiles/' + escapeHtml(s.profile_picture) + '" class="w-12 h-12 rounded-full object-cover border-2 border-slate-200">'
+                            : '<div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg">' + escapeHtml(s.name.charAt(0).toUpperCase()) + '</div>'
+                        }
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">${escapeHtml(s.name)}</h3>
+                            <p class="text-sm text-slate-500">${escapeHtml(s.student_id)} ${s.course ? '• ' + escapeHtml(s.course) : ''}</p>
+                        </div>
+                    </div>
+                    ${statusBadge}
+                </div>
+
+                <!-- Details Grid -->
+                <div class="p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- RFID UID -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">RFID UID</p>
+                            <p class="text-lg font-mono font-semibold text-slate-800">${escapeHtml(s.rfid_uid)}</p>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Email</p>
+                            <p class="text-sm font-medium text-slate-800 break-all">${escapeHtml(s.email)}</p>
+                        </div>
+
+                        <!-- Violations -->
+                        <div class="bg-${violationColor}-50 rounded-lg p-4 border border-${violationColor}-200">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Violations</p>
+                            <p class="text-2xl font-bold text-${violationColor}-700">${escapeHtml(String(s.violation_count))}</p>
+                            <p class="text-xs text-${violationColor}-600 mt-1">${violationLabel}</p>
+                        </div>
+
+                        <!-- Last Scan -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Last Gate Scan</p>
+                            <p class="text-sm font-medium text-slate-800">${lastScan}</p>
+                        </div>
+
+                        <!-- Account Status -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Account Status</p>
+                            <p class="text-sm font-semibold ${s.status === 'Active' ? 'text-green-700' : 'text-yellow-700'}">${escapeHtml(s.status)}</p>
+                        </div>
+
+                        <!-- Registered At -->
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">RFID Registered</p>
+                            <p class="text-sm font-medium text-slate-800">${s.rfid_registered_at ? new Date(s.rfid_registered_at).toLocaleString() : '<span class=&quot;text-slate-400&quot;>Unknown</span>'}</p>
+                        </div>
+                    </div>
+
+                    ${card && card.is_lost == 1 ? `
+                    <div class="mt-4 bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xl">🚫</span>
+                            <h4 class="font-bold text-red-800">Card Marked as LOST</h4>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="text-red-600 font-medium">Lost Date:</span>
+                                <span class="text-red-800">${lostDate || 'Unknown'}</span>
+                            </div>
+                            <div>
+                                <span class="text-red-600 font-medium">Reason:</span>
+                                <span class="text-red-800">${escapeHtml(card.lost_reason || 'No reason provided')}</span>
+                            </div>
+                        </div>
+                        <p class="text-red-700 text-xs mt-2 font-medium">⚠️ This card is disabled. Gate scans will be rejected until an admin re-enables it.</p>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>`;
+    })
+    .catch(err => {
+        console.error('RFID Checker error:', err);
+        resultDiv.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                <p class="text-red-700 font-medium">Failed to look up RFID card. Please try again.</p>
+            </div>`;
+    });
+}
 
 // Real-time search for registered cards
 document.addEventListener('DOMContentLoaded', function() {
@@ -2835,10 +3166,46 @@ function showAuditDetails(log) {
     try {
         const details = JSON.parse(log.details);
         const detailsHtml = Object.entries(details).map(([key, value]) => {
+            // Special handling for UPDATE_STUDENT changes object
+            if (key === 'changes' && value && typeof value === 'object' && !Array.isArray(value)) {
+                const changeRows = Object.entries(value).map(([field, change]) => {
+                    const fromValue = change && typeof change === 'object' && change.from !== undefined ? String(change.from) : '';
+                    const toValue = change && typeof change === 'object' && change.to !== undefined ? String(change.to) : '';
+
+                    return `
+                        <div class="py-2 border-b border-slate-100 last:border-b-0">
+                            <div class="font-medium text-slate-700">${field.replace(/_/g, ' ').toUpperCase()}</div>
+                            <div class="text-sm text-slate-600 mt-1">
+                                <span class="text-slate-500">From:</span> ${escapeHtml(fromValue || '—')}
+                            </div>
+                            <div class="text-sm text-slate-600">
+                                <span class="text-slate-500">To:</span> ${escapeHtml(toValue || '—')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="py-2 border-b border-slate-100">
+                        <div class="font-medium text-slate-700 mb-2">CHANGES:</div>
+                        <div class="bg-white rounded-lg p-3 border border-slate-200">
+                            ${changeRows || '<div class="text-sm text-slate-500">No field changes recorded</div>'}
+                        </div>
+                    </div>
+                `;
+            }
+
+            let displayValue = value;
+            if (value === null || value === undefined || value === '') {
+                displayValue = '—';
+            } else if (typeof value === 'object') {
+                displayValue = JSON.stringify(value);
+            }
+
             return `
                 <div class="flex justify-between py-2 border-b border-slate-100">
                     <span class="font-medium text-slate-700">${key.replace(/_/g, ' ').toUpperCase()}:</span>
-                    <span class="text-slate-600">${value}</span>
+                    <span class="text-slate-600">${escapeHtml(String(displayValue))}</span>
                 </div>
             `;
         }).join('');
@@ -2851,8 +3218,7 @@ function showAuditDetails(log) {
                         ${detailsHtml}
                     </div>
                     <div class="text-xs text-slate-500 mt-4 pt-4 border-t border-slate-200">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><strong>IP Address:</strong> ${log.ip_address || 'N/A'}</div>
+                        <div>
                             <div><strong>Timestamp:</strong> ${new Date(log.created_at).toLocaleString()}</div>
                         </div>
                     </div>
@@ -2871,7 +3237,7 @@ function showAuditDetails(log) {
 }
 
 // Apply audit log filters
-async function applyAuditFilters() {
+async function applyAuditFilters(silent = false) {
     const actionType = document.getElementById('filterActionType').value;
     const dateFrom = document.getElementById('filterDateFrom').value;
     const dateTo = document.getElementById('filterDateTo').value;
@@ -2888,13 +3254,19 @@ async function applyAuditFilters() {
         
         if (data.success) {
             updateAuditTable(data.logs);
-            showToast(`Found ${data.count} audit log${data.count !== 1 ? 's' : ''}`, 'success', 2000);
+            if (!silent) {
+                showToast(`Found ${data.count} audit log${data.count !== 1 ? 's' : ''}`, 'success', 2000);
+            }
         } else {
-            showToast(data.error || 'Failed to filter logs', 'error');
+            if (!silent) {
+                showToast(data.error || 'Failed to filter logs', 'error');
+            }
         }
     } catch (error) {
         console.error('Error:', error);
-        showToast('Failed to apply filters', 'error');
+        if (!silent) {
+            showToast('Failed to apply filters', 'error');
+        }
     }
 }
 
@@ -2974,6 +3346,57 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// ========================================
+// AUDIT LOG LIVE REFRESH
+// ========================================
+let auditLiveInterval = null;
+let auditLiveEnabled = false;
+
+function toggleAuditLiveRefresh() {
+    auditLiveEnabled = !auditLiveEnabled;
+    const indicator = document.getElementById('auditLiveIndicator');
+    const toggleBtn = document.getElementById('auditLiveToggle');
+    const toggleText = document.getElementById('auditLiveToggleText');
+    
+    if (auditLiveEnabled) {
+        // Start live refresh every 5 seconds
+        auditLiveInterval = setInterval(() => {
+            applyAuditFilters(true); // silent mode - no toast
+        }, 5000);
+        
+        // Run immediately
+        applyAuditFilters(true);
+        
+        indicator.classList.remove('hidden');
+        indicator.classList.add('flex');
+        toggleBtn.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-green-100', 'hover:text-green-700', 'border-slate-300');
+        toggleBtn.classList.add('bg-green-100', 'text-green-700', 'hover:bg-red-100', 'hover:text-red-700', 'border-green-300');
+        toggleText.textContent = 'Disable Live';
+    } else {
+        // Stop live refresh
+        if (auditLiveInterval) {
+            clearInterval(auditLiveInterval);
+            auditLiveInterval = null;
+        }
+        
+        indicator.classList.remove('flex');
+        indicator.classList.add('hidden');
+        toggleBtn.classList.remove('bg-green-100', 'text-green-700', 'hover:bg-red-100', 'hover:text-red-700', 'border-green-300');
+        toggleBtn.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-green-100', 'hover:text-green-700', 'border-slate-300');
+        toggleText.textContent = 'Enable Live';
+    }
+}
+
+// Auto-enable live refresh when audit section is loaded
+<?php if ($activeSection === 'audit'): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-start live refresh for real-time audit updates
+    if (!auditLiveEnabled) {
+        toggleAuditLiveRefresh();
+    }
+});
+<?php endif; ?>
 
 // ========================================
 // MODERN CONFIRMATION MODAL

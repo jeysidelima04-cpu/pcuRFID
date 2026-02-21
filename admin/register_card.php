@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -66,18 +67,33 @@ try {
         throw new \Exception('Student not found or failed to update record');
     }
     
+    // Fetch student name for audit logging
+    $nameStmt = $pdo->prepare('SELECT name, student_id FROM users WHERE id = ?');
+    $nameStmt->execute([$data['student_id']]);
+    $studentInfo = $nameStmt->fetch(\PDO::FETCH_ASSOC);
+    $studentName = $studentInfo['name'] ?? 'Unknown';
+    $studentIdStr = $studentInfo['student_id'] ?? '';
+
     // Also insert into rfid_cards table for lost/found tracking
     try {
         $stmt = $pdo->prepare('
-            INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, status)
-            VALUES (?, ?, NOW(), "active")
-            ON DUPLICATE KEY UPDATE rfid_uid = VALUES(rfid_uid), registered_at = NOW(), status = "active"
+            INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, is_active)
+            VALUES (?, ?, NOW(), 1)
+            ON DUPLICATE KEY UPDATE rfid_uid = VALUES(rfid_uid), registered_at = NOW(), is_active = 1
         ');
         $stmt->execute([$data['student_id'], $rfid_uid]);
     } catch (\PDOException $e) {
         // Table might not exist yet, log but don't fail the registration
         error_log('Failed to insert into rfid_cards table: ' . $e->getMessage());
     }
+
+    // Audit log
+    $adminId = $_SESSION['admin_id'] ?? 0;
+    $adminName = $_SESSION['admin_name'] ?? 'Admin';
+    logAuditAction($pdo, $adminId, $adminName, 'REGISTER_RFID', 'student', $data['student_id'], $studentName,
+        "Registered RFID card {$rfid_uid} to {$studentName} ({$studentIdStr})",
+        ['rfid_uid' => $rfid_uid, 'student_id' => $studentIdStr]
+    );
 
     echo json_encode(['success' => true]);
 

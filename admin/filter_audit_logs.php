@@ -51,6 +51,39 @@ try {
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $logs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+    // Ensure MARK_LOST / MARK_FOUND details show the real users.student_id (school ID)
+    foreach ($logs as &$log) {
+        if (!in_array($log['action_type'] ?? '', ['MARK_LOST', 'MARK_FOUND'], true)) {
+            continue;
+        }
+
+        $details = json_decode($log['details'] ?? '', true);
+        if (!is_array($details)) {
+            continue;
+        }
+
+        $cardId = isset($details['card_id']) ? (int)$details['card_id'] : 0;
+        if ($cardId <= 0) {
+            continue;
+        }
+
+        $sidStmt = $pdo->prepare('
+            SELECT u.student_id
+            FROM rfid_cards rc
+            INNER JOIN users u ON u.id = rc.user_id
+            WHERE rc.id = ?
+            LIMIT 1
+        ');
+        $sidStmt->execute([$cardId]);
+        $resolvedStudentId = (string)($sidStmt->fetchColumn() ?: '');
+
+        if ($resolvedStudentId !== '') {
+            $details['student_id'] = $resolvedStudentId;
+            $log['details'] = json_encode($details);
+        }
+    }
+    unset($log);
     
     echo json_encode([
         'success' => true,

@@ -1,6 +1,7 @@
 <?php
 // admin/mark_lost_rfid.php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 // PHPMailer for sending emails
 use PHPMailer\PHPMailer\PHPMailer;
@@ -22,11 +23,13 @@ verify_csrf();
 // Get JSON input
 $data = json_decode(file_get_contents('php://input'), true);
 $cardId = (int)($data['card_id'] ?? 0);
+$studentId = (int)($data['student_id'] ?? 0);
+$rfidUid = trim($data['rfid_uid'] ?? '');
 $action = trim($data['action'] ?? ''); // 'mark_lost' or 'mark_found'
 $studentEmail = trim($data['student_email'] ?? '');
 $studentName = trim($data['student_name'] ?? '');
 
-if (!$cardId || !in_array($action, ['mark_lost', 'mark_found'])) {
+if (!in_array($action, ['mark_lost', 'mark_found'])) {
     echo json_encode(['success' => false, 'error' => 'Invalid request']);
     exit;
 }
@@ -40,6 +43,59 @@ if (!$adminId) {
 }
 
 try {
+    $pdo = pdo();
+
+    if ($cardId <= 0) {
+        if ($studentId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Card ID is missing and student reference is invalid']);
+            exit;
+        }
+
+        if ($rfidUid !== '') {
+            $resolveStmt = $pdo->prepare("SELECT id FROM rfid_cards WHERE user_id = ? AND rfid_uid = ? ORDER BY id DESC LIMIT 1");
+            $resolveStmt->execute([$studentId, $rfidUid]);
+            $cardId = (int)($resolveStmt->fetchColumn() ?: 0);
+        }
+
+        if ($cardId <= 0) {
+            $resolveStmt = $pdo->prepare("SELECT id FROM rfid_cards WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+            $resolveStmt->execute([$studentId]);
+            $cardId = (int)($resolveStmt->fetchColumn() ?: 0);
+        }
+
+        if ($cardId <= 0 && $rfidUid !== '') {
+            $insertStmt = $pdo->prepare("INSERT INTO rfid_cards (user_id, rfid_uid, registered_at, is_active) VALUES (?, ?, NOW(), 1)");
+            $insertStmt->execute([$studentId, $rfidUid]);
+            $cardId = (int)$pdo->lastInsertId();
+        }
+
+        if ($cardId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Unable to resolve RFID card record']);
+            exit;
+        }
+    }
+
+    // Fetch the student's actual student_id (school ID) for audit logging
+    $actualStudentId = '';
+    try {
+        $sidStmt = $pdo->prepare('
+            SELECT u.student_id
+            FROM users u
+            LEFT JOIN rfid_cards rc ON rc.user_id = u.id
+            WHERE (u.id = :student_id AND :student_id > 0)
+               OR (rc.id = :card_id AND :card_id > 0)
+            ORDER BY rc.id DESC
+            LIMIT 1
+        ');
+        $sidStmt->execute([
+            'student_id' => $studentId,
+            'card_id' => $cardId
+        ]);
+        $actualStudentId = (string)($sidStmt->fetchColumn() ?: '');
+    } catch (\Exception $e) {
+        error_log('Failed to fetch student_id for audit: ' . $e->getMessage());
+    }
+
     if ($action === 'mark_lost') {
         // Mark as lost with automatic reason
         $reason = 'RFID card marked as lost by admin - Student notified';
@@ -48,6 +104,14 @@ try {
         if ($result) {
             // Send email notification to student
             $emailSent = sendLostRfidEmail($studentEmail, $studentName);
+            
+            // Audit log
+            $adminName = $_SESSION['admin_name'] ?? 'Admin';
+            $auditPdo = pdo();
+            logAuditAction($auditPdo, $adminId, $adminName, 'MARK_LOST', 'rfid_card', $cardId, $studentName,
+                "Marked RFID card {$rfidUid} as lost for {$studentName} ({$actualStudentId})",
+                ['rfid_uid' => $rfidUid, 'card_id' => $cardId, 'student_id' => $actualStudentId, 'email_sent' => $emailSent]
+            );
             
             echo json_encode([
                 'success' => true,
@@ -65,6 +129,14 @@ try {
             // Send email notification to student that card is re-enabled
             $emailSent = sendFoundRfidEmail($studentEmail, $studentName);
             
+            // Audit log
+            $adminName = $_SESSION['admin_name'] ?? 'Admin';
+            $auditPdo = pdo();
+            logAuditAction($auditPdo, $adminId, $adminName, 'MARK_FOUND', 'rfid_card', $cardId, $studentName,
+                "Re-enabled RFID card {$rfidUid} for {$studentName} ({$actualStudentId})",
+                ['rfid_uid' => $rfidUid, 'card_id' => $cardId, 'student_id' => $actualStudentId, 'email_sent' => $emailSent]
+            );
+            
             echo json_encode([
                 'success' => true,
                 'message' => '✓ RFID card re-enabled successfully' . ($emailSent ? ' and email sent to student' : ' (email failed)'),
@@ -75,7 +147,7 @@ try {
             echo json_encode(['success' => false, 'error' => 'Failed to re-enable RFID card']);
         }
     }
-} catch (Exception $e) {
+} catch (\Exception $e) {
     error_log('Error in mark_lost_rfid.php: ' . $e->getMessage());
     echo json_encode([
         'success' => false,

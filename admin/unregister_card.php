@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 header('Content-Type: application/json');
 
@@ -43,6 +44,14 @@ if (empty($input['student_id'])) {
 try {
     $pdo = pdo();
     
+    // Fetch student info before unregistering (for audit log)
+    $infoStmt = $pdo->prepare('SELECT name, student_id, rfid_uid FROM users WHERE id = ? AND role = "Student"');
+    $infoStmt->execute([$input['student_id']]);
+    $studentInfo = $infoStmt->fetch(\PDO::FETCH_ASSOC);
+    $studentName = $studentInfo['name'] ?? 'Unknown';
+    $oldRfidUid = $studentInfo['rfid_uid'] ?? '';
+    $studentIdStr = $studentInfo['student_id'] ?? '';
+    
     // Unregister RFID card
     $stmt = $pdo->prepare('
         UPDATE users 
@@ -52,6 +61,14 @@ try {
     
     if ($stmt->execute([$input['student_id']])) {
         if ($stmt->rowCount() > 0) {
+            // Audit log
+            $adminId = $_SESSION['admin_id'] ?? 0;
+            $adminName = $_SESSION['admin_name'] ?? 'Admin';
+            logAuditAction($pdo, $adminId, $adminName, 'UNREGISTER_RFID', 'student', $input['student_id'], $studentName,
+                "Unregistered RFID card {$oldRfidUid} from {$studentName} ({$studentIdStr})",
+                ['rfid_uid' => $oldRfidUid, 'student_id' => $studentIdStr]
+            );
+            
             echo json_encode(['success' => true]);
         } else {
             http_response_code(404);

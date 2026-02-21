@@ -138,19 +138,16 @@ try {
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <script src="../assets/js/digital-id-card.js?v=11"></script>
+    <link rel="preload" as="image" href="../assets/images/id-card-template.png">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <!-- Face Recognition: face-api.js (pre-trained TensorFlow.js models) -->
     <?php if ($faceRecEnabled): ?>
     <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    <script defer src="../assets/js/face-recognition.js"></script>
+    <script defer src="../assets/js/face-recognition.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/face-recognition.js'); ?>"></script>
     <?php endif; ?>
     <style type="text/tailwindcss">
         .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            /* instant - no animation */
         }
         .btn-hover {
             transition: all 0.3s ease;
@@ -292,10 +289,10 @@ try {
                         </div>
                         <div class="flex gap-2">
                             <button id="btnStartFace" onclick="startFaceDetection()" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors font-medium hidden">
-                                ▶ Start
+                                &#9654; Start
                             </button>
                             <button id="btnStopFace" onclick="stopFaceDetection()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors font-medium hidden">
-                                ■ Stop
+                                &#9632; Stop
                             </button>
                         </div>
                     </div>
@@ -303,6 +300,29 @@ try {
                 
                 <!-- Webcam & Detection Area -->
                 <div class="p-6 md:p-8">
+
+                    <!-- ===== CAMERA SELECTOR — always visible ===== -->
+                    <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <svg class="w-5 h-5 text-[#0056b3] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <label for="cameraSelect" class="text-sm font-semibold text-slate-700 whitespace-nowrap">Select Camera:</label>
+                            <select id="cameraSelect" onchange="changeCameraDevice(this.value)"
+                                class="flex-1 min-w-0 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#0056b3] focus:border-[#0056b3]">
+                                <option value="">&#8212; Detecting cameras... &#8212;</option>
+                            </select>
+                            <button onclick="populateCameraSelector()" title="Refresh camera list"
+                                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-sm rounded-lg transition-colors font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <p id="cameraSelectHint" class="text-xs text-slate-400 mt-2 ml-8">Camera list will populate once permission is granted.</p>
+                    </div>
+                    <!-- ===== END CAMERA SELECTOR ===== -->
                     <div id="faceInitStatus" class="text-center py-12">
                         <svg class="animate-spin w-12 h-12 mx-auto text-blue-500 mb-4" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -372,6 +392,7 @@ try {
     let cardBuffer = '';
     let bufferTimeout = null;
     let scanLog = [];
+    let scanInProgress = false;
 
     // XSS escape helper for safe innerHTML rendering
     function escHtml(str) {
@@ -386,14 +407,9 @@ try {
         // If Enter key, process the buffer we've accumulated
         if (e.key === 'Enter') {
             e.preventDefault();
-            
             const uid = cardBuffer.trim();
-            console.log('RFID Scan Complete - Buffer:', cardBuffer, 'Trimmed:', uid, 'Length:', uid.length);
-            
-            if (uid.length >= 4) {
+            if (uid.length >= 4 && !scanInProgress) {
                 processRFIDScan(uid);
-            } else {
-                console.error('Invalid scan - too short:', uid);
             }
             cardBuffer = '';
             clearTimeout(bufferTimeout);
@@ -403,35 +419,19 @@ try {
         // Accumulate all other single-character keys
         if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
             cardBuffer += e.key;
-            console.log('Character captured:', e.key, 'Buffer now:', cardBuffer);
             clearTimeout(bufferTimeout);
-            
-            // Reset buffer after 500ms of no input (in case scan was interrupted)
             bufferTimeout = setTimeout(() => {
                 if (cardBuffer.length > 0 && cardBuffer.length < 4) {
-                    console.warn('Buffer timeout - incomplete scan, clearing:', cardBuffer);
                     cardBuffer = '';
                 }
-            }, 500);
+            }, 80);
         }
     });
 
     function processRFIDScan(uid) {
-        // Show processing state
-        document.getElementById('scanStatus').innerHTML = `
-            <div class="fade-in">
-                <div class="mb-6">
-                    <svg class="animate-spin w-20 h-20 md:w-24 md:h-24 mx-auto text-blue-500" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </div>
-                <h2 class="text-2xl md:text-3xl font-bold text-blue-600 mb-2">Processing...</h2>
-                <p class="text-slate-600 font-mono text-sm md:text-base">RFID: ${uid}</p>
-            </div>
-        `;
+        scanInProgress = true;
 
-        // Send to backend with CSRF protection
+        // No loading screen — fire immediately, display result instantly
         fetch('gate_scan.php', {
             method: 'POST',
             headers: {
@@ -442,19 +442,11 @@ try {
         })
         .then(res => res.json())
         .then(data => {
-            console.log('Backend response:', data);
-            
-            // Log debug info if available
-            if (data.debug) {
-                console.log('=== DEBUG INFO ===');
-                console.log('Scanned UID:', data.debug.scanned_uid);
-                console.log('Scanned Length:', data.debug.scanned_length);
-                console.log('Total Registered Cards:', data.debug.total_registered);
-                console.log('Registered Cards:', data.debug.registered_cards);
-            }
-            
+            scanInProgress = false;
             if (data.success) {
                 displaySuccessScan(data);
+            } else if (data.is_lost) {
+                displayLostCardScan(data, uid);
             } else if (data.access_denied) {
                 displayAccessDenied(data);
             } else {
@@ -462,7 +454,7 @@ try {
             }
         })
         .catch(error => {
-            console.error('Scan error:', error);
+            scanInProgress = false;
             displayErrorScan({error: 'Network error occurred'}, uid);
         });
     }
@@ -538,13 +530,62 @@ try {
             }
         });
         gateIdCard.render();
-        gateIdCard.animateEntrance();
 
         // Add to log
         addToScanLog(student, data.timestamp);
 
-        // Reset after delay - optimized for fast queue processing
-        setTimeout(resetScanDisplay, student.violation_count === 3 ? 3000 : 3000);
+        // Reset after delay — long enough for guard to read both ID card and violation info
+        setTimeout(resetScanDisplay, student.violation_count >= 3 ? 7000 : 5000);
+    }
+
+    function displayLostCardScan(data, uid) {
+        const student = data.student || {};
+        const lostInfo = data.lost_info || {};
+        const lostDate = lostInfo.lost_at ? new Date(lostInfo.lost_at).toLocaleString() : 'Unknown';
+
+        document.getElementById('scanStatus').innerHTML = `
+            <div class="fade-in">
+                <div class="bg-orange-50 border-4 border-orange-500 rounded-2xl p-6 md:p-8">
+                    <div class="text-5xl md:text-6xl mb-4">🚫</div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-orange-800 mb-3 animate-pulse">RFID CARD DISABLED</h2>
+                    
+                    ${student.name ? `
+                    <div class="bg-white rounded-lg p-4 md:p-5 mb-4 border-2 border-orange-300">
+                        <p class="text-xl md:text-2xl font-bold text-slate-800 mb-1">${escHtml(student.name)}</p>
+                        <p class="text-slate-600 text-sm">ID: ${escHtml(student.student_id || '')}</p>
+                    </div>
+                    ` : ''}
+
+                    <div class="bg-orange-600 rounded-lg p-4 mb-4 text-white">
+                        <p class="font-bold text-xl md:text-2xl mb-1">⚠️ CARD MARKED AS LOST</p>
+                        <p class="text-sm mb-1">This RFID card has been disabled by an administrator.</p>
+                        <p class="text-xs opacity-80">Disabled on: ${escHtml(lostDate)}</p>
+                    </div>
+
+                    <div class="bg-blue-50 border-2 border-blue-400 rounded-lg p-4 mb-3">
+                        <p class="text-blue-900 font-bold text-base mb-2">📧 STUDENT MUST CONTACT:</p>
+                        <p class="text-blue-800 text-lg font-semibold">Student Services Office</p>
+                        <p class="text-blue-700 text-sm">Email: <strong>studentservices@pcu.edu.ph</strong></p>
+                    </div>
+
+                    <p class="text-orange-700 font-bold text-sm mt-3">🔒 Entry via this card is NOT permitted until re-enabled</p>
+                </div>
+            </div>
+        `;
+
+        // Add to scan log with lost indicator
+        if (student.name) {
+            addToScanLog({
+                name: student.name,
+                student_id: student.student_id || '',
+                email: '',
+                violation_count: 0,
+                severity: 'lost'
+            }, data.timestamp || new Date().toISOString());
+        }
+
+        // Keep on screen longer so guard can read the info
+        setTimeout(resetScanDisplay, 7000);
     }
 
     function displayErrorScan(data, uid) {
@@ -560,47 +601,64 @@ try {
             </div>
         `;
 
-        setTimeout(resetScanDisplay, 1500);
+        setTimeout(resetScanDisplay, 3000);
     }
 
     function displayAccessDenied(data) {
         const student = data.student;
         
         document.getElementById('scanStatus').innerHTML = `
-            <div class="fade-in w-full">
-                <div class="bg-red-50 border-4 border-red-600 rounded-2xl p-6 md:p-8">
-                    <div class="text-6xl md:text-7xl mb-4">⛔</div>
-                    <h2 class="text-3xl md:text-4xl font-bold text-red-900 mb-4 animate-pulse">ACCESS DENIED</h2>
+            <div class="w-full">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    <!-- Digital ID Card -->
+                    <div id="gateDigitalIdContainer" class="flex justify-center"></div>
                     
-                    ${student.profile_picture ? `
-                        <div class="flex justify-center mb-4">
-                            <img src="../assets/images/profiles/${escHtml(student.profile_picture)}" 
-                                 alt="${escHtml(student.name)}" 
-                                 class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-red-500 shadow-lg">
+                    <!-- Access Denied Info -->
+                    <div class="bg-red-50 border-4 border-red-600 rounded-2xl p-6 md:p-8">
+                        <div class="text-5xl md:text-6xl mb-4">⛔</div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-red-900 mb-3 animate-pulse">ACCESS DENIED</h2>
+                        
+                        <div class="bg-white rounded-lg p-4 md:p-5 mb-4 border-2 border-red-300">
+                            <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name)}</p>
+                            <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id)}</p>
+                            ${student.course ? `<p class="text-slate-500 text-sm mb-1">${escHtml(student.course)}</p>` : ''}
+                            <p class="text-slate-500 text-sm">${escHtml(student.email)}</p>
                         </div>
-                    ` : ''}
-                    
-                    <div class="bg-white rounded-lg p-4 md:p-6 mb-4 border-2 border-red-300">
-                        <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name)}</p>
-                        <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id)}</p>
-                        <p class="text-slate-500 text-sm">${escHtml(student.email)}</p>
+                        <div class="bg-red-600 rounded-lg p-4 mb-4 text-white">
+                            <p class="font-bold text-xl md:text-2xl mb-1">🚫 ENTRY NOT ALLOWED</p>
+                            <p class="text-lg mb-1">Total Violations: <strong>${escHtml(String(student.violation_count))}</strong></p>
+                            <p class="text-sm">Maximum 3-strike limit exceeded</p>
+                        </div>
+                        <div class="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 mb-3">
+                            <p class="text-yellow-900 font-bold text-sm mb-1">⚠️ ACTION REQUIRED</p>
+                            <p class="text-yellow-800 text-sm">${escHtml(data.message)}</p>
+                        </div>
+                        <p class="text-red-700 font-bold text-sm mt-3 animate-pulse">🔒 STUDENT MUST CONTACT ADMINISTRATION OFFICE</p>
                     </div>
-                    <div class="bg-red-600 rounded-lg p-4 md:p-6 mb-4 text-white">
-                        <p class="font-bold text-2xl md:text-3xl mb-2">🚫 ENTRY NOT ALLOWED</p>
-                        <p class="text-lg md:text-xl mb-2">Total Violations: ${escHtml(String(student.violation_count))}</p>
-                        <p class="text-sm md:text-base">Maximum limit of 3 strikes has been exceeded</p>
-                    </div>
-                    <div class="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 mb-3">
-                        <p class="text-yellow-900 font-bold text-base md:text-lg mb-1">⚠️ ACTION REQUIRED</p>
-                        <p class="text-yellow-800 text-sm md:text-base">${escHtml(data.message)}</p>
-                    </div>
-                    <p class="text-red-700 font-bold text-sm md:text-base mt-4 animate-pulse">🔒 STUDENT MUST CONTACT ADMINISTRATION OFFICE</p>
                 </div>
             </div>
         `;
 
-        // Faster reset for denied access to keep line moving
-        setTimeout(resetScanDisplay, 3000);
+        // Render Digital ID Card for denied student
+        const deniedIdCard = new DigitalIdCard('#gateDigitalIdContainer', {
+            templateSrc: '../assets/images/id-card-template.png',
+            student: {
+                name: student.name || '',
+                studentId: student.student_id || '',
+                course: student.course || '',
+                email: student.email || '',
+                profilePicture: student.profile_picture
+                    ? '../assets/images/profiles/' + student.profile_picture
+                    : null
+            }
+        });
+        deniedIdCard.render();
+
+        // Add to log
+        addToScanLog(student, data.timestamp || new Date().toISOString());
+
+        // Keep on screen long enough for guard to read both ID and denial info
+        setTimeout(resetScanDisplay, 7000);
     }
 
     function resetScanDisplay() {
@@ -630,7 +688,7 @@ try {
         scanLog.unshift({student, time});
         
         const logHTML = scanLog.map((log, index) => `
-            <div class="bg-white rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border border-slate-200 hover:border-blue-300 transition-colors fade-in shadow-sm" style="animation-delay: ${index * 0.05}s">
+            <div class="bg-white rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border border-slate-200 shadow-sm">
                 <div class="flex-1">
                     <p class="font-semibold text-slate-800 text-sm md:text-base">${escHtml(log.student.name)}</p>
                     <p class="text-xs md:text-sm text-slate-500">${escHtml(log.student.student_id)} • ${escHtml(log.student.email)}</p>
@@ -658,6 +716,9 @@ try {
     // Auto-focus on page load to ensure RFID scanner works
     window.addEventListener('load', function() {
         document.body.focus();
+        // Pre-warm the ID card template image into browser cache so first scan is instant
+        var _warmImg = new Image();
+        _warmImg.src = '../assets/images/id-card-template.png';
     });
 
     <?php if ($faceRecEnabled): ?>
@@ -668,6 +729,9 @@ try {
     let currentMode = 'rfid';
     let faceSystem = null;
     let faceInitialized = false;
+    let faceReady = false;         // models + descriptors loaded and ready to detect
+    let cameraRunning = false;      // true while a camera stream is active
+    let selectedCameraId = null;    // deviceId of the chosen camera (null = browser default)
     let lastFaceMatchUserId = null;
     let lastFaceMatchTime = 0;
     const FACE_COOLDOWN_MS = 5000; // 5 second cooldown between same-person matches
@@ -685,8 +749,18 @@ try {
             btnRfid.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-[#0056b3] text-white shadow-md';
             btnFace.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
             
-            // Stop face detection when switching away
-            if (faceSystem) faceSystem.stopContinuousDetection();
+            // SECURITY: Fully stop and release camera hardware so the camera LED turns off
+            // stopContinuousDetection() only pauses the detection loop — stopCamera() actually
+            // releases the MediaStream tracks so no unknown process can access the camera.
+            if (faceSystem) {
+                faceSystem.stopContinuousDetection();
+                faceSystem.stopCamera();
+            }
+            stopFaceAutoRefresh();
+            cameraRunning = false;
+            // Hide Start/Stop buttons while in RFID mode
+            document.getElementById('btnStartFace').classList.add('hidden');
+            document.getElementById('btnStopFace').classList.add('hidden');
             document.body.focus();
         } else {
             rfidPanel.classList.add('hidden');
@@ -694,10 +768,125 @@ try {
             btnFace.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-[#0056b3] text-white shadow-md';
             btnRfid.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
             
-            // Initialize face recognition on first switch
             if (!faceInitialized) {
+                // First time — enumerate cameras immediately (fire-and-forget, no await needed)
+                // then load models + faces, then auto-start camera preview
+                populateCameraSelector();
                 initFaceRecognition();
+            } else {
+                const faceCount = parseInt(document.getElementById('faceLoadedCount').textContent) || 0;
+                document.getElementById('faceStatus').textContent = faceReady
+                    ? `Ready - ${faceCount} faces loaded. Click Start to begin detection.`
+                    : `Initializing face engine... ${faceCount} faces loaded so far.`;
+                if (faceReady) {
+                    document.getElementById('btnStartFace').classList.remove('hidden');
+                } else {
+                    document.getElementById('btnStartFace').classList.add('hidden');
+                }
+                document.getElementById('btnStopFace').classList.add('hidden');
+                if (!cameraRunning) {
+                    restartCamera();
+                }
             }
+        }
+    }
+
+    // Re-opens the camera stream after it was released (e.g. after switching to RFID mode)
+    async function restartCamera() {
+        const statusEl = document.getElementById('faceStatus');
+        document.getElementById('faceVideoContainer').classList.remove('hidden');
+        statusEl.textContent = 'Starting camera...';
+        const cameraOk = await faceSystem.startCamera(
+            document.getElementById('faceVideo'),
+            document.getElementById('faceCanvas'),
+            selectedCameraId
+        );
+        if (cameraOk) {
+            cameraRunning = true;
+            const faceCount = parseInt(document.getElementById('faceLoadedCount').textContent) || 0;
+            statusEl.textContent = `Ready - ${faceCount} faces loaded. Click Start to begin detection.`;
+            document.getElementById('btnStartFace').classList.remove('hidden');
+            document.getElementById('faceVideoContainer').classList.remove('hidden');
+        } else {
+            statusEl.textContent = '❌ Camera failed. Check permissions.';
+            cameraRunning = false;
+        }
+    }
+
+    // Populates the camera selector dropdown
+    // Safe to call at any time — early calls get generic labels, post-permission calls get real device names
+    async function populateCameraSelector() {
+        if (!faceSystem && !navigator.mediaDevices) return;
+        let cameras = [];
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            cameras = devices
+                .filter(d => d.kind === 'videoinput')
+                .map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Camera ${i + 1}` }));
+        } catch (e) { return; }
+
+        const select = document.getElementById('cameraSelect');
+        const hint  = document.getElementById('cameraSelectHint');
+        if (!select) return;
+
+        // Preserve current value if possible
+        const current = selectedCameraId || select.value;
+        select.innerHTML = '';
+
+        if (cameras.length === 0) {
+            select.innerHTML = '<option value="">No cameras detected</option>';
+            if (hint) hint.textContent = 'No cameras found. Connect a webcam and click Refresh.';
+            return;
+        }
+
+        cameras.forEach((cam, i) => {
+            const opt = document.createElement('option');
+            opt.value = cam.deviceId;
+            opt.textContent = cam.label || `Camera ${i + 1}`;
+            if (cam.deviceId && cam.deviceId === current) opt.selected = true;
+            select.appendChild(opt);
+        });
+
+        // Sync selectedCameraId
+        if (!selectedCameraId || !cameras.find(c => c.deviceId === selectedCameraId)) {
+            selectedCameraId = select.value;
+        } else {
+            select.value = selectedCameraId;
+        }
+
+        if (hint) {
+            hint.textContent = cameras.length === 1
+                ? '1 camera detected. Connect more cameras and click Refresh to see them.'
+                : `${cameras.length} cameras detected. Select the one you want to use.`;
+        }
+    }
+
+    // Called when admin picks a different camera from the dropdown
+    async function changeCameraDevice(deviceId) {
+        if (!deviceId) return;
+        // Allow re-selecting even the same device (force refresh)
+        if (!faceSystem) return;
+
+        // Stop detection loop if running
+        if (faceSystem._continuousRunning) stopFaceDetection();
+
+        document.getElementById('faceStatus').textContent = 'Switching camera...';
+
+        // Use switchCamera which gets the NEW stream BEFORE killing the old one.
+        // This is the only reliable way on Chrome/Windows — if you stop first,
+        // the browser recycles the old device handle to the new getUserMedia call.
+        const cameraOk = await faceSystem.switchCamera(deviceId);
+
+        if (cameraOk) {
+            selectedCameraId = deviceId;
+            cameraRunning = true;
+            const faceCount = parseInt(document.getElementById('faceLoadedCount').textContent) || 0;
+            document.getElementById('faceStatus').textContent =
+                `Camera switched — ${faceCount} faces loaded. Click Start to begin detection.`;
+            document.getElementById('btnStartFace').classList.remove('hidden');
+            document.getElementById('btnStopFace').classList.add('hidden');
+        } else {
+            document.getElementById('faceStatus').textContent = '❌ Camera switch failed. Try another camera.';
         }
     }
 
@@ -710,8 +899,8 @@ try {
             matchThreshold: FACE_THRESHOLD,
             minConfidence: 0.5,
             csrfToken: CSRF_TOKEN,
-            detectionIntervalMs: 200,  // Fast detection loop (200ms between frames)
-            ssdInputSize: 224,         // Smaller input = faster inference (224 vs default 416)
+            detectionIntervalMs: 120,  // Faster detection loop for near-instant start
+            ssdInputSize: 160,         // Much faster inference on CPU while keeping usable accuracy
             onStatusChange: (status, msg) => {
                 statusEl.textContent = msg;
             },
@@ -722,50 +911,78 @@ try {
             onDetection: handleFaceDetection
         });
 
-        // Step 1: Load models
-        statusEl.textContent = 'Loading face recognition models...';
-        const modelsOk = await faceSystem.loadModels();
+        // Step 1: Immediately show panel and start camera preview (non-blocking UX)
+        faceInitialized = true;
+        faceReady = false;
+        cameraRunning = false;
+        initEl.classList.add('hidden');
+        document.getElementById('btnStartFace').classList.add('hidden');
+        document.getElementById('btnStopFace').classList.add('hidden');
+        statusEl.textContent = 'Starting camera preview...';
+        restartCamera();
+
+        // Step 2: Load models + face descriptors in parallel while preview is already visible
+        statusEl.textContent = 'Initializing face engine...';
+        const [modelsOk, faceCount] = await Promise.all([
+            faceSystem.loadModels(),
+            faceSystem.loadKnownFaces('../api/get_face_descriptors.php')
+        ]);
+
+        document.getElementById('faceLoadedCount').textContent = faceCount;
+
         if (!modelsOk) {
-            initEl.innerHTML = `
-                <div class="text-red-500">
-                    <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    <p class="font-semibold">Failed to load face models</p>
-                    <p class="text-sm mt-1 text-slate-500">Ensure model files exist in assets/models/</p>
-                    <p class="text-xs mt-2 text-slate-400">Run the model download script: setup/download_models.php</p>
-                </div>`;
+            statusEl.textContent = '❌ Failed to load face models. Check model files in assets/models.';
+            faceReady = false;
             return;
         }
 
-        // Step 2: Load known faces from server
-        statusEl.textContent = 'Loading registered faces...';
-        const faceCount = await faceSystem.loadKnownFaces('../api/get_face_descriptors.php');
-        document.getElementById('faceLoadedCount').textContent = faceCount;
-
-        // Step 3: Show camera controls
-        initEl.classList.add('hidden');
-        document.getElementById('faceVideoContainer').classList.remove('hidden');
+        // Ready for instant Start
+        faceReady = true;
+        statusEl.textContent = `Ready - ${faceCount} faces loaded. Click Start to begin detection.`;
         document.getElementById('btnStartFace').classList.remove('hidden');
-
-        // Step 4: Start camera
-        statusEl.textContent = 'Starting camera...';
-        const cameraOk = await faceSystem.startCamera(
-            document.getElementById('faceVideo'),
-            document.getElementById('faceCanvas')
-        );
-
-        if (cameraOk) {
-            faceInitialized = true;
-            statusEl.textContent = `Ready - ${faceCount} faces loaded. Click Start to begin detection.`;
-            document.getElementById('btnStartFace').classList.remove('hidden');
-        } else {
-            statusEl.textContent = '❌ Camera failed. Check permissions.';
-        }
+        await populateCameraSelector();
     }
 
-    function startFaceDetection() {
+    async function startFaceDetection() {
         if (!faceSystem) return;
+        if (!faceReady) {
+            document.getElementById('faceStatus').textContent = 'Initializing face engine... please wait a moment.';
+            return;
+        }
+
+        // Start camera only when operator clicks Start (keeps Face tab switch instant)
+        if (!cameraRunning) {
+            document.getElementById('faceStatus').textContent = 'Starting camera...';
+            let cameraOk = await faceSystem.startCamera(
+                document.getElementById('faceVideo'),
+                document.getElementById('faceCanvas'),
+                selectedCameraId
+            );
+
+            // Retry path: clear selected device and force default camera
+            if (!cameraOk) {
+                document.getElementById('faceStatus').textContent = 'Retrying with default camera...';
+                selectedCameraId = null;
+                cameraOk = await faceSystem.startCamera(
+                    document.getElementById('faceVideo'),
+                    document.getElementById('faceCanvas'),
+                    null
+                );
+            }
+
+            if (!cameraOk || !faceSystem.stream || faceSystem.stream.getVideoTracks().length === 0) {
+                document.getElementById('faceStatus').textContent =
+                    '❌ Camera failed to start. Close other camera apps and allow browser permission, then click Start again.';
+                cameraRunning = false;
+                return;
+            }
+
+            cameraRunning = true;
+            document.getElementById('faceVideoContainer').classList.remove('hidden');
+            // Permission is now granted, refresh labels/device IDs
+            await populateCameraSelector();
+        }
+
         faceSystem.startContinuousDetection();
         document.getElementById('btnStartFace').classList.add('hidden');
         document.getElementById('btnStopFace').classList.remove('hidden');
@@ -872,46 +1089,96 @@ try {
         }, 4000);
     }
 
+    function renderFaceDigitalId(containerSelector, student, match) {
+        const profilePictureFile = student.profile_picture || match.profilePicture || null;
+        const idCard = new DigitalIdCard(containerSelector, {
+            templateSrc: '../assets/images/id-card-template.png',
+            student: {
+                name: student.name || match.name || '',
+                studentId: student.student_id || match.studentId || '',
+                course: student.course || match.course || '',
+                email: student.email || match.email || '',
+                profilePicture: profilePictureFile
+                    ? '../assets/images/profiles/' + profilePictureFile
+                    : null
+            }
+        });
+        idCard.render();
+    }
+
     function displayFaceScanResult(response, match) {
         const resultEl = document.getElementById('faceScanResult');
         resultEl.classList.remove('hidden');
 
         if (response.access_denied) {
+            const student = response.student || {};
             resultEl.innerHTML = `
-                <div class="bg-red-50 border-4 border-red-600 rounded-2xl p-6 text-center fade-in">
-                    <div class="text-5xl mb-3">⛔</div>
-                    <h3 class="text-2xl font-bold text-red-900 mb-2">ACCESS DENIED</h3>
-                    ${match.profilePicture ? `<img src="../assets/images/profiles/${escHtml(match.profilePicture)}" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 border-red-500">` : ''}
-                    <p class="text-lg font-bold text-slate-800">${escHtml(response.student?.name || match.name)}</p>
-                    <p class="text-slate-600">${escHtml(response.student?.student_id || match.studentId)}</p>
-                    <div class="bg-red-600 text-white rounded-lg p-3 mt-3">
-                        <p class="font-bold">Violations: ${escHtml(String(response.student?.violation_count || '3+'))}</p>
-                        <p class="text-sm">${escHtml(response.message || 'Entry denied')}</p>
+                <div class="w-full fade-in">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        <div id="faceDigitalIdContainer" class="flex justify-center"></div>
+                        <div class="bg-red-50 border-4 border-red-600 rounded-2xl p-6 md:p-8">
+                            <div class="text-5xl md:text-6xl mb-4">⛔</div>
+                            <h3 class="text-2xl md:text-3xl font-bold text-red-900 mb-3">ACCESS DENIED</h3>
+                            <div class="bg-white rounded-lg p-4 md:p-5 mb-4 border-2 border-red-300">
+                                <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name || match.name || '')}</p>
+                                <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id || match.studentId || '')}</p>
+                                ${(student.course || match.course) ? `<p class="text-slate-500 text-sm mb-1">${escHtml(student.course || match.course)}</p>` : ''}
+                                <p class="text-slate-500 text-sm">${escHtml(student.email || match.email || '')}</p>
+                            </div>
+                            <div class="bg-red-600 rounded-lg p-4 mb-4 text-white">
+                                <p class="font-bold text-xl md:text-2xl mb-1">🚫 ENTRY NOT ALLOWED</p>
+                                <p class="text-lg mb-1">Total Violations: <strong>${escHtml(String(student.violation_count || '3+'))}</strong></p>
+                                <p class="text-sm">Maximum 3-strike limit exceeded</p>
+                            </div>
+                            <div class="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-4 mb-3">
+                                <p class="text-yellow-900 font-bold text-sm mb-1">⚠️ ACTION REQUIRED</p>
+                                <p class="text-yellow-800 text-sm">${escHtml(response.message || 'Entry denied')}</p>
+                            </div>
+                            <p class="text-red-700 font-bold text-sm mt-3">🔒 STUDENT MUST CONTACT ADMINISTRATION OFFICE</p>
+                        </div>
                     </div>
                 </div>`;
+
+            renderFaceDigitalId('#faceDigitalIdContainer', student, match);
             addToScanLog({
-                name: response.student?.name || match.name,
-                student_id: response.student?.student_id || match.studentId,
-                email: response.student?.email || match.email,
-                violation_count: response.student?.violation_count || 0
+                name: student.name || match.name,
+                student_id: student.student_id || match.studentId,
+                email: student.email || match.email,
+                violation_count: student.violation_count || 0,
+                course: student.course || match.course || ''
             }, new Date().toISOString());
         } else if (response.success) {
             const student = response.student;
             let severityColor = student.severity === 'critical' ? 'red' : student.severity === 'medium' ? 'yellow' : 'green';
+            let severityBg = student.severity === 'critical' ? 'bg-red-50' : student.severity === 'medium' ? 'bg-yellow-50' : 'bg-green-50';
+            let severityBorder = student.severity === 'critical' ? 'border-red-500' : student.severity === 'medium' ? 'border-yellow-400' : 'border-green-400';
+            let severityIcon = student.severity === 'critical' ? '⚠️' : student.severity === 'medium' ? '⚡' : '✓';
             
             resultEl.innerHTML = `
-                <div class="bg-${severityColor}-50 border-4 border-${severityColor}-400 rounded-2xl p-6 text-center fade-in">
-                    <div class="text-4xl mb-3">${student.severity === 'critical' ? '⚠️' : student.severity === 'medium' ? '⚡' : '✓'}</div>
-                    <h3 class="text-xl font-bold text-${severityColor}-800 mb-2">FACE RECOGNIZED - NO PHYSICAL ID</h3>
-                    ${match.profilePicture ? `<img src="../assets/images/profiles/${escHtml(match.profilePicture)}" class="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-4 border-white shadow-lg">` : ''}
-                    <p class="text-lg font-bold text-slate-800">${escHtml(student.name)}</p>
-                    <p class="text-slate-600 text-sm">${escHtml(student.student_id)} • ${escHtml(student.email)}</p>
-                    <div class="bg-${severityColor}-100 rounded-lg p-3 mt-3">
-                        <p class="font-bold text-${severityColor}-900 text-xl">Violation #${escHtml(String(student.violation_count))}</p>
-                        <p class="text-${severityColor}-700 text-sm">${escHtml(student.severity_message)}</p>
+                <div class="w-full fade-in">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                        <div id="faceDigitalIdContainer" class="flex justify-center"></div>
+                        <div class="${severityBg} border-4 ${severityBorder} rounded-2xl p-6 md:p-8">
+                            <div class="text-5xl md:text-6xl mb-4">${severityIcon}</div>
+                            <h3 class="text-2xl md:text-3xl font-bold text-${severityColor}-800 mb-3">NO PHYSICAL ID</h3>
+                            <div class="bg-white rounded-lg p-4 md:p-6 mb-4">
+                                <p class="text-xl md:text-2xl font-bold text-slate-800 mb-2">${escHtml(student.name)}</p>
+                                <p class="text-slate-600 mb-1">ID: ${escHtml(student.student_id)}</p>
+                                ${(student.course || match.course) ? `<p class="text-slate-500 text-sm mb-1">${escHtml(student.course || match.course)}</p>` : ''}
+                                <p class="text-slate-500 text-sm">${escHtml(student.email)}</p>
+                            </div>
+                            <div class="bg-${severityColor}-100 rounded-lg p-4 mb-3">
+                                <p class="text-${severityColor}-900 font-bold text-2xl md:text-3xl mb-1">Violation #${escHtml(String(student.violation_count))}</p>
+                                <p class="text-${severityColor}-700 text-sm md:text-base">${escHtml(student.severity_message)}</p>
+                            </div>
+                            <p class="text-slate-600 text-sm md:text-base">${escHtml(response.message || 'Face recognized - Student forgot physical ID')}</p>
+                            ${student.violation_count === 3 ? '<p class="text-red-600 font-bold mt-3 text-sm md:text-base">🚨 FINAL WARNING - Next time entry will be DENIED!</p>' : ''}
+                            <p class="text-xs text-slate-400 mt-2">Match confidence: ${(match.confidence * 100).toFixed(1)}%</p>
+                        </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Match confidence: ${(match.confidence * 100).toFixed(1)}%</p>
                 </div>`;
+
+            renderFaceDigitalId('#faceDigitalIdContainer', student, match);
             addToScanLog(student, response.timestamp);
         } else {
             resultEl.innerHTML = `

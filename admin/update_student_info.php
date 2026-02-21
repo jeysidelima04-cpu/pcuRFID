@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 // Check if user is logged in as admin
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -43,6 +44,12 @@ if (strlen($studentId) < 3) {
     exit;
 }
 
+if (!preg_match('/^\d+$/', $studentId)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Student ID must contain numbers only']);
+    exit;
+}
+
 try {
     $pdo = pdo();
     
@@ -56,6 +63,11 @@ try {
         exit;
     }
     
+    // Fetch old values for audit log
+    $oldStmt = $pdo->prepare('SELECT name, student_id, course FROM users WHERE id = ?');
+    $oldStmt->execute([$userId]);
+    $oldData = $oldStmt->fetch(\PDO::FETCH_ASSOC);
+    
     // Update student information
     $updateStmt = $pdo->prepare('
         UPDATE users 
@@ -66,6 +78,19 @@ try {
     $updateStmt->execute([$name, $studentId, $course ?: null, $userId]);
     
     if ($updateStmt->rowCount() > 0) {
+        // Audit log with changes detail
+        $adminId = $_SESSION['admin_id'] ?? 0;
+        $adminName = $_SESSION['admin_name'] ?? 'Admin';
+        $changes = [];
+        if ($oldData && $oldData['name'] !== $name) $changes['name'] = ['from' => $oldData['name'], 'to' => $name];
+        if ($oldData && $oldData['student_id'] !== $studentId) $changes['student_id'] = ['from' => $oldData['student_id'], 'to' => $studentId];
+        if ($oldData && ($oldData['course'] ?? '') !== ($course ?: '')) $changes['course'] = ['from' => $oldData['course'] ?? '', 'to' => $course];
+        
+        logAuditAction($pdo, $adminId, $adminName, 'UPDATE_STUDENT', 'student', $userId, $name,
+            "Updated student info for {$name} ({$studentId})",
+            ['changes' => $changes, 'student_id' => $studentId]
+        );
+        
         echo json_encode([
             'success' => true,
             'message' => 'Student information updated successfully'

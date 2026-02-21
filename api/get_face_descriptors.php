@@ -71,6 +71,7 @@ try {
             u.name,
             u.student_id,
             u.email,
+            u.course,
             u.profile_picture,
             u.violation_count,
             u.status
@@ -109,6 +110,7 @@ try {
                 'name'            => $row['name'],
                 'student_id'      => $row['student_id'],
                 'email'           => $row['email'],
+                'course'          => $row['course'],
                 'profile_picture' => $row['profile_picture'],
                 'violation_count' => (int)$row['violation_count'],
                 'label'           => $row['label'],

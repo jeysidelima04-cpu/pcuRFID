@@ -77,7 +77,7 @@ try {
     
     // Get student info
     $stmt = $pdo->prepare("
-        SELECT id, student_id, name, email, violation_count, profile_picture, status, rfid_uid
+        SELECT id, student_id, name, email, course, violation_count, profile_picture, status, rfid_uid
         FROM users 
         WHERE id = ? AND role = 'Student'
     ");
@@ -136,6 +136,7 @@ try {
                     'name' => $student['name'],
                     'student_id' => $student['student_id'],
                     'email' => $student['email'],
+                    'course' => $student['course'],
                     'violation_count' => $student['violation_count'],
                     'profile_picture' => $student['profile_picture'],
                     'severity' => 'blocked'
@@ -187,6 +188,7 @@ try {
                     'name' => $student['name'],
                     'student_id' => $student['student_id'],
                     'email' => $student['email'],
+                    'course' => $student['course'],
                     'violation_count' => $newViolationCount,
                     'profile_picture' => $student['profile_picture'],
                     'severity' => 'blocked'
@@ -217,6 +219,7 @@ try {
                 'name' => $student['name'],
                 'student_id' => $student['student_id'],
                 'email' => $student['email'],
+                'course' => $student['course'],
                 'violation_count' => $newViolationCount,
                 'severity' => $severity,
                 'severity_message' => $severityMessage,
