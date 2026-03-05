@@ -10,7 +10,8 @@ if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Super Admin | <?php echo e($page_title ?? 'Dashboard'); ?></title>
+    <title>GateWatch Super Admin | <?php echo e($page_title ?? 'Dashboard'); ?></title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">

@@ -109,7 +109,7 @@ try {
                 'user_id'         => (int)$row['user_id'],
                 'name'            => $row['name'],
                 'student_id'      => $row['student_id'],
-                'email'           => $row['email'],
+                // email intentionally excluded — not needed for matching and reduces PII exposure
                 'course'          => $row['course'],
                 'profile_picture' => $row['profile_picture'],
                 'violation_count' => (int)$row['violation_count'],
@@ -131,6 +131,19 @@ try {
         'threshold'   => (float)env('FACE_MATCH_THRESHOLD', '0.6'),
         'timestamp'   => date('Y-m-d H:i:s')
     ]);
+    
+    // Audit log: record who fetched descriptors and how many (helps detect bulk data exfil)
+    $requestorId   = $_SESSION['admin_id'] ?? $_SESSION['security_id'] ?? 0;
+    $requestorType = $isAdmin ? 'admin' : 'security';
+    error_log(sprintf(
+        '[FACE_DESCRIPTOR_ACCESS] role=%s id=%d ip=%s agent=%s total=%d errors=%d',
+        $requestorType,
+        $requestorId,
+        $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 120),
+        count($descriptors),
+        $decryptionErrors
+    ));
     
 } catch (Exception $e) {
     error_log('Get face descriptors error: ' . $e->getMessage());

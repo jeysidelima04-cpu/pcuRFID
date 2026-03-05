@@ -186,7 +186,7 @@ try {
             // Create new user account
             // Password is set to a random hash since they'll use Google Sign-In
             $random_password = bin2hex(random_bytes(32));
-            $hashed_password = password_hash($random_password, PASSWORD_DEFAULT);
+            $hashed_password = password_hash($random_password, PASSWORD_ARGON2ID);
             
             try {
                 $insertStmt = $pdo->prepare('
@@ -262,10 +262,11 @@ try {
     error_log('Google OAuth Error: ' . $e->getMessage());
     error_log('Stack trace: ' . $e->getTraceAsString());
     
-    // Show detailed error in development (comment out in production)
-    $_SESSION['error'] = 'Google Sign-In failed: ' . $e->getMessage();
+    // Log full details server-side only — never expose to client
+    error_log('Google OAuth Exception: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+    $_SESSION['error'] = 'Google Sign-In failed. Please try again or contact support if the problem persists.';
     
-    header('Location: login.php?error=google_auth_failed&details=' . urlencode($e->getMessage()));
+    header('Location: login.php?error=google_auth_failed');
     exit;
 }
 ?>

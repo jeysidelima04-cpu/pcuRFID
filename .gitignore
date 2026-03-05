@@ -39,3 +39,12 @@ assets/profiles/*
 # Database backups
 *.sql.backup
 backup/
+
+# Large binary / media files
+*.exe
+*.mp4
+*.avi
+*.mov
+*.zip
+*.rar
+*.7z

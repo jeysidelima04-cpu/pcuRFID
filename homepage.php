@@ -83,604 +83,356 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GateWatch | Home</title>
+    <link rel="icon" type="image/png" href="assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="assets/css/styles.css">
-    <!-- Heroicons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/@heroicons/v2/24/outline/esm/index.js"></script>
     <style>
-        .bg-pcu {
-            position: relative;
-            background-color: rgba(255, 255, 255, 0.1);
+        :root {
+            --sky-50: #f0f9ff;
+            --sky-100: #e0f2fe;
+            --sky-600: #0284c7;
+            --slate-900: #0f172a;
+            --glass: rgba(255, 255, 255, 0.65);
         }
-        .bg-pcu::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url('pcu-building.jpg');
+
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: #e0f2ff;
+            background: radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.07), transparent 30%),
+                        radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.08), transparent 25%),
+                        linear-gradient(135deg, #e0f2ff 0%, #f8fbff 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .page-shell {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hero-photo {
+            position: fixed;
+            inset: 0;
+            background-image: url('assets/images/pcu-building.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-attachment: fixed;
-            filter: blur(2px);
-            -webkit-filter: blur(2px);
-            z-index: -1;
-            opacity: 0.9;
+            filter: saturate(1.05);
+            opacity: 0.55;
+            z-index: 0;
         }
-        
-        /* Mobile Responsive Styles */
-        @media (max-width: 768px) {
-            /* Navbar - keep logo on left */
-            nav .max-w-7xl {
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-            }
-            
-            /* Adjust navbar height and vertical alignment */
-            nav .flex.justify-between {
-                justify-content: space-between !important;
-                padding-top: 0.5rem !important;
-                padding-bottom: 0.5rem !important;
-            }
-            
-            /* Move logo down slightly */
-            nav .flex.items-center:first-child {
-                padding-top: 0.25rem !important;
-            }
-            
-            /* Move user menu down slightly */
-            nav .flex.items-center:last-child {
-                position: relative !important;
-                padding-top: 0.25rem !important;
-            }
-            
-            /* Information card content - left aligned */
-            .bg-gradient-to-br .flex.items-center {
-                align-items: flex-start !important;
-            }
-            
-            .bg-gradient-to-br .flex.items-center > div:last-child {
-                text-align: left !important;
-                width: 100% !important;
-            }
-            
-            /* Ensure card text is left-aligned */
-            .bg-gradient-to-br .text-sm,
-            .bg-gradient-to-br .text-lg {
-                text-align: left !important;
-            }
-            
-            /* Ensure card labels and values are properly aligned */
-            .bg-gradient-to-br .font-medium.text-slate-500,
-            .bg-gradient-to-br .font-semibold.text-slate-700 {
-                display: block !important;
-                text-align: left !important;
-            }
-            
-            /* Fix icon alignment in cards */
-            .bg-gradient-to-br .space-x-3 {
-                align-items: center !important;
-            }
-            
-            /* Violations card special handling */
-            .bg-gradient-to-br .flex-grow {
-                width: 100% !important;
-            }
-            
-            .bg-gradient-to-br .flex.items-center.justify-between {
-                align-items: flex-start !important;
-                flex-direction: column !important;
-                gap: 0.5rem !important;
-            }
-            
-            /* Profile section - center everything */
-            .flex.flex-col.items-center {
-                align-items: center !important;
-                text-align: center !important;
-            }
-            
-            .profile-container {
-                 display: flex !important;
-                justify-content: center !important;
-                align-items: center !important;
-                width: 100% !important;
-            }
-            
-            /* Profile picture centered */
-            .profile-container .w-32.h-32 {
-                width: 5rem !important;
-                height: 5rem !important;
-                font-size: 2.5rem !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-            }
-            
-            /* Welcome message centered */
-            .text-center {
-                text-align: center !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-            }
-            
-            .text-3xl {
-                font-size: 1.5rem !important;
-            }
-            
-            .text-lg {
-                font-size: 1rem !important;
-            }
-            
-            /* View Information button centered */
-            .flex.justify-center {
-                justify-content: center !important;
-            }
-            
-            .hover-button {
-                padding: 0.75rem 1.5rem !important;
-                font-size: 0.875rem !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-            }
-            
-            /* Information cards grid - stack vertically */
-            .grid.md\\:grid-cols-2 {
-                grid-template-columns: 1fr !important;
-            }
-            
-            /* Card adjustments */
-            .bg-gradient-to-br {
-                padding: 0.75rem !important;
-            }
-            
-            /* Reduce spacing */
-            .space-y-8 > * + * {
-                margin-top: 1.5rem !important;
-            }
-            
-            .py-12 {
-                padding-top: 2rem !important;
-                padding-bottom: 2rem !important;
-            }
-            
-            /* Main content padding */
-            main {
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-                padding-top: 5rem !important;
-            }
-            
-            /* Information section */
-            #userInformation {
-                padding: 1.5rem !important;
-                margin-left: 0.5rem !important;
-                margin-right: 0.5rem !important;
-                max-width: 100% !important;
-            }
-            
-            /* Center everything properly */
-            .max-w-2xl {
-                max-width: 100% !important;
-            }
-            
-            .max-w-xs {
-                max-width: 20rem !important;
-            }
-            
-            /* Adjust card text sizes */
-            .text-2xl {
-                font-size: 1.25rem !important;
-            }
-            
-            .h-1.w-20 {
-                width: 3rem !important;
-            }
+
+        .hero-gradient {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.14), rgba(255, 255, 255, 0.7));
+            z-index: 0;
         }
-        
-        @media (max-width: 480px) {
-            /* Extra small devices */
-            .profile-container .w-32.h-32 {
-                width: 4rem !important;
-                height: 4rem !important;
-                font-size: 2rem !important;
-            }
-            
-            #userInformation {
-                padding: 1rem !important;
-            }
-            
-            .gap-6 {
-                gap: 0.75rem !important;
-            }
-            
-            .max-w-xs {
-                max-width: 100% !important;
-            }
+
+        .floating-blob {
+            position: fixed;
+            filter: blur(40px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+            z-index: 1;
+            transform: scale(1.1);
+            pointer-events: none;
         }
-        
-        /* Button Animations */
-        .hover-button {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .blob-1 {
+            top: -120px;
+            left: -160px;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.55), rgba(2, 132, 199, 0.25));
         }
-        .hover-button:hover {
-            transform: translateY(-2px);
+
+        .blob-2 {
+            bottom: 0;
+            right: -120px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.45), rgba(14, 165, 233, 0.18));
         }
-        .hover-button:active {
-            transform: translateY(0);
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
         }
-        
-        /* Profile Picture Animation */
-        .profile-container {
+
+        .frosted {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .pill {
+            border-radius: 9999px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .stat-card {
             position: relative;
-            transition: transform 0.3s ease;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
-        .profile-container:hover {
-            transform: scale(1.05);
-        }
-        .profile-container::after {
+
+        .stat-card::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 50%;
-            border: 3px solid #0284c7;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(14, 165, 233, 0.05));
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: opacity 0.25s ease;
         }
-        .profile-container:hover::after {
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        .stat-card:hover::after {
             opacity: 1;
-            transform: scale(1.1);
         }
-        
-        /* Sidebar Animation */
+
+        .avatar-ring {
+            position: relative;
+        }
+
+        .avatar-ring::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 9999px;
+            background: conic-gradient(from 120deg, rgba(2, 132, 199, 0.25), rgba(14, 165, 233, 0.4), rgba(2, 132, 199, 0.25));
+            animation: rotate 6s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .hero-grid {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .floating-blob {
+                display: none;
+            }
+
+            .avatar-ring::before {
+                content: none;
+                animation: none;
+            }
+        }
+
+        .section-title {
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 64px;
+            height: 4px;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            border-radius: 999px;
+        }
+
+        .accordion {
+            transition: max-height 0.35s ease, opacity 0.35s ease;
+        }
+
+        .chip {
+            border: 1px solid rgba(2, 132, 199, 0.15);
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(255, 255, 255, 0.6));
+        }
+
+        .cta-shadow {
+            box-shadow: 0 20px 60px rgba(14, 165, 233, 0.2);
+        }
+
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
         .sidebar-button {
             transition: all 0.2s ease;
-            justify-content: center !important;
-            align-items: center !important;
         }
-        .sidebar-button:hover {
-            background-color: #0284c7;
-            color: white;
-        }
+
+        .sidebar-button:hover,
         .sidebar-button:focus,
         .sidebar-button[aria-expanded="true"] {
             background-color: #0284c7;
             color: white;
         }
-        
-        /* Profile Menu Animation */
+
         .profile-menu {
             transform-origin: top right;
-            transition: all 0.2s ease-out;
+            transition: transform 0.18s ease-out, opacity 0.18s ease-out;
         }
+
         .profile-menu[hidden] {
             display: none;
             transform: scale(0.95);
             opacity: 0;
         }
+
         .profile-menu:not([hidden]) {
             display: block;
             transform: scale(1);
             opacity: 1;
         }
-        
-        /* Logo vertical alignment */
-        @media (max-width: 768px) {
-            nav .flex.items-center a img {
-                margin-top: -0.125rem !important;
-            }
+
+        .hover-button {
+            transition: all 0.25s ease;
         }
-        
-        /* Modal fade-in animation */
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        /* Success animation */
-        @keyframes successPulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-        
-        .modal-show {
-            animation: modalFadeIn 0.3s ease-out;
-        }
-        
-        .success-animation {
-            animation: successPulse 0.5s ease-in-out;
-        }
-        
-        /* Page reload transition */
-        .page-reload-transition {
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        
-        /* Checkmark animation */
-        .checkmark-circle {
-            stroke-dasharray: 166;
-            stroke-dashoffset: 166;
-            stroke-width: 2;
-            stroke-miterlimit: 10;
-            stroke: #10b981;
-            fill: none;
-            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-        }
-        
-        .checkmark {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: block;
-            stroke-width: 3;
-            stroke: #10b981;
-            stroke-miterlimit: 10;
-            margin: 0 auto;
-            box-shadow: inset 0px 0px 0px #10b981;
-            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
-        }
-        
-        .checkmark-check {
-            transform-origin: 50% 50%;
-            stroke-dasharray: 48;
-            stroke-dashoffset: 48;
-            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
-        }
-        
-        @keyframes stroke {
-            100% {
-                stroke-dashoffset: 0;
-            }
-        }
-        
-        @keyframes scale {
-            0%, 100% {
-                transform: none;
-            }
-            50% {
-                transform: scale3d(1.1, 1.1, 1);
-            }
-        }
-        
-        @keyframes fill {
-            100% {
-                box-shadow: inset 0px 0px 0px 40px #10b981;
-            }
-        }
-        
-        .success-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 60;
-            opacity: 0;
-            animation: fadeIn 0.3s ease-out forwards;
-        }
-        
-        .success-text {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-top: 1.5rem;
-            opacity: 0;
-            animation: fadeIn 0.4s ease-out 0.8s forwards;
-        }
-        
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
+
+        .hover-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
         }
     </style>
 </head>
-<body class="text-slate-800">
-    <div class="bg-pcu min-h-screen">
-        <!-- Navbar -->
-        <nav class="bg-white/90 backdrop-blur-sm border-b border-slate-200 fixed w-full top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <!-- Logo -->
-                    <div class="flex items-center">
-                        <a href="homepage.php" class="flex items-center hover:opacity-80 transition-opacity">
-                            <img src="pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
-                            <span class="ml-2 text-xl font-semibold text-sky-700">GateWatch</span>
-                        </a>
-                    </div>
-                    
-                    <!-- User Menu -->
-                    <div class="flex items-center">
-                        <div class="relative ml-3">
-                            <button type="button" 
-                                    class="sidebar-button flex items-center p-2 rounded-full text-slate-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                                    id="user-menu-button"
-                                    aria-expanded="false"
-                                    aria-haspopup="true">
-                                <span class="sr-only">Open user menu</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
+<body class="text-slate-900">
+    <div class="page-shell">
+        <div class="hero-photo"></div>
+        <div class="hero-gradient"></div>
+        <span class="floating-blob blob-1"></span>
+        <span class="floating-blob blob-2"></span>
 
-                            <!-- Dropdown menu -->
-                            <div class="profile-menu absolute right-0 mt-2 w-64 rounded-xl bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 hidden" 
-                                 role="menu" 
-                                 id="user-menu"
-                                 hidden>
-                                <div class="px-4 py-2 text-sm text-slate-500">
-                                    <div class="mb-1">Signed in as</div>
-                                    <div class="font-medium text-slate-700 break-words"><?= htmlspecialchars($user['email']) ?></div>
-                                </div>
-                                <div class="border-t border-slate-200"></div>
-                                <a href="digital_id.php" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                                    </svg>
-                                    Digital ID
-                                </a>
-                                <button type="button" onclick="toggleContactSupport(); closeUserMenu();" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2" role="menuitem">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                    </svg>
-                                    Contact Support
-                                </button>
-                                <div class="border-t border-slate-200"></div>
-                                <form action="auth.php" method="POST" class="block">
-                                    <?= csrf_input() ?>
-                                    <input type="hidden" name="action" value="logout">
-                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors" role="menuitem">
-                                        Sign out
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+        <nav class="nav-blur border-b border-slate-200 fixed w-full top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-3">
+                        <a href="homepage.php" class="flex items-center hover:opacity-90 transition-opacity">
+                            <img src="pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
+                            <span class="ml-2 text-xl font-semibold text-sky-700">Philippine Christian University</span>
+                        </a>
+
+                    </div>
+
+                    <div class="flex items-center">
+                        <form action="auth.php" method="POST" class="ml-3">
+                            <?= csrf_input() ?>
+                            <input type="hidden" name="action" value="logout">
+                            <button type="submit" class="sidebar-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 border border-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                Sign Out
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12">
-            <!-- Profile Section -->
-            <div class="flex flex-col items-center justify-center space-y-8 py-12">
-                <!-- Profile Picture -->
-                <?php
-                    // Get the first letter of the user's name
-                    $firstLetter = strtoupper(substr($user['name'], 0, 1));
-                    
-                    // Generate a consistent color based on the name
-                    $colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
-                    $colorIndex = ord($firstLetter) % count($colors);
-                    $bgColor = $colors[$colorIndex];
-                    
-                    // Check if user has uploaded profile picture
-                    $hasProfilePicture = !empty($user['profile_picture']);
-                    $profilePictureUrl = $hasProfilePicture ? 'assets/images/profiles/' . htmlspecialchars($user['profile_picture']) : '';
-                ?>
-                <div class="profile-container relative group">
-                    <?php if ($hasProfilePicture): ?>
-                        <div id="profilePictureDisplay" class="w-32 h-32 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100">
-                            <img src="<?= $profilePictureUrl ?>" alt="Profile Picture" class="w-full h-full object-cover">
-                        </div>
-                    <?php else: ?>
-                        <div id="profilePictureDisplay" class="w-32 h-32 rounded-full <?= $bgColor ?> border-4 border-white shadow-xl flex items-center justify-center text-white text-6xl font-bold">
-                            <?= htmlspecialchars($firstLetter) ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 relative z-10 flex-1">
+            <?php
+                $firstLetter = strtoupper(substr($user['name'], 0, 1));
+                $colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+                $colorIndex = ord($firstLetter) % count($colors);
+                $bgColor = $colors[$colorIndex];
+                $hasProfilePicture = !empty($user['profile_picture']);
+                $profilePictureUrl = $hasProfilePicture ? 'assets/images/profiles/' . htmlspecialchars($user['profile_picture']) : '';
+            ?>
 
-                <!-- Welcome Message -->
-                <div class="text-center bg-white/90 backdrop-blur-sm px-8 py-4 rounded-2xl shadow-lg">
-                    <h2 class="text-3xl font-bold text-sky-700 mb-1">Welcome, <?= htmlspecialchars($user['name']) ?></h2>
-                    <p class="text-lg text-slate-700 font-medium">Student</p>
-                </div>
-
-                <!-- Action Button -->
-                <div class="flex justify-center w-full px-4 mb-8">
-                    <button onclick="toggleInformation()" class="hover-button w-full max-w-xs bg-white hover:bg-slate-50 text-slate-700 rounded-xl px-6 py-3 font-medium shadow-lg border border-slate-200 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                        </svg>
-                        View Information
-                    </button>
-                </div>
-
-                <!-- User Information Section (Hidden by default) -->
-                <div id="userInformation" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 max-w-2xl mx-auto hidden">
-                    <!-- Profile Information Header -->
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-sky-700">Student Information</h3>
-                        <div class="h-1 w-20 bg-sky-700 mx-auto mt-2 rounded-full"></div>
-                    </div>
-
-                    <!-- Profile Information Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                        <!-- Student ID Card -->
-                        <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-4 border border-sky-100 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-sky-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-slate-500">Student ID</div>
-                                    <div class="text-lg font-semibold text-slate-700"><?= htmlspecialchars($user['student_id']) ?></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Name Card -->
-                        <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-4 border border-sky-100 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-sky-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-slate-500">Full Name</div>
-                                    <div class="text-lg font-semibold text-slate-700"><?= htmlspecialchars($user['name']) ?></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Role Card -->
-                        <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-4 border border-sky-100 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-sky-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-slate-500">Role</div>
-                                    <div class="text-lg font-semibold text-slate-700"><?= htmlspecialchars($user['role']) ?></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Status Card -->
-                        <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-4 border border-sky-100 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-sky-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-slate-500">Status</div>
-                                    <div class="text-lg">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium <?= $user['status'] === 'Active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' ?>">
-                                            <?= htmlspecialchars($user['status']) ?>
-                                        </span>
+            <section class="hero-grid items-start mt-6">
+                <div class="lg:col-span-5 md:col-span-12">
+                    <div class="glass-card rounded-3xl p-6 sm:p-7 card-animate">
+                        <div class="flex items-center gap-4">
+                            <div class="avatar-ring">
+                                <?php if ($hasProfilePicture): ?>
+                                    <div class="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                                        <img src="<?= $profilePictureUrl ?>" alt="Profile Picture" class="w-full h-full object-cover">
                                     </div>
+                                <?php else: ?>
+                                    <div class="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-full <?= $bgColor ?> border-4 border-white shadow-lg flex items-center justify-center text-white text-4xl sm:text-5xl font-bold">
+                                        <?= htmlspecialchars($firstLetter) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm uppercase tracking-[0.18em] text-sky-600 font-semibold mb-1">Student Access</p>
+                                <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">Welcome back, <?= htmlspecialchars($user['name']) ?></h1>
+                                <div class="flex flex-wrap items-center gap-2 mt-3">
+                                    <span class="badge bg-sky-50 text-sky-700 border border-sky-100">Role: <?= htmlspecialchars($user['role']) ?></span>
+                                    <span class="badge bg-sky-50 text-sky-700 border border-sky-100">Student ID: <?= htmlspecialchars($user['student_id'] ?? 'N/A') ?></span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- RFID Card Status -->
+
+                        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button onclick="window.location.href='digital_id.php'" class="w-full h-12 pill bg-sky-600 text-white font-semibold shadow-lg cta-shadow hover:bg-sky-700 transition-colors flex items-center justify-center relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                </svg>
+                                <span class="w-full text-center">Open Digital ID</span>
+                            </button>
+                            <button onclick="toggleContactSupport()" class="w-full h-12 pill bg-white text-slate-800 font-semibold border border-slate-200 hover:border-sky-200 hover:shadow-md transition-colors flex items-center justify-center relative">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sky-600 absolute left-4 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                                </svg>
+                                <span class="w-full text-center">Contact Support</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 md:col-span-12">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass-card rounded-3xl p-5 card-animate stat-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Account</p>
+                                    <h3 class="text-xl font-semibold text-slate-900">Status</h3>
+                                </div>
+                                <span class="badge bg-green-50 text-green-700 border border-green-100">Active</span>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">Keep your account active to avoid access delays at the gate.</p>
+                        </div>
+
                         <?php
-                        // Check if RFID is marked as lost
                         $rfidIsLost = false;
                         $rfidLostReason = '';
                         if (!empty($user['rfid_uid'])) {
@@ -691,60 +443,180 @@ try {
                                 $rfidIsLost = $rfidStatus && $rfidStatus['is_lost'] == 1;
                                 $rfidLostReason = $rfidStatus['lost_reason'] ?? '';
                             } catch (\PDOException $e) {
-                                // rfid_cards table might not exist
                                 $rfidIsLost = false;
                             }
                         }
-                        
                         $cardBgColor = !empty($user['rfid_uid']) ? ($rfidIsLost ? 'red' : 'green') : 'amber';
                         $cardStatus = !empty($user['rfid_uid']) ? ($rfidIsLost ? 'LOST - Use Digital ID' : 'Active') : 'Not Active';
+
+                        // Check face recognition enrollment
+                        $faceEnrolled = false;
+                        try {
+                            $faceStmt = $pdo->prepare('SELECT COUNT(*) FROM face_descriptors WHERE user_id = ? AND is_active = 1');
+                            $faceStmt->execute([$user['id']]);
+                            $faceEnrolled = (int)$faceStmt->fetchColumn() > 0;
+                        } catch (\PDOException $e) {
+                            $faceEnrolled = false;
+                        }
                         ?>
-                        <div class="bg-gradient-to-br from-<?= $cardBgColor ?>-50 to-white rounded-xl p-4 border border-<?= $cardBgColor ?>-100 shadow-sm">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-<?= $cardBgColor ?>-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-<?= $cardBgColor ?>-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <?php if ($rfidIsLost): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                                        <?php endif; ?>
-                                    </svg>
+                        <div class="glass-card rounded-3xl p-5 card-animate stat-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">RFID</p>
+                                    <h3 class="text-xl font-semibold text-slate-900">Card Status</h3>
                                 </div>
-                                <div class="flex-1">
-                                    <div class="text-sm font-medium text-slate-500">RFID Card</div>
-                                    <div class="text-lg">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-<?= $cardBgColor ?>-100 text-<?= $cardBgColor ?>-700">
-                                            <?php if ($rfidIsLost): ?>
-                                                🔴 <?= htmlspecialchars($cardStatus) ?>
-                                            <?php else: ?>
-                                                <?= htmlspecialchars($cardStatus) ?>
-                                            <?php endif; ?>
-                                        </span>
-                                    </div>
-                                </div>
+                                <span class="badge bg-<?= $cardBgColor ?>-50 text-<?= $cardBgColor ?>-700 border border-<?= $cardBgColor ?>-100">
+                                    <?= htmlspecialchars($cardStatus) ?>
+                                </span>
                             </div>
+                            <p class="text-slate-600 leading-relaxed">
+                                <?= $rfidIsLost ? 'Marked lost. Please use Digital ID until a replacement is issued.' : 'Present your RFID or Digital ID at the gate for smooth entry.' ?>
+                            </p>
                         </div>
 
-                        <!-- Strike/Violation Card -->
-                        <div class="bg-gradient-to-br from-rose-50 to-white rounded-xl p-4 border border-rose-100 shadow-sm h-full">
-                            <div class="flex items-center space-x-3 h-full">
-                                <div class="p-2 bg-rose-100 rounded-lg">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        <div class="glass-card rounded-3xl p-5 card-animate stat-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Violations</p>
+                                    <h3 class="text-xl font-semibold text-slate-900">Record</h3>
+                                </div>
+                                <span class="badge bg-rose-50 text-rose-700 border border-rose-100">
+                                    <?= $user['violation_count'] ?? 0 ?> total
+                                </span>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">Stay compliant to keep this at zero. Need help? Contact support anytime.</p>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-5 card-animate stat-card">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Face</p>
+                                    <h3 class="text-xl font-semibold text-slate-900">Recognition</h3>
+                                </div>
+                                <?php if ($faceEnrolled): ?>
+                                <span class="badge bg-green-50 text-green-700 border border-green-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                </div>
-                                <div class="flex-grow">
-                                    <div class="text-sm font-medium text-slate-500">ID Violations</div>
-                                    <div class="text-lg font-semibold text-slate-700">
-                                        <?= $user['violation_count'] ?? 0 ?> Violation<?= ($user['violation_count'] ?? 0) !== 1 ? 's' : '' ?>
-                                    </div>
-                                </div>
+                                    Verified
+                                </span>
+                                <?php else: ?>
+                                <span class="badge bg-amber-50 text-amber-700 border border-amber-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                    </svg>
+                                    Unverified
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed">
+                                <?= $faceEnrolled
+                                    ? 'Your face is enrolled and ready for Face Recognition entry at supported gates.'
+                                    : 'No face enrolled yet. Contact an admin to register your face for gate entry.' ?>
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section class="mt-10">
+                <div class="mb-6">
+                    <h2 class="section-title text-2xl sm:text-3xl font-bold text-slate-900">Gate Entry Guide</h2>
+                    <p class="text-slate-600 mt-3">Follow these steps every time you enter campus to avoid violations.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 card-animate">
+                    <!-- Step 1 -->
+                    <div class="glass-card rounded-3xl p-6 stat-card flex flex-col gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-600 grid place-items-center text-white text-xl font-bold leading-none shrink-0 shadow-lg">1</div>
+                            <div>
+                                <p class="text-xs uppercase tracking-widest text-sky-600 font-semibold">Before You Enter</p>
+                                <h3 class="text-lg font-bold text-slate-900">Prepare Your ID</h3>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 leading-relaxed">Have your <strong class="text-slate-800">RFID card</strong> ready in hand, or open your <strong class="text-slate-800">Digital ID</strong> on your phone before reaching the gate. This keeps the line moving for everyone.</p>
+                        <button onclick="window.location.href='digital_id.php'" class="mt-auto hover-button pill px-4 py-2.5 bg-sky-50 border border-sky-200 text-sky-700 font-semibold text-sm flex items-center gap-2 w-full justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                            </svg>
+                            Open Digital ID
+                        </button>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="glass-card rounded-3xl p-6 stat-card flex flex-col gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-600 grid place-items-center text-white text-xl font-bold leading-none shrink-0 shadow-lg">2</div>
+                            <div>
+                                <p class="text-xs uppercase tracking-widest text-sky-600 font-semibold">At The Gate</p>
+                                <h3 class="text-lg font-bold text-slate-900">Scan, Show, or Look</h3>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 leading-relaxed"><strong class="text-slate-800">Tap your RFID card</strong>, let the guard scan your <strong class="text-slate-800">Digital ID QR code</strong>, or use <strong class="text-slate-800">Face Recognition</strong> at supported gates. All three methods are accepted at campus entry points.</p>
+                        <div class="mt-auto flex flex-col gap-2">
+                            <div class="frosted rounded-xl px-4 py-2.5 border border-sky-100 flex items-center gap-3">
+                                <span class="h-2.5 w-2.5 rounded-full bg-green-500 shrink-0"></span>
+                                <p class="text-sm text-slate-700">RFID card tap</p>
+                            </div>
+                            <div class="frosted rounded-xl px-4 py-2.5 border border-sky-100 flex items-center gap-3">
+                                <span class="h-2.5 w-2.5 rounded-full bg-green-500 shrink-0"></span>
+                                <p class="text-sm text-slate-700">Digital ID QR scan</p>
+                            </div>
+                            <div class="frosted rounded-xl px-4 py-2.5 border border-sky-100 flex items-center gap-3">
+                                <span class="h-2.5 w-2.5 rounded-full bg-sky-500 shrink-0"></span>
+                                <p class="text-sm text-slate-700">Face Recognition </span></p>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Step 3 -->
+                    <div class="glass-card rounded-3xl p-6 stat-card flex flex-col gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-600 grid place-items-center text-white text-xl font-bold leading-none shrink-0 shadow-lg">3</div>
+                            <div>
+                                <p class="text-xs uppercase tracking-widest text-sky-600 font-semibold">After Entry</p>
+                                <h3 class="text-lg font-bold text-slate-900">Entry Logged</h3>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 leading-relaxed">Your entry is <strong class="text-slate-800">recorded automatically</strong> in real time. Entering without a valid ID will result in a <strong class="text-rose-600">violation record</strong> on your account.</p>
+                        <div class="mt-auto frosted rounded-2xl px-4 py-3 border border-rose-100 flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <p class="text-sm text-slate-700">No ID = violation on record</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Lost RFID Banner (shown only if RFID is lost) -->
+                <?php if ($rfidIsLost): ?>
+                <div class="mt-4 glass-card rounded-3xl p-5 card-animate flex flex-col sm:flex-row items-start sm:items-center gap-4 border border-rose-200">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-rose-700">Your RFID card is marked as lost</p>
+                        <p class="text-sm text-slate-600 mt-0.5">Use your <strong>Digital ID QR</strong> for gate entry until a replacement card is issued by the admin.<?= $rfidLostReason ? ' Reason: ' . htmlspecialchars($rfidLostReason) : '' ?></p>
+                    </div>
+                    <button onclick="window.location.href='digital_id.php'" class="hover-button pill px-5 py-2.5 bg-rose-600 text-white font-semibold text-sm whitespace-nowrap shadow-md">
+                        Open Digital ID
+                    </button>
+                </div>
+                <?php endif; ?>
+            </section>
         </main>
+
+        <footer class="relative z-10 border-t border-sky-100/60" style="margin-top: auto; background: rgba(2, 132, 199, 0.08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <span class="text-sm font-medium text-sky-700">Made by: GROUP-INGS</span>
+                <span class="text-sm font-semibold text-sky-800 tracking-wide">Philippine Christian University</span>
+                <span class="text-sm font-medium text-sky-700">Ver 1.25</span>
+            </div>
+        </footer>
     </div>
 
     <!-- Contact Support Modal (Hidden by default) -->
@@ -805,25 +677,29 @@ try {
         const userMenuButton = document.getElementById('user-menu-button');
         const userMenu = document.getElementById('user-menu');
         
-        userMenuButton.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent event from bubbling
-            const isExpanded = userMenuButton.getAttribute('aria-expanded') === 'true';
-            userMenuButton.setAttribute('aria-expanded', !isExpanded);
-            userMenu.toggleAttribute('hidden');
-        });
+        if (userMenuButton && userMenu) {
+            userMenuButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent event from bubbling
+                const isExpanded = userMenuButton.getAttribute('aria-expanded') === 'true';
+                userMenuButton.setAttribute('aria-expanded', !isExpanded);
+                userMenu.toggleAttribute('hidden');
+            });
 
-        // Close menu when clicking outside
-        document.addEventListener('click', (event) => {
-            if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-                userMenuButton.setAttribute('aria-expanded', 'false');
-                userMenu.hidden = true;
-            }
-        });
+            // Close menu when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+                    userMenuButton.setAttribute('aria-expanded', 'false');
+                    userMenu.hidden = true;
+                }
+            });
+        }
 
         // Function to close user menu
         function closeUserMenu() {
-            userMenuButton.setAttribute('aria-expanded', 'false');
-            userMenu.hidden = true;
+            if (userMenuButton && userMenu) {
+                userMenuButton.setAttribute('aria-expanded', 'false');
+                userMenu.hidden = true;
+            }
         }
 
         // Toggle user information
@@ -831,12 +707,36 @@ try {
             const infoSection = document.getElementById('userInformation');
             if (infoSection.classList.contains('hidden')) {
                 infoSection.classList.remove('hidden');
-                infoSection.classList.add('animate-fade-in');
+                infoSection.style.maxHeight = infoSection.scrollHeight + 'px';
+                infoSection.style.opacity = '1';
             } else {
-                infoSection.classList.add('hidden');
-                infoSection.classList.remove('animate-fade-in');
+                infoSection.style.maxHeight = '0px';
+                infoSection.style.opacity = '0';
+                setTimeout(() => infoSection.classList.add('hidden'), 300);
             }
         }
+
+        // GSAP animations for page entry
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.card-animate');
+            gsap.set(cards, { y: 20, opacity: 0 });
+            gsap.to(cards, {
+                y: 0,
+                opacity: 1,
+                duration: 0.7,
+                stagger: 0.08,
+                ease: 'power2.out'
+            });
+
+            const blobs = document.querySelectorAll('.floating-blob');
+            gsap.to(blobs, {
+                scale: 1.05,
+                duration: 6,
+                repeat: -1,
+                yoyo: true,
+                ease: 'sine.inOut'
+            });
+        });
 
         // Toggle edit profile form
         function toggleEditProfile() {

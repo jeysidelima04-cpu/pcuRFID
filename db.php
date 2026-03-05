@@ -78,6 +78,9 @@ define('DB_USER', env('DB_USER', 'root'));
 define('DB_PASS', env('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
 
+// App debug toggle for safe error display
+define('APP_DEBUG', filter_var(env('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN));
+
 // Enable error logging
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
@@ -114,10 +117,19 @@ function pdo(): \PDO {
 }
 
 /**
- * Auto-setup admin account from .env configuration
- * Creates or updates admin user if credentials are provided in .env
+ * Auto-setup admin account from .env configuration.
+ *
+ * SECURITY: This function is intentionally DISABLED unless ADMIN_AUTO_SETUP=true
+ * is explicitly set in .env. Setting that flag on a running production server
+ * allows anyone who can write to .env to silently elevate a DB account.
+ * Only enable during initial installation, then set ADMIN_AUTO_SETUP=false.
  */
 function setup_admin_account(\PDO $pdo): void {
+    // Hard gate — must be explicitly opted-in
+    if (!filter_var(env('ADMIN_AUTO_SETUP', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+        return;
+    }
+
     try {
         $adminEmail = env('ADMIN_EMAIL', '');
         $adminPassword = env('ADMIN_PASSWORD', '');
@@ -137,14 +149,14 @@ function setup_admin_account(\PDO $pdo): void {
             // Admin exists - check if password needs updating
             if (!password_verify($adminPassword, $existingAdmin['password'])) {
                 // Update password
-                $hashedPassword = password_hash($adminPassword, PASSWORD_BCRYPT);
+                $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID);
                 $updateStmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
                 $updateStmt->execute([$hashedPassword, $existingAdmin['id']]);
                 error_log("[PCU RFID] Admin account password updated from .env configuration");
             }
         } else {
             // Create new admin account
-            $hashedPassword = password_hash($adminPassword, PASSWORD_BCRYPT);
+            $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID);
             
             // Check which columns exist in users table
             $columnsStmt = $pdo->query("SHOW COLUMNS FROM users");
@@ -224,69 +236,131 @@ function sendMail(string $to, string $subject, string $htmlBody, bool $returnErr
 }
 
 /**
- * Rate limiting function - prevents brute force attacks
- * Uses session-based tracking (no database changes needed)
- * 
- * @param string $action Action identifier (e.g., 'login', 'reset_password')
- * @param int $max_attempts Maximum allowed attempts
- * @param int $time_window Time window in seconds (default 15 minutes)
- * @return bool True if allowed, false if rate limited
+ * Rate limiting function - prevents brute force attacks.
+ * Primary: IP-based tracking stored in the database (survives session rotation).
+ * Fallback: Session-based tracking (used if DB table is not yet created).
+ *
+ * @param string $action       Action identifier (e.g. 'login', 'reset_password')
+ * @param int    $max_attempts Maximum allowed attempts within the window
+ * @param int    $time_window  Time window in seconds (default 15 minutes)
+ * @return bool True if the request is allowed, false if rate-limited
  */
 function check_rate_limit(string $action, int $max_attempts = 5, int $time_window = 900): bool {
-    // Initialize rate limit tracker in session if not exists
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $identifier = $action . '|' . $ip;
+    $now = time();
+
+    // ---- PRIMARY: DB-backed IP rate limiting ----
+    try {
+        $pdo = pdo();
+
+        // Auto-create table on first use so no manual migration is required
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS ip_rate_limits (
+                `id`           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `identifier`   VARCHAR(180) NOT NULL,
+                `attempts`     INT UNSIGNED NOT NULL DEFAULT 1,
+                `first_attempt` INT UNSIGNED NOT NULL,
+                `blocked_until` INT UNSIGNED NOT NULL DEFAULT 0,
+                UNIQUE KEY `uk_identifier` (`identifier`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+
+        // Clean expired rows periodically (1-in-100 chance per request, avoids a scheduled job)
+        if (mt_rand(1, 100) === 1) {
+            $pdo->prepare("DELETE FROM ip_rate_limits WHERE blocked_until > 0 AND blocked_until < ?")
+                ->execute([$now]);
+        }
+
+        $stmt = $pdo->prepare("SELECT * FROM ip_rate_limits WHERE identifier = ? LIMIT 1");
+        $stmt->execute([$identifier]);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            // Currently blocked?
+            if ($row['blocked_until'] > $now) {
+                $remaining = $row['blocked_until'] - $now;
+                error_log("Rate limit (DB): {$action} from {$ip} blocked for {$remaining}s");
+                return false;
+            }
+
+            // Window expired — reset the counter
+            if (($now - $row['first_attempt']) > $time_window) {
+                $pdo->prepare("UPDATE ip_rate_limits SET attempts = 1, first_attempt = ?, blocked_until = 0 WHERE identifier = ?")
+                    ->execute([$now, $identifier]);
+                return true;
+            }
+
+            // Increment
+            $newAttempts = (int)$row['attempts'] + 1;
+            if ($newAttempts > $max_attempts) {
+                $blockedUntil = $now + $time_window;
+                $pdo->prepare("UPDATE ip_rate_limits SET attempts = ?, blocked_until = ? WHERE identifier = ?")
+                    ->execute([$newAttempts, $blockedUntil, $identifier]);
+                error_log("Rate limit (DB): {$action} from {$ip} exceeded {$max_attempts} attempts — blocked until " . date('H:i:s', $blockedUntil));
+                return false;
+            }
+
+            $pdo->prepare("UPDATE ip_rate_limits SET attempts = ? WHERE identifier = ?")
+                ->execute([$newAttempts, $identifier]);
+        } else {
+            // First attempt for this identifier
+            $pdo->prepare("INSERT INTO ip_rate_limits (identifier, attempts, first_attempt, blocked_until) VALUES (?, 1, ?, 0)")
+                ->execute([$identifier, $now]);
+        }
+
+        return true;
+
+    } catch (\Throwable $e) {
+        error_log("Rate limit DB error (falling back to session): " . $e->getMessage());
+        // ---- FALLBACK: session-based rate limiting ----
+    }
+
+    // ---- FALLBACK: Session-based rate limiting ----
     if (!isset($_SESSION['rate_limits'])) {
         $_SESSION['rate_limits'] = [];
     }
-    
-    $now = time();
-    $identifier = $action . '_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    
-    // Get attempts for this action
-    if (!isset($_SESSION['rate_limits'][$identifier])) {
-        $_SESSION['rate_limits'][$identifier] = [
-            'attempts' => 0,
-            'first_attempt' => $now,
-            'blocked_until' => 0
-        ];
+    $sessionKey = $action . '_' . $ip;
+    if (!isset($_SESSION['rate_limits'][$sessionKey])) {
+        $_SESSION['rate_limits'][$sessionKey] = ['attempts' => 0, 'first_attempt' => $now, 'blocked_until' => 0];
     }
-    
-    $limit_data = &$_SESSION['rate_limits'][$identifier];
-    
-    // Check if currently blocked
-    if ($limit_data['blocked_until'] > $now) {
-        $remaining = $limit_data['blocked_until'] - $now;
-        error_log("Rate limit: $action blocked for $remaining seconds");
+    $limit = &$_SESSION['rate_limits'][$sessionKey];
+
+    if ($limit['blocked_until'] > $now) {
         return false;
     }
-    
-    // Reset if time window expired
-    if ($now - $limit_data['first_attempt'] > $time_window) {
-        $limit_data['attempts'] = 0;
-        $limit_data['first_attempt'] = $now;
-        $limit_data['blocked_until'] = 0;
+    if ($now - $limit['first_attempt'] > $time_window) {
+        $limit = ['attempts' => 0, 'first_attempt' => $now, 'blocked_until' => 0];
     }
-    
-    // Increment attempt counter
-    $limit_data['attempts']++;
-    
-    // Block if exceeded max attempts
-    if ($limit_data['attempts'] > $max_attempts) {
-        $limit_data['blocked_until'] = $now + $time_window;
-        error_log("Rate limit: $action exceeded $max_attempts attempts, blocked for $time_window seconds");
+    $limit['attempts']++;
+    if ($limit['attempts'] > $max_attempts) {
+        $limit['blocked_until'] = $now + $time_window;
         return false;
     }
-    
     return true;
 }
 
 /**
- * Reset rate limit for successful action
- * Call this after successful login/reset to clear the counter
+ * Reset rate limit for successful action.
+ * Clears both the DB record and the session fallback.
  */
 function reset_rate_limit(string $action): void {
-    $identifier = $action . '_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    if (isset($_SESSION['rate_limits'][$identifier])) {
-        unset($_SESSION['rate_limits'][$identifier]);
+    $ip      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $identifier = $action . '|' . $ip;
+
+    // Clear DB record
+    try {
+        $pdo = pdo();
+        $pdo->prepare("DELETE FROM ip_rate_limits WHERE identifier = ?")
+            ->execute([$identifier]);
+    } catch (\Throwable $e) {
+        error_log("Rate limit reset DB error: " . $e->getMessage());
+    }
+
+    // Clear session fallback
+    $sessionKey = $action . '_' . $ip;
+    if (isset($_SESSION['rate_limits'][$sessionKey])) {
+        unset($_SESSION['rate_limits'][$sessionKey]);
     }
 }
 

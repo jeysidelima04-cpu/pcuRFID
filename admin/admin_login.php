@@ -10,15 +10,20 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Rate limiting: 5 attempts per 15 minutes (TEMPORARILY DISABLED)
-    // if (!check_rate_limit('admin_login', 5, 900)) {
-    //     $error = 'Too many login attempts. Please try again in 15 minutes.';
-    // } else {
+    verify_csrf();
+
+    $rateLimitEnabled = filter_var(env('ENABLE_ADMIN_RATE_LIMIT', 'true'), FILTER_VALIDATE_BOOLEAN);
+    if ($rateLimitEnabled && !check_rate_limit('admin_login', 5, 900)) {
+        error_log('Admin login rate limit hit for IP ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        $error = 'Too many login attempts. Please try again in 15 minutes.';
+    } else {
         $email = strtolower(trim($_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
 
         if (!$email || !$password) {
             $error = 'Please enter email and password.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Please enter a valid email address.';
         } else {
             try {
                 $pdo = pdo();
@@ -38,9 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
                 
                 if ($admin && password_verify($password, $admin['password'])) {
+                    // Transparently rehash from bcrypt to Argon2id
+                    if (password_needs_rehash($admin['password'], PASSWORD_ARGON2ID)) {
+                        $newHash = password_hash($password, PASSWORD_ARGON2ID);
+                        $rehashStmt = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
+                        $rehashStmt->execute([$newHash, $admin['id']]);
+                    }
+
                     // Valid admin credentials - reset rate limit
                     reset_rate_limit('admin_login');
                     
+                    session_regenerate_id(true);
                     $_SESSION['user_id'] = $admin['id'];
                     $_SESSION['role'] = 'Admin';
                     $_SESSION['admin_logged_in'] = true;
@@ -56,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Login system error. Please try again.';
             }
         }
-    // }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -64,7 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Admin | Login</title>
+    <title>GateWatch Admin | Login</title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
@@ -122,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST" class="space-y-6">
+                <?php echo csrf_input(); ?>
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700">Username</label>
                     <input 

@@ -134,7 +134,8 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Security | Gate Monitor</title>
+    <title>GateWatch Security | Gate Monitor</title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <script src="../assets/js/digital-id-card.js?v=11"></script>
@@ -165,90 +166,236 @@ try {
             animation: pulse-ring 2s ease-in-out infinite;
         }
     </style>
+    <style>
+        :root {
+            --sky-50: #f0f9ff;
+            --sky-100: #e0f2fe;
+            --sky-600: #0284c7;
+            --slate-900: #0f172a;
+            --glass: rgba(255, 255, 255, 0.65);
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.08), transparent 30%),
+                        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.1), transparent 28%),
+                        radial-gradient(circle at 0% 80%, rgba(2, 132, 199, 0.07), transparent 25%),
+                        linear-gradient(135deg, #e0f2ff 0%, #f8fbff 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+            color: #0f172a;
+        }
+
+        .page-shell {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hero-photo {
+            position: fixed;
+            inset: 0;
+            background-image: url('../assets/images/pcu-building.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: saturate(1.05);
+            opacity: 0.55;
+            z-index: 0;
+        }
+
+        .hero-gradient {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.18), rgba(255, 255, 255, 0.78));
+            z-index: 0;
+        }
+
+        .floating-blob {
+            position: fixed;
+            filter: blur(40px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+            z-index: 1;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .blob-1 {
+            top: -120px;
+            left: -160px;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.55), rgba(2, 132, 199, 0.25));
+        }
+
+        .blob-2 {
+            bottom: 0;
+            right: -120px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.45), rgba(14, 165, 233, 0.18));
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+        }
+
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(14, 165, 233, 0.05));
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .sidebar-button {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-button:hover,
+        .sidebar-button:focus {
+            background-color: #0284c7;
+            color: white;
+        }
+    </style>
 </head>
-<body class="bg-slate-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
-        <div class="container mx-auto px-4 md:px-8 py-4">
-            <div class="flex items-center justify-between flex-wrap gap-4">
-                <div class="flex items-center gap-3">
-                    <a href="http://localhost/pcuRFID2/security/gate_monitor.php" class="transition-transform hover:scale-105">
-                        <img src="../assets/images/pcu-logo.png" alt="Philippine Christian University" class="w-12 h-12 md:w-16 md:h-16">
-                    </a>
-                    <div>
-                        <h1 class="text-lg md:text-xl font-bold text-slate-800">Gate Monitor</h1>
-                        <p class="text-slate-600 text-xs md:text-sm">GateWatch</p>
+<body class="text-slate-900">
+    <div class="page-shell">
+        <div class="hero-photo"></div>
+        <div class="hero-gradient"></div>
+        <span class="floating-blob blob-1"></span>
+        <span class="floating-blob blob-2"></span>
+
+        <!-- Header -->
+        <nav class="nav-blur border-b border-slate-200 fixed w-full top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-3">
+                        <a href="gate_monitor.php" class="flex items-center hover:opacity-90 transition-opacity">
+                            <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
+                            <span class="ml-2 text-xl font-semibold text-sky-700">Philippine Christian University</span>
+                        </a>
                     </div>
-                </div>
-                <div class="flex items-center gap-3 md:gap-4">
-                    <div class="text-right hidden sm:block">
-                        <p class="text-slate-800 font-medium text-sm md:text-base"><?php echo htmlspecialchars($guard_username); ?></p>
-                        <p class="text-slate-500 text-xs"><?php echo date('M j, Y g:i A'); ?></p>
+
+                    <div class="flex items-center gap-3">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-slate-700 font-medium text-sm"><?php echo htmlspecialchars($guard_username); ?></p>
+                            <p class="text-slate-400 text-xs"><?php echo date('M j, Y g:i A'); ?></p>
+                        </div>
+                        <a href="security_logout.php" class="sidebar-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 border border-slate-300 hover:text-white hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors">
+                            Sign Out
+                        </a>
                     </div>
-                    <a href="security_logout.php" class="px-3 md:px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium btn-hover">
-                        Logout
-                    </a>
                 </div>
             </div>
-        </div>
-    </header>
+        </nav>
 
-    <div class="container mx-auto px-4 md:px-8 py-6 md:py-8">
-        <!-- Page Title -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-slate-800">Gate Entrance Monitoring</h1>
-            <p class="text-slate-600 mt-1">Monitor student RFID card scans and track violations in real-time</p>
-        </div>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 relative z-10 flex-1">
+            <!-- Page Title -->
+            <div class="glass-card rounded-3xl p-6 mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">Gate Entrance Monitoring</h1>
+                <p class="text-slate-600 mt-1">Monitor student RFID card scans and track violations in real-time</p>
+            </div>
 
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
             <!-- Today's Scans -->
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-medium opacity-90">Today's Scans</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
+            <div class="glass-card rounded-3xl p-5 stat-card">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Today's</p>
+                        <h3 class="text-xl font-semibold text-slate-900">Scans</h3>
+                    </div>
+                    <span class="badge bg-blue-50 text-blue-700 border border-blue-100">
+                        <?php echo number_format($todayScans); ?> total
+                    </span>
                 </div>
-                <p class="text-3xl font-bold mb-1"><?php echo number_format($todayScans); ?></p>
-                <p class="text-sm opacity-75">Violations</p>
+                <p class="text-slate-600 leading-relaxed">Total RFID card taps recorded at the gate today.</p>
             </div>
 
             <!-- Unique Students -->
-            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-medium opacity-90">Unique Students</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                    </svg>
+            <div class="glass-card rounded-3xl p-5 stat-card">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Unique</p>
+                        <h3 class="text-xl font-semibold text-slate-900">Students</h3>
+                    </div>
+                    <span class="badge bg-purple-50 text-purple-700 border border-purple-100">
+                        <?php echo number_format($uniqueStudents); ?> today
+                    </span>
                 </div>
-                <p class="text-3xl font-bold mb-1"><?php echo number_format($uniqueStudents); ?></p>
-                <p class="text-sm opacity-75">Today</p>
+                <p class="text-slate-600 leading-relaxed">Distinct students who have scanned their cards today.</p>
             </div>
 
             <!-- High Violations -->
-            <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white sm:col-span-2 lg:col-span-1">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-medium opacity-90">High Violations</h3>
-                    <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
+            <div class="glass-card rounded-3xl p-5 stat-card sm:col-span-2 lg:col-span-1">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Violations</p>
+                        <h3 class="text-xl font-semibold text-slate-900">High Alert</h3>
+                    </div>
+                    <span class="badge bg-rose-50 text-rose-700 border border-rose-100">
+                        <?php echo number_format($highViolationCount); ?> students
+                    </span>
                 </div>
-                <p class="text-3xl font-bold mb-1"><?php echo number_format($highViolationCount); ?></p>
-                <p class="text-sm opacity-75">Students (3+ strikes)</p>
+                <p class="text-slate-600 leading-relaxed">Students with 3 or more recorded violations.</p>
             </div>
         </div>
 
         <!-- Main Scan Area -->
-        <div class="max-w-4xl mx-auto mb-6 md:mb-8">
+        <div class="max-w-4xl mx-auto mb-6 md:mb-8 glass-card rounded-3xl stat-card">
             <?php if ($faceRecEnabled): ?>
             <!-- Mode Selector -->
-            <div class="flex gap-2 mb-4">
-                <button id="btnRfidMode" onclick="switchMode('rfid')" class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-[#0056b3] text-white shadow-md">
+            <div class="flex gap-2 p-5 pb-0">
+                <button id="btnRfidMode" onclick="switchMode('rfid')" class="flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-sky-600 text-white shadow-md">
                     <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                     RFID Scanner
                 </button>
-                <button id="btnFaceMode" onclick="switchMode('face')" class="flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50">
+                <button id="btnFaceMode" onclick="switchMode('face')" class="flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-white/80 text-slate-600 border border-white/60 hover:bg-white">
                     <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     Face Recognition
                 </button>
@@ -256,10 +403,11 @@ try {
             <?php endif; ?>
 
             <!-- RFID Scanner Panel -->
-            <div id="rfidPanel" class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
-                    <h2 class="text-lg font-semibold text-slate-800">RFID Scanner</h2>
-                    <p class="text-sm text-slate-600">Tap student card on reader to record entry</p>
+            <div id="rfidPanel" class="overflow-hidden">
+                <div class="px-6 pt-5 pb-4 border-b border-slate-200/30">
+                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">RFID</p>
+                    <h2 class="text-xl font-semibold text-slate-900">Scanner</h2>
+                    <p class="text-sm text-slate-600 mt-1">Tap student card on reader to record entry</p>
                 </div>
                 <!-- Scan Status Display -->
                 <div id="scanStatus" class="p-8 md:p-12 text-center min-h-[300px] md:min-h-[400px] flex items-center justify-center">
@@ -280,12 +428,13 @@ try {
 
             <?php if ($faceRecEnabled): ?>
             <!-- Face Recognition Panel (hidden by default) -->
-            <div id="facePanel" class="bg-white rounded-xl shadow-sm overflow-hidden hidden">
-                <div class="bg-gradient-to-r from-slate-50 to-green-50 px-6 py-4 border-b border-slate-200">
+            <div id="facePanel" class="overflow-hidden hidden">
+                <div class="px-6 pt-5 pb-4 border-b border-slate-200/30">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-semibold text-slate-800">Face Recognition</h2>
-                            <p class="text-sm text-slate-600" id="faceStatus">Loading models...</p>
+                            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Face</p>
+                            <h2 class="text-xl font-semibold text-slate-900">Recognition</h2>
+                            <p class="text-sm text-slate-600 mt-1" id="faceStatus">Loading models...</p>
                         </div>
                         <div class="flex gap-2">
                             <button id="btnStartFace" onclick="startFaceDetection()" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors font-medium hidden">
@@ -302,7 +451,7 @@ try {
                 <div class="p-6 md:p-8">
 
                     <!-- ===== CAMERA SELECTOR — always visible ===== -->
-                    <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="mb-5 bg-white/70 border border-slate-200/70 rounded-xl p-4 backdrop-blur">
                         <div class="flex items-center gap-3 flex-wrap">
                             <svg class="w-5 h-5 text-[#0056b3] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -346,15 +495,15 @@ try {
                     
                     <!-- Face recognition stats -->
                     <div class="flex gap-4 mt-4 text-center text-sm">
-                        <div class="flex-1 bg-slate-50 rounded-lg p-3">
+                        <div class="flex-1 bg-white/70 backdrop-blur rounded-lg p-3 border border-white/60">
                             <p class="text-slate-500">Loaded Faces</p>
                             <p id="faceLoadedCount" class="text-xl font-bold text-slate-800">0</p>
                         </div>
-                        <div class="flex-1 bg-slate-50 rounded-lg p-3">
+                        <div class="flex-1 bg-white/70 backdrop-blur rounded-lg p-3 border border-white/60">
                             <p class="text-slate-500">Matches Today</p>
                             <p class="text-xl font-bold text-slate-800"><?php echo number_format($faceEntriesToday); ?></p>
                         </div>
-                        <div class="flex-1 bg-slate-50 rounded-lg p-3">
+                        <div class="flex-1 bg-white/70 backdrop-blur rounded-lg p-3 border border-white/60">
                             <p class="text-slate-500">Threshold</p>
                             <p class="text-xl font-bold text-slate-800"><?php echo $faceMatchThreshold; ?></p>
                         </div>
@@ -366,21 +515,23 @@ try {
 
         <!-- Recent Scans Log -->
         <div class="max-w-5xl mx-auto">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+            <div class="glass-card rounded-3xl overflow-hidden stat-card">
+                <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200/30">
                     <div>
-                        <h3 class="text-lg font-semibold text-slate-800">Recent Scans</h3>
-                        <p class="text-sm text-slate-600">Live activity log</p>
+                        <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Activity</p>
+                        <h3 class="text-xl font-semibold text-slate-900">Recent Scans</h3>
+                        <p class="text-sm text-slate-600 mt-1">Live activity log</p>
                     </div>
-                    <button onclick="clearLog()" class="text-sm text-[#0056b3] hover:text-blue-700 font-medium transition-colors">
+                    <span class="badge bg-sky-50 text-sky-700 border border-sky-100 cursor-pointer hover:bg-sky-100 transition-colors" onclick="clearLog()">
                         Clear Log
-                    </button>
+                    </span>
                 </div>
-                <div id="scanLog" class="p-6 space-y-3 max-h-[400px] overflow-y-auto bg-slate-50">
+                <div id="scanLog" class="p-6 space-y-3 max-h-[400px] overflow-y-auto">
                     <p class="text-center text-slate-400 py-8 text-sm">No scans recorded yet. Waiting for first card tap...</p>
                 </div>
             </div>
         </div>
+        </main>
     </div>
 
     <script>
@@ -746,8 +897,8 @@ try {
         if (mode === 'rfid') {
             rfidPanel.classList.remove('hidden');
             facePanel.classList.add('hidden');
-            btnRfid.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-[#0056b3] text-white shadow-md';
-            btnFace.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
+            btnRfid.className = 'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-sky-600 text-white shadow-md';
+            btnFace.className = 'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-white/80 text-slate-600 border border-white/60 hover:bg-white';
             
             // SECURITY: Fully stop and release camera hardware so the camera LED turns off
             // stopContinuousDetection() only pauses the detection loop — stopCamera() actually
@@ -765,8 +916,8 @@ try {
         } else {
             rfidPanel.classList.add('hidden');
             facePanel.classList.remove('hidden');
-            btnFace.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-[#0056b3] text-white shadow-md';
-            btnRfid.className = 'flex-1 px-4 py-3 rounded-lg font-medium text-sm transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
+            btnFace.className = 'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-sky-600 text-white shadow-md';
+            btnRfid.className = 'flex-1 px-4 py-3 rounded-xl font-medium text-sm transition-all bg-white/80 text-slate-600 border border-white/60 hover:bg-white';
             
             if (!faceInitialized) {
                 // First time — enumerate cameras immediately (fire-and-forget, no await needed)

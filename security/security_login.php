@@ -15,36 +15,47 @@ if (isset($_GET['timeout']) && $_GET['timeout'] == '1') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     // Rate limiting: 5 attempts per 15 minutes
     if (!check_rate_limit('security_login', 5, 900)) {
         $error = 'Too many login attempts. Please try again in 15 minutes.';
     } else {
-        $username = $_POST['username'] ?? '';
+        $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
-        
-        // Get security credentials from environment variables
-        $valid_username = env('SECURITY_USERNAME');
-        $valid_password = env('SECURITY_PASSWORD');
-        
-        // Ensure credentials are configured in .env file
-        if (empty($valid_username) || empty($valid_password)) {
-            $error = 'Security credentials not configured. Please contact administrator.';
-        } elseif ($username === $valid_username && $password === $valid_password) {
-            reset_rate_limit('security_login');
-            
-            // Regenerate session ID to prevent session fixation attacks
-            session_regenerate_id(true);
-            
-            // Set session variables
-            $_SESSION['security_logged_in'] = true;
-            $_SESSION['security_username'] = $username;
-            $_SESSION['last_activity'] = time();  // Initialize activity timestamp
-            $_SESSION['created_at'] = time();  // Initialize creation timestamp
-            
-            header('Location: gate_monitor.php');
-            exit();
+
+        if ($username === '' || $password === '') {
+            $error = 'Please enter username and password.';
         } else {
-            $error = 'Invalid credentials. Please try again.';
+            // Get security credentials from environment variables
+            $valid_username = env('SECURITY_USERNAME');
+            $valid_password = env('SECURITY_PASSWORD');
+            
+            // Ensure credentials are configured in .env file
+            if (empty($valid_username) || empty($valid_password)) {
+                $error = 'Security credentials not configured. Please contact administrator.';
+            } elseif ($username === $valid_username && (
+                // Support both hashed (recommended) and plaintext (legacy) password storage.
+                // To upgrade: replace the plaintext SECURITY_PASSWORD in .env with the output of:
+                //   php -r "echo password_hash('your_password', PASSWORD_ARGON2ID);"
+                ((str_starts_with($valid_password, '$2y$') || str_starts_with($valid_password, '$argon2id$')) && password_verify($password, $valid_password))
+                || (!str_starts_with($valid_password, '$2y$') && !str_starts_with($valid_password, '$argon2id$') && hash_equals($valid_password, $password))
+            )) {
+                reset_rate_limit('security_login');
+                
+                // Regenerate session ID to prevent session fixation attacks
+                session_regenerate_id(true);
+                
+                // Set session variables
+                $_SESSION['security_logged_in'] = true;
+                $_SESSION['security_username'] = $username;
+                $_SESSION['last_activity'] = time();  // Initialize activity timestamp
+                $_SESSION['created_at'] = time();  // Initialize creation timestamp
+                
+                header('Location: gate_monitor.php');
+                exit();
+            } else {
+                $error = 'Invalid credentials. Please try again.';
+            }
         }
     }
 }
@@ -54,7 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Security | Login</title>
+    <title>GateWatch Security | Login</title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
@@ -112,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST" class="space-y-6">
+                <?php echo csrf_input(); ?>
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-slate-700">Username</label>
                     <input 

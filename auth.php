@@ -56,8 +56,7 @@ try {
     error_log("[PCU RFID Error] " . $e->getMessage());
     error_log("[PCU RFID Error] Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
-    // Display error in development
-    if (true) {  // Change this to false in production
+    if (APP_DEBUG) {
         echo "<h1>Server Error</h1>";
         echo "<p>Error: " . htmlspecialchars($e->getMessage()) . "</p>";
         echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
@@ -131,7 +130,7 @@ function handleSignup(): void {
         redirect_error('signup.php', 'Email or Student ID already in use.');
     }
 
-    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $hash = password_hash($password, PASSWORD_ARGON2ID);
 
     // Create user with Pending status and pending verification
     $pdo->beginTransaction();
@@ -244,6 +243,13 @@ function handleLogin(): void {
             redirect_error('login.php', 'Too many failed attempts. Account locked.');
         }
         redirect_error('login.php', 'Invalid credentials.');
+    }
+
+    // Transparently rehash from bcrypt to Argon2id
+    if (password_needs_rehash($user['password'], PASSWORD_ARGON2ID)) {
+        $newHash = password_hash($password, PASSWORD_ARGON2ID);
+        $rehashStmt = $pdo->prepare('UPDATE users SET password = :pass WHERE id = :id');
+        $rehashStmt->execute([':pass' => $newHash, ':id' => $user['id']]);
     }
 
     if ($user['status'] === 'Pending') {

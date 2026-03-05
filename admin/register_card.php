@@ -97,6 +97,10 @@ try {
 
     echo json_encode(['success' => true]);
 
+} catch (\PDOException $e) {
+    error_log('RFID registration database error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server error while registering card. Please try again.']);
 } catch (\Exception $e) {
     error_log('RFID registration error: ' . $e->getMessage());
     http_response_code(500);

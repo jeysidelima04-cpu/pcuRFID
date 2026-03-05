@@ -183,6 +183,10 @@ try {
     error_log('Face registration encryption error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Encryption error - check server configuration']);
+} catch (\PDOException $e) {
+    error_log('Face registration database error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server error while registering face descriptor. Please try again.']);
 } catch (Exception $e) {
     error_log('Face registration error: ' . $e->getMessage());
     http_response_code(400);

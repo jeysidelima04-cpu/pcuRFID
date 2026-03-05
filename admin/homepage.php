@@ -353,7 +353,8 @@ $activeSection = $_GET['section'] ?? 'students';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID Admin | <?php echo $page_title; ?></title>
+    <title>GateWatch Admin | <?php echo $page_title; ?></title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">
@@ -386,6 +387,9 @@ $activeSection = $_GET['section'] ?? 'students';
             aside {
                 transform: translateX(0) !important;
             }
+            .main-content {
+                margin-left: 17.5rem !important;
+            }
         }
         
         /* Mobile sidebar toggle styles */
@@ -395,7 +399,7 @@ $activeSection = $_GET['section'] ?? 'students';
                 z-index: 1000;
             }
             aside.sidebar-hidden {
-                transform: translateX(-100%);
+                transform: translateX(calc(-100% - 0.75rem));
             }
             .main-content {
                 transition: margin-left 0.3s ease-in-out;
@@ -440,11 +444,133 @@ $activeSection = $_GET['section'] ?? 'students';
             }
         }
     </style>
+    <style>
+        :root {
+            --sky-50: #f0f9ff;
+            --sky-100: #e0f2fe;
+            --sky-600: #0284c7;
+            --slate-900: #0f172a;
+            --glass: rgba(255, 255, 255, 0.78);
+        }
+
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            background: #e0f2ff;
+            background: radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.07), transparent 30%),
+                        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 28%),
+                        radial-gradient(circle at 0% 80%, rgba(2, 132, 199, 0.06), transparent 25%),
+                        linear-gradient(135deg, #e0f2ff 0%, #f8fbff 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        .page-shell {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hero-photo {
+            position: fixed;
+            inset: 0;
+            background-image: url('../assets/images/pcu-building.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: saturate(1.05);
+            opacity: 0.55;
+            z-index: 0;
+        }
+
+        .hero-gradient {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.14), rgba(255, 255, 255, 0.7));
+            z-index: 0;
+        }
+
+        .floating-blob {
+            position: fixed;
+            filter: blur(40px);
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+            z-index: 1;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .blob-1 {
+            top: -120px;
+            left: -160px;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(2, 132, 199, 0.55), rgba(2, 132, 199, 0.25));
+        }
+
+        .blob-2 {
+            bottom: 0;
+            right: -120px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.45), rgba(14, 165, 233, 0.18));
+        }
+
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+        }
+
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sidebar-glass {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255,255,255,0.18);
+        }
+
+        .sidebar-button {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-button:hover,
+        .sidebar-button:focus {
+            background-color: #0284c7;
+            color: white;
+        }
+    </style>
 </head>
-<body class="bg-slate-50">
+<body class="text-slate-900">
+    <div class="page-shell">
+        <div class="hero-photo"></div>
+        <div class="hero-gradient"></div>
+        <span class="floating-blob blob-1"></span>
+        <span class="floating-blob blob-2"></span>
+
+        <div class="relative z-10">
 
 <!-- Main Layout with Sidebar -->
-<div class="flex min-h-screen bg-slate-50">
+<div class="flex min-h-screen">
     <!-- Overlay for mobile when sidebar is open -->
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
     
@@ -461,19 +587,19 @@ $activeSection = $_GET['section'] ?? 'students';
     </button>
 
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-white shadow-lg fixed top-0 left-0 h-screen overflow-y-auto z-40 sidebar-hidden">
-        <div class="p-6">
-            <a href="?section=students" class="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
+    <aside id="sidebar" class="w-64 sidebar-glass fixed top-3 left-3 rounded-2xl overflow-y-auto z-40 sidebar-hidden" style="height:calc(100vh - 1.5rem)">
+        <div class="p-4">
+            <a href="?section=students" class="flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity">
                 <img src="../pcu-logo.png" alt="PCU Logo" class="w-10 h-10">
                 <div>
-                    <h2 class="font-semibold text-slate-800">Admin Panel</h2>
-                    <p class="text-xs text-slate-500">GateWatch</p>
+                    <h2 class="font-semibold text-sky-700">Admin Panel</h2>
+                    <p class="text-xs text-slate-500">Philippine Christian University</p>
                 </div>
             </a>
 
             <!-- Navigation -->
-            <nav class="space-y-2">
-                <a href="?section=verify" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'verify' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+            <nav class="space-y-1">
+                <a href="?section=verify" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'verify' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -485,14 +611,14 @@ $activeSection = $_GET['section'] ?? 'students';
                     </div>
                 </a>
                 
-                <a href="?section=students" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'students' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=students" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'students' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
                     <span class="font-medium">All Students</span>
                 </a>
 
-                <a href="?section=registered" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'registered' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=registered" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'registered' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
                     </svg>
@@ -502,14 +628,14 @@ $activeSection = $_GET['section'] ?? 'students';
                     </div>
                 </a>
 
-                <a href="?section=analytics" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'analytics' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=analytics" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'analytics' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
                     <span class="font-medium">Analytics</span>
                 </a>
 
-                <a href="?section=notifications" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'notifications' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=notifications" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'notifications' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
@@ -521,14 +647,14 @@ $activeSection = $_GET['section'] ?? 'students';
                     </div>
                 </a>
 
-                <a href="?section=audit" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'audit' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=audit" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'audit' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span class="font-medium">Audit Log</span>
                 </a>
 
-                <a href="?section=rfid_checker" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'rfid_checker' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=rfid_checker" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'rfid_checker' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
@@ -543,7 +669,7 @@ $activeSection = $_GET['section'] ?? 'students';
                     if (!empty($s['rfid_uid']) && empty($s['face_registered'])) $faceEnrollCount++;
                 }
                 ?>
-                <a href="?section=face_enroll" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'face_enroll' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=face_enroll" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'face_enroll' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                     </svg>
@@ -552,7 +678,7 @@ $activeSection = $_GET['section'] ?? 'students';
                         <span class="ml-auto bg-[#0056b3] text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold"><?php echo $faceEnrollCount; ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="?section=face" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors <?php echo $activeSection === 'face' ? 'bg-blue-50 text-[#0056b3]' : 'text-slate-600 hover:bg-slate-50'; ?>">
+                <a href="?section=face" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors <?php echo $activeSection === 'face' ? 'bg-sky-100/70 text-sky-700 font-semibold' : 'text-slate-600 hover:bg-white/60'; ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -563,8 +689,8 @@ $activeSection = $_GET['section'] ?? 'students';
             </nav>
 
             <!-- Gate Monitor Link -->
-            <div class="mt-4 pt-4 border-t border-slate-200">
-                <a href="../security/gate_monitor.php" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 hover:from-green-100 hover:to-emerald-100 border border-green-200">
+            <div class="mt-4 pt-4 border-t border-white/40">
+                <a href="../security/gate_monitor.php" target="_blank" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors bg-green-50/60 text-green-700 hover:bg-green-100/70 border border-green-200/50">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
@@ -579,8 +705,8 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
 
             <!-- Logout Button -->
-            <div class="mt-8 pt-6 border-t border-slate-200">
-                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+            <div class="mt-8 pt-6 border-t border-white/40">
+                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50/60 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
@@ -600,13 +726,13 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php if ($activeSection === 'verify'): ?>
             <!-- Verify Students Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Verify Student Accounts</h1>
                 <p class="text-slate-600 mt-1">Review and approve student registration requests</p>
             </div>
 
             <?php if (empty($pendingStudents)): ?>
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="glass-card rounded-2xl overflow-hidden">
                     <div class="p-12 text-center">
                         <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -618,7 +744,7 @@ $activeSection = $_GET['section'] ?? 'students';
             <?php else: ?>
                 <div class="grid gap-6">
                     <?php foreach ($pendingStudents as $student): ?>
-                        <div class="bg-white rounded-xl shadow-sm overflow-hidden fade-in">
+                        <div class="glass-card rounded-2xl overflow-hidden fade-in">
                             <div class="p-6">
                                 <div class="flex items-start gap-6">
                                     <!-- Profile Picture or Avatar -->
@@ -713,12 +839,12 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'students'): ?>
             <!-- All Students Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Student Management</h1>
                 <p class="text-slate-600 mt-1">Manage student accounts and RFID registrations</p>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="p-6">
                     <?php if (empty($students)): ?>
                         <p class="text-slate-600 text-center py-8">No students found.</p>
@@ -779,12 +905,12 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'registered'): ?>
             <!-- Registered Cards Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Registered RFID Cards</h1>
                 <p class="text-slate-600 mt-1">View and manage students with registered cards</p>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="p-6">
                     <!-- Search Bar -->
                     <div class="mb-6">
@@ -996,12 +1122,12 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'notifications'): ?>
             <!-- Notifications Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Violation Notifications</h1>
                 <p class="text-slate-600 mt-1">Students who have reached the maximum violation limit</p>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="p-6">
                     <?php if (empty($violationAlerts)): ?>
                         <div class="text-center py-12">
@@ -1090,7 +1216,7 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'analytics'): ?>
             <!-- Analytics Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Violation Analytics</h1>
                 <p class="text-slate-600 mt-1">Track student card scan violations over time</p>
             </div>
@@ -1098,56 +1224,56 @@ $activeSection = $_GET['section'] ?? 'students';
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <!-- Daily -->
-                <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-medium opacity-90">Today</h3>
-                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100/80 px-3 py-1 rounded-full">Today</span>
+                        <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <p class="text-3xl font-bold mb-1"><?php echo number_format($dailyViolations); ?></p>
-                    <p class="text-sm opacity-75">Violations</p>
+                    <p class="text-3xl font-bold text-slate-800 mb-1"><?php echo number_format($dailyViolations); ?></p>
+                    <p class="text-sm font-medium text-slate-500">Violations</p>
                 </div>
 
                 <!-- Weekly -->
-                <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-medium opacity-90">This Week</h3>
-                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="text-xs font-bold uppercase tracking-wider text-purple-700 bg-purple-100/80 px-3 py-1 rounded-full">This Week</span>
+                        <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                     </div>
-                    <p class="text-3xl font-bold mb-1"><?php echo number_format($weeklyViolations); ?></p>
-                    <p class="text-sm opacity-75">Violations</p>
+                    <p class="text-3xl font-bold text-slate-800 mb-1"><?php echo number_format($weeklyViolations); ?></p>
+                    <p class="text-sm font-medium text-slate-500">Violations</p>
                 </div>
 
                 <!-- Monthly -->
-                <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-medium opacity-90">This Month</h3>
-                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="text-xs font-bold uppercase tracking-wider text-orange-700 bg-orange-100/80 px-3 py-1 rounded-full">This Month</span>
+                        <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                         </svg>
                     </div>
-                    <p class="text-3xl font-bold mb-1"><?php echo number_format($monthlyViolations); ?></p>
-                    <p class="text-sm opacity-75">Violations</p>
+                    <p class="text-3xl font-bold text-slate-800 mb-1"><?php echo number_format($monthlyViolations); ?></p>
+                    <p class="text-sm font-medium text-slate-500">Violations</p>
                 </div>
 
                 <!-- Yearly -->
-                <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="glass-card rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-medium opacity-90">This Year</h3>
-                        <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="text-xs font-bold uppercase tracking-wider text-green-700 bg-green-100/80 px-3 py-1 rounded-full">This Year</span>
+                        <svg class="w-7 h-7 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                     </div>
-                    <p class="text-3xl font-bold mb-1"><?php echo number_format($yearlyViolations); ?></p>
-                    <p class="text-sm opacity-75">Violations</p>
+                    <p class="text-3xl font-bold text-slate-800 mb-1"><?php echo number_format($yearlyViolations); ?></p>
+                    <p class="text-sm font-medium text-slate-500">Violations</p>
                 </div>
             </div>
 
             <!-- Recent Violations Table -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="p-6">
                     <h2 class="text-lg font-semibold text-slate-800 mb-4">Recent Violations</h2>
                     <?php
@@ -1212,7 +1338,7 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'audit'): ?>
             <!-- Audit Log Section -->
-            <div class="mb-6 flex items-center justify-between">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800">Audit Log</h1>
                     <p class="text-slate-600 mt-1">Track all administrative actions and changes</p>
@@ -1235,7 +1361,7 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
 
             <!-- Filter Options -->
-            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="glass-card rounded-2xl p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Action Type</label>
@@ -1271,10 +1397,10 @@ $activeSection = $_GET['section'] ?? 'students';
             </div>
 
             <!-- Audit Log Table -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="bg-slate-50 border-b border-slate-200">
+                        <thead class="bg-white/40 border-b border-white/50">
                             <tr>
                                 <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Timestamp</th>
                                 <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Admin</th>
@@ -1342,7 +1468,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                                 View Details
                                             </button>
                                         <?php else: ?>
-                                            <span class="text-slate-400 text-sm">-</span>
+                                            <span class="text-slate-500 text-sm">-</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -1354,7 +1480,7 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'face_enroll'): ?>
             <!-- Face Enrollment Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Face Enrollment</h1>
                 <p class="text-slate-600 mt-1">Enroll student faces for gate recognition. Only students with a registered RFID card are shown.</p>
             </div>
@@ -1392,26 +1518,26 @@ $activeSection = $_GET['section'] ?? 'students';
 
             <!-- Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[#0056b3]">
-                    <p class="text-sm text-slate-500">Pending Enrollment</p>
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-[#0056b3]">
+                    <p class="text-sm font-medium text-slate-600">Pending Enrollment</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo count($enrollEligible); ?></p>
-                    <p class="text-xs text-slate-400 mt-1">Students with RFID, no face</p>
+                    <p class="text-xs text-slate-500 mt-1">Students with RFID, no face</p>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-                    <p class="text-sm text-slate-500">Recently Enrolled</p>
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-green-500">
+                    <p class="text-sm font-medium text-slate-600">Recently Enrolled</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo count($recentEnrolled); ?></p>
-                    <p class="text-xs text-slate-400 mt-1">Last 7 days</p>
+                    <p class="text-xs text-slate-500 mt-1">Last 7 days</p>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
-                    <p class="text-sm text-slate-500">Total RFID Registered</p>
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-purple-500">
+                    <p class="text-sm font-medium text-slate-600">Total RFID Registered</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $registeredCount; ?></p>
-                    <p class="text-xs text-slate-400 mt-1">Active students with cards</p>
+                    <p class="text-xs text-slate-500 mt-1">Active students with cards</p>
                 </div>
             </div>
 
             <!-- Pending Enrollment Table -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-                <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="glass-card rounded-2xl overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-white/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h3 class="text-lg font-semibold text-slate-800">📷 Pending Face Enrollment</h3>
                         <p class="text-sm text-slate-600">Students who have RFID cards but no face registered yet</p>
@@ -1428,7 +1554,7 @@ $activeSection = $_GET['section'] ?? 'students';
                         </svg>
                         <h4 class="text-xl font-semibold text-slate-700 mb-2">All Caught Up!</h4>
                         <p class="text-slate-500">All students with RFID cards have been enrolled in face recognition.</p>
-                        <p class="text-slate-400 text-sm mt-1">New students will appear here after their RFID card is registered.</p>
+                        <p class="text-slate-500 text-sm mt-1">New students will appear here after their RFID card is registered.</p>
                     </div>
                 <?php else: ?>
                     <div class="grid gap-4 p-6" id="enrollStudentGrid">
@@ -1484,12 +1610,12 @@ $activeSection = $_GET['section'] ?? 'students';
 
             <?php if (!empty($recentEnrolled)): ?>
             <!-- Recently Enrolled -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200">
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-white/50">
                     <h3 class="text-lg font-semibold text-slate-800">✅ Recently Enrolled</h3>
                     <p class="text-sm text-slate-600">Faces enrolled in the last 7 days</p>
                 </div>
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-white/30">
                     <?php foreach ($recentEnrolled as $re): ?>
                     <div class="px-6 py-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -1509,7 +1635,7 @@ $activeSection = $_GET['section'] ?? 'students';
                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                                 ✅ <?php echo (int)$re['descriptor_count']; ?> face(s)
                             </span>
-                            <p class="text-xs text-slate-400 mt-1"><?php echo date('M d, Y h:i A', strtotime($re['face_registered_at'])); ?></p>
+                            <p class="text-xs text-slate-500 mt-1"><?php echo date('M d, Y h:i A', strtotime($re['face_registered_at'])); ?></p>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -1521,7 +1647,7 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'face'): ?>
             <!-- Face Recognition Management Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Face Recognition Management</h1>
                 <p class="text-slate-600 mt-1">Register and manage student face recognition data</p>
             </div>
@@ -1546,23 +1672,23 @@ $activeSection = $_GET['section'] ?? 'students';
             }
             ?>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <p class="text-sm text-slate-500">Students with Face ID</p>
+                <div class="glass-card rounded-2xl p-6">
+                    <p class="text-sm font-medium text-slate-600">Students with Face ID</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceRegCount; ?></p>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <p class="text-sm text-slate-500">Total Descriptors</p>
+                <div class="glass-card rounded-2xl p-6">
+                    <p class="text-sm font-medium text-slate-600">Total Descriptors</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceTotalDesc; ?></p>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <p class="text-sm text-slate-500">Face Entries Today</p>
+                <div class="glass-card rounded-2xl p-6">
+                    <p class="text-sm font-medium text-slate-600">Face Entries Today</p>
                     <p class="text-3xl font-bold text-slate-800 mt-1"><?php echo $faceEntriesToday; ?></p>
                 </div>
             </div>
 
             <!-- Student List for Face Registration -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-white/50 flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-slate-800">Active Students</h3>
                         <p class="text-sm text-slate-600">Click "Register Face" to capture face data via webcam</p>
@@ -1598,7 +1724,7 @@ $activeSection = $_GET['section'] ?? 'students';
                             }
                             
                             if (empty($faceStudents)): ?>
-                                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">No active students found.</td></tr>
+                                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No active students found.</td></tr>
                             <?php else:
                                 foreach ($faceStudents as $fs): ?>
                                 <tr class="hover:bg-slate-50 face-student-row">
@@ -1655,14 +1781,14 @@ $activeSection = $_GET['section'] ?? 'students';
 
         <?php elseif ($activeSection === 'rfid_checker'): ?>
             <!-- RFID ID Checker Section -->
-            <div class="mb-6">
+            <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">RFID ID Checker</h1>
                 <p class="text-slate-600 mt-1">Scan or enter an RFID UID to look up card status, student info, violations, and last scan</p>
             </div>
 
             <div class="max-w-3xl">
                 <!-- Scan Input Area -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div class="glass-card rounded-2xl p-6 mb-6">
                     <div class="flex flex-col sm:flex-row gap-4">
                         <div class="flex-1">
                             <label class="block text-sm font-medium text-slate-700 mb-2">RFID Card UID</label>
@@ -1679,7 +1805,7 @@ $activeSection = $_GET['section'] ?? 'students';
                             </button>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Tip: Place cursor in the field and tap the RFID card on the reader. The UID will auto-populate.</p>
+                    <p class="text-xs text-slate-500 mt-2">Tip: Place cursor in the field and tap the RFID card on the reader. The UID will auto-populate.</p>
                 </div>
 
                 <!-- Result Area -->
@@ -2957,7 +3083,7 @@ function lookupRfidCard() {
     }
 
     resultDiv.innerHTML = `
-        <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+        <div class="glass-card rounded-2xl p-8 text-center">
             <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -3024,7 +3150,7 @@ function lookupRfidCard() {
             : null;
 
         resultDiv.innerHTML = `
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="glass-card rounded-2xl overflow-hidden">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -4079,6 +4205,9 @@ async function captureEnrollFace() {
 }
 </script>
 <?php endif; ?>
+
+        </div>
+    </div>
 
 </body>
 </html>

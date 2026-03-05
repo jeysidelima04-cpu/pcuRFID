@@ -78,7 +78,7 @@ try {
     $pdo->beginTransaction();
     
     // Hash password
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $hashedPassword = password_hash($password, PASSWORD_ARGON2ID);
     
     // Insert new admin into users table
     $stmt = $pdo->prepare("

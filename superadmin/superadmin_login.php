@@ -59,21 +59,23 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
     
-    // Insert default super admin if not exists
-    // Credentials from .env file for security
-    $defaultEmail = env('SUPERADMIN_EMAIL', '');
-    $defaultPassword = env('SUPERADMIN_PASSWORD', '');
-    $defaultName = env('SUPERADMIN_NAME', 'Super Admin');
-    
-    // Only create default super admin if credentials are configured in .env
-    if (!empty($defaultEmail) && !empty($defaultPassword)) {
-        $stmt = $pdo->prepare("SELECT id FROM super_admins WHERE email = ?");
-        $stmt->execute([$defaultEmail]);
-        
-        if (!$stmt->fetch()) {
-            $hashedPassword = password_hash($defaultPassword, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO super_admins (username, email, password, status) VALUES (?, ?, ?, 'Active')");
-            $stmt->execute([$defaultName, $defaultEmail, $hashedPassword]);
+    // SECURITY: Only seed the default super-admin account when SUPERADMIN_AUTO_SETUP=true
+    // is explicitly set in .env. This prevents silent privilege escalation on every
+    // page load. Enable only during initial installation, then set to false.
+    if (filter_var(env('SUPERADMIN_AUTO_SETUP', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+        $defaultEmail    = env('SUPERADMIN_EMAIL', '');
+        $defaultPassword = env('SUPERADMIN_PASSWORD', '');
+        $defaultName     = env('SUPERADMIN_NAME', 'Super Admin');
+
+        if (!empty($defaultEmail) && !empty($defaultPassword)) {
+            $stmt = $pdo->prepare("SELECT id FROM super_admins WHERE email = ?");
+            $stmt->execute([$defaultEmail]);
+
+            if (!$stmt->fetch()) {
+                $hashedPassword = password_hash($defaultPassword, PASSWORD_ARGON2ID);
+                $stmt = $pdo->prepare("INSERT INTO super_admins (username, email, password, status) VALUES (?, ?, ?, 'Active')");
+                $stmt->execute([$defaultName, $defaultEmail, $hashedPassword]);
+            }
         }
     }
     
@@ -114,6 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif ($superAdmin['status'] !== 'Active') {
                     $error = 'Your account has been deactivated. Please contact system administrator.';
                 } elseif (password_verify($password, $superAdmin['password'])) {
+                    // Transparently rehash from bcrypt to Argon2id
+                    if (password_needs_rehash($superAdmin['password'], PASSWORD_ARGON2ID)) {
+                        $newHash = password_hash($password, PASSWORD_ARGON2ID);
+                        $rehashStmt = $pdo->prepare('UPDATE super_admins SET password = ? WHERE id = ?');
+                        $rehashStmt->execute([$newHash, $superAdmin['id']]);
+                    }
+
                     // Valid credentials - reset login attempts
                     $stmt = $pdo->prepare("UPDATE super_admins SET login_attempts = 0, locked_until = NULL, last_login = NOW() WHERE id = ?");
                     $stmt->execute([$superAdmin['id']]);
@@ -164,7 +173,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCU RFID | Super Admin Login</title>
+    <title>GateWatch | Super Admin Login</title>
+    <link rel="icon" type="image/png" href="../assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="../assets/js/tailwind.config.js"></script>
     <link rel="stylesheet" href="../assets/css/styles.css">

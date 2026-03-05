@@ -1,9 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../db.php';
-require __DIR__ . '/../vendor/autoload.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
+require_once __DIR__ . '/../vendor/autoload.php';
 
 header('Content-Type: application/json');
 ob_start(); // Enable output buffering for deferred email sending
@@ -191,33 +189,18 @@ try {
 } catch (\PDOException $e) {
     error_log('Gate scan error: ' . $e->getMessage());
     echo json_encode([
-        'success' => false, 
-        'error' => 'Database error occurred',
-        'details' => $e->getMessage()
+        'success' => false,
+        'error' => 'A server error occurred. Please try again or contact support.'
     ]);
 }
 
 /**
  * Send email notification to student about violation
+ * Uses the centralised sendMail() helper from db.php which reads
+ * SMTP credentials securely from .env — no hardcoded secrets here.
  */
 function sendViolationEmail($student, $violationCount, $severity) {
     try {
-        $mail = new PHPMailer(true);
-        
-        // Server settings
-        $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'mrk.briones118@gmail.com'; // Your Gmail
-        $mail->Password = 'epbiboyqhgtnlzoo'; // Your App Password
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
-        $mail->Timeout = 10;       // 10 second connection timeout
-        $mail->SMTPKeepAlive = true; // Reuse connection if multiple sends
-        
-        // Recipients
-        $mail->setFrom('mrk.briones118@gmail.com', 'PCU RFID Security System');
-        $mail->addAddress($student['email'], $student['name']);
         
         // Email content based on severity
         $subject = '';
@@ -406,17 +389,15 @@ function sendViolationEmail($student, $violationCount, $severity) {
             ";
         }
         
-        // Content
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body = $body;
-        $mail->AltBody = strip_tags($body);
-        
-        // Send email
-        $mail->send();
-        error_log("Violation email sent to {$student['email']} - Strike #{$violationCount} ({$severity})");
+        // Send via central sendMail() (SMTP config loaded from .env)
+        $sent = sendMail($student['email'], $subject, $body, true);
+        if ($sent === true) {
+            error_log("Violation email sent to {$student['email']} - Strike #{$violationCount} ({$severity})");
+        } else {
+            error_log("Failed to send violation email to {$student['email']}: " . ($sent ?: 'unknown error'));
+        }
         
     } catch (\Exception $e) {
-        error_log("Failed to send violation email: {$mail->ErrorInfo}");
+        error_log("Failed to send violation email: " . $e->getMessage());
     }
 }
