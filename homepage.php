@@ -610,11 +610,152 @@ try {
             </section>
         </main>
 
-        <footer class="relative z-10 border-t border-sky-100/60" style="margin-top: auto; background: rgba(2, 132, 199, 0.08); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span class="text-sm font-medium text-sky-700">Made by: GROUP-INGS</span>
-                <span class="text-sm font-semibold text-sky-800 tracking-wide">Philippine Christian University</span>
-                <span class="text-sm font-medium text-sky-700">Ver 1.25</span>
+        <footer class="relative z-10 mt-auto">
+            <!-- Main Footer Body -->
+            <div style="background: rgba(8, 13, 28, 0.93); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.07);">
+                <div class="w-full px-5 sm:px-10 lg:px-20 py-8 md:py-10">
+
+                    <!-- Mobile Layout -->
+                    <div class="flex lg:hidden" style="flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; max-width: 340px; margin: 0 auto;">
+
+                        <!-- Logo -->
+                        <a href="homepage.php" style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(2,132,199,0.12); text-decoration: none;">
+                            <img src="assets/images/pcu-logo.png" alt="Philippine Christian University Logo" style="width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));">
+                        </a>
+
+                        <!-- Social Icons -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                            <a href="https://www.facebook.com/pcuupdatesmanila" target="_blank" rel="noopener noreferrer" aria-label="PCU Manila Facebook Page" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #cbd5e1; text-decoration: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                            </a>
+                            <a href="https://www.youtube.com/@philippinechristianunivers1648" target="_blank" rel="noopener noreferrer" aria-label="PCU Manila YouTube Channel" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; color: #cbd5e1; text-decoration: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.41 19.1C5.12 19.56 12 19.56 12 19.56s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95 29 29 0 0 0 .46-5.34 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/></svg>
+                            </a>
+                        </div>
+
+                        <!-- Address -->
+                        <p style="font-size: 0.875rem; color: #94a3b8; line-height: 1.6; margin: 0;">1648 Taft Avenue corner Pedro Gil St.,<br>Malate, Manila</p>
+
+                        <!-- Divider -->
+                        <div style="width: 60px; height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+                        <!-- Contact Us -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
+                            <p style="font-size: 0.875rem; font-weight: 600; color: #ffffff; margin: 0;">Contact Us:</p>
+                            <p style="font-size: 0.875rem; color: #94a3b8; line-height: 1.5; margin: 0;">PBX Phone Lines (connecting all<br>departments in the Manila Campus)</p>
+                            <a href="tel:+6328248537082485390" style="font-size: 0.875rem; color: #38bdf8; text-decoration: underline; text-underline-offset: 3px;">Trunk Lines: 8248 - 5370 to 8248 - 5390</a>
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="width: 60px; height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+                        <!-- Working Hours -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
+                            <p style="font-size: 0.875rem; font-weight: 600; color: #ffffff; margin: 0;">Working Hours</p>
+                            <p style="font-size: 0.875rem; color: #94a3b8; margin: 0;">Monday - Saturday</p>
+                            <p style="font-size: 0.875rem; color: #38bdf8; margin: 0;">8 am - 5 pm</p>
+                            <p style="font-size: 0.875rem; color: #94a3b8; margin: 0;">Sunday - <span style="color: #fb7185;">Closed</span></p>
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="width: 60px; height: 1px; background: rgba(255,255,255,0.08);"></div>
+
+                        <!-- Map -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%;">
+                            <p style="font-size: 0.875rem; font-weight: 600; color: #ffffff; margin: 0;">Our Location</p>
+                            <div style="width: 100%; height: 200px; border-radius: 0.75rem; overflow: hidden; border: 1px solid #334155;">
+                                <iframe
+                                    src="https://www.openstreetmap.org/export/embed.html?bbox=120.9861%2C14.5726%2C120.9921%2C14.5786&amp;layer=mapnik&amp;marker=14.575619%2C120.989119"
+                                    width="100%" height="100%"
+                                    style="border: 0; display: block;"
+                                    loading="lazy"
+                                    title="Philippine Christian University — 1648 Taft Avenue, Malate, Manila"
+                                    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+                                </iframe>
+                            </div>
+                            <a href="https://www.openstreetmap.org/way/268207595#map=19/14.575619/120.989119"
+                               target="_blank" rel="noopener noreferrer"
+                               style="font-size: 0.75rem; color: #38bdf8; text-decoration: none;">
+                                View larger map ↗
+                            </a>
+                        </div>
+
+                        <!-- Privacy Policy -->
+                        <a href="#" style="font-size: 0.875rem; font-weight: 600; color: #e2e8f0; text-decoration: none;">Privacy Policy</a>
+
+                    </div>
+
+                    <!-- Desktop Layout: 3-column grid (hidden on mobile/tablet) -->
+                    <div class="hidden lg:grid lg:grid-cols-3 gap-10">
+
+                        <!-- Left: Contact Info -->
+                        <div class="flex flex-col gap-4">
+                            <a href="#" class="text-sm font-semibold text-slate-200 hover:text-sky-300 transition-colors w-fit">Privacy Policy</a>
+                            <div class="flex flex-col gap-2">
+                                <p class="text-sm font-semibold text-white">Contact Us:</p>
+                                <p class="text-sm text-slate-400 leading-relaxed">PBX Phone Lines (connecting all departments in the Manila Campus)</p>
+                                <a href="tel:+6328248537082485390" class="text-sm text-sky-400 underline underline-offset-2 hover:text-sky-300 transition-colors w-fit">
+                                    Trunk Lines: 8248 - 5370 to 8248 - 5390
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Center: Logo, Socials, Address, Hours -->
+                        <div class="flex flex-col items-center gap-4 text-center">
+                            <a href="homepage.php"><img src="assets/images/pcu-logo.png" alt="Philippine Christian University Logo" class="w-16 h-16 object-contain" style="filter: drop-shadow(0 0 6px rgba(255,255,255,0.25));"></a>
+                            <div class="flex items-center gap-5">
+                                <a href="https://www.facebook.com/pcuupdatesmanila" target="_blank" rel="noopener noreferrer" aria-label="PCU Manila Facebook Page" class="text-slate-300 hover:text-blue-400 transition-colors duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                                    </svg>
+                                </a>
+                                <a href="https://www.youtube.com/@philippinechristianunivers1648" target="_blank" rel="noopener noreferrer" aria-label="PCU Manila YouTube Channel" class="text-slate-300 hover:text-red-500 transition-colors duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.41 19.1C5.12 19.56 12 19.56 12 19.56s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95 29 29 0 0 0 .46-5.34 29 29 0 0 0-.46-5.33z"/>
+                                        <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <p class="text-sm text-slate-400 leading-relaxed">1648 Taft Avenue corner Pedro Gil St.,<br>Malate, Manila</p>
+                            <div>
+                                <p class="text-sm font-semibold text-white mb-1">Working Hours</p>
+                                <p class="text-sm text-slate-400">Monday - Saturday<br><span class="text-sky-400">8 am - 5 pm</span></p>
+                                <p class="text-sm text-slate-400 mt-1">Sunday - <span class="text-rose-400">Closed</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Right: OpenStreetMap -->
+                        <div class="flex flex-col gap-3">
+                            <p class="text-sm font-semibold text-white">Our Location</p>
+                            <div class="rounded-xl overflow-hidden border border-slate-700 shadow-lg w-full" style="height: 200px;">
+                                <iframe
+                                    src="https://www.openstreetmap.org/export/embed.html?bbox=120.9861%2C14.5726%2C120.9921%2C14.5786&amp;layer=mapnik&amp;marker=14.575619%2C120.989119"
+                                    width="100%" height="100%"
+                                    style="border: 0; display: block;"
+                                    loading="lazy"
+                                    title="Philippine Christian University — 1648 Taft Avenue, Malate, Manila"
+                                    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+                                </iframe>
+                            </div>
+                            <a href="https://www.openstreetmap.org/way/268207595#map=19/14.575619/120.989119"
+                               target="_blank" rel="noopener noreferrer"
+                               class="text-xs text-sky-400 hover:text-sky-300 transition-colors text-center">
+                                View larger map ↗
+                            </a>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Bottom copyright bar -->
+            <div style="background: rgba(4, 8, 18, 0.96); border-top: 1px solid rgba(255,255,255,0.05);">
+                <div class="w-full px-5 sm:px-10 lg:px-20 py-3 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1.5 lg:gap-2 text-center">
+                    <span class="text-xs font-medium text-slate-500">Made by: GROUP-INGS</span>
+                    <span class="text-xs text-slate-400" style="text-align: center; width: 100%; display: block;">Copyright&copy; 2026. All Rights Reserved Philippine Christian University</span>
+                    <span class="text-xs font-medium text-slate-500">Ver 1.25</span>
+                </div>
             </div>
         </footer>
     </div>
