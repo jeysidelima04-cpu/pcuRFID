@@ -1,31 +1,9 @@
 <?php
 
-// Enable error reporting
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 // Start the session and include database connection
 require_once __DIR__ . '/../db.php';
 
-// Check if user is logged in as admin
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: admin_login.php');
-    exit();
-}
-
-// Auto-fix: Set admin_id if not already set (for existing sessions)
-if (!isset($_SESSION['admin_id'])) {
-    try {
-        $pdo = pdo();
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'Admin' LIMIT 1");
-        $stmt->execute();
-        $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
-        $_SESSION['admin_id'] = $admin['id'] ?? 1;
-    } catch (\PDOException $e) {
-        error_log("Auto-fix admin_id error: " . $e->getMessage());
-        $_SESSION['admin_id'] = 1; // Fallback
-    }
-}
+require_admin_auth();
 
 $page_title = 'Student Management';
 
@@ -2975,6 +2953,7 @@ async function saveStudentInfo() {
             
             var photoResp = await fetch('upload_student_picture.php', {
                 method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken },
                 body: formData
             });
             var photoData = await photoResp.json();

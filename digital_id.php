@@ -5,23 +5,7 @@ require_once 'vendor/autoload.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-// Enhanced session security check
-if (!isset($_SESSION['user']) || empty($_SESSION['user']['id']) || empty($_SESSION['user']['email'])) {
-    session_unset();
-    session_destroy();
-    header('Location: login.php?error=' . urlencode('Please log in to access the digital ID'));
-    exit;
-}
-
-// Session timeout after 30 minutes of inactivity
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
-    session_unset();
-    session_destroy();
-    header('Location: login.php?error=' . urlencode('Session expired. Please log in again'));
-    exit;
-}
-
-$_SESSION['last_activity'] = time();
+require_student_auth();
 
 // Get user information from database
 try {
@@ -38,7 +22,7 @@ try {
     }
     
     // Create secure JWT token for QR code
-    $jwt_secret = env('JWT_SECRET', 'pcurfid2-default-secret-change-in-production');
+    $jwt_secret = get_jwt_secret();
     $payload = [
         'student_id' => $user['student_id'],
         'name' => $user['name'],
@@ -518,6 +502,7 @@ try {
             .qr-wrapper { padding: 12px; }
         }
     </style>
+    <?php session_guard_script('login.php'); ?>
 </head>
 <body>
     <!-- Header -->
@@ -630,21 +615,196 @@ try {
 
     <script src="assets/js/qrious.min.js"></script>
     <script>
-        // QR Code Generation
-        new QRious({
-            element: document.getElementById('qrcode'),
-            value: "<?php echo $jwt_token; ?>",
-            size: 200,
-            level: 'H',
-            background: '#ffffff',
-            foreground: '#0f172a'
-        });
+        const qrCanvas = document.getElementById('qrcode');
+        const qrSize = 200;
+        const qrValue = <?php echo json_encode($jwt_token); ?>;
+        const qrBrandColor = '#111111';
+        const qrLogo = new Image();
+        qrLogo.src = 'assets/images/gatewatch-logo.png';
+
+        function isDarkPixel(data, width, x, y) {
+            const offset = (y * width + x) * 4;
+            const red = data[offset];
+            const green = data[offset + 1];
+            const blue = data[offset + 2];
+            const alpha = data[offset + 3];
+            return alpha > 0 && (red + green + blue) < 740;
+        }
+
+        function findQRBounds(ctx, size) {
+            const image = ctx.getImageData(0, 0, size, size);
+            const data = image.data;
+            let minX = size;
+            let minY = size;
+            let maxX = -1;
+            let maxY = -1;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (!isDarkPixel(data, size, x, y)) {
+                        continue;
+                    }
+
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+            }
+
+            if (maxX === -1 || maxY === -1) {
+                return null;
+            }
+
+            return { minX, minY, maxX, maxY, data };
+        }
+
+        function getFinderRunLength(bounds, size) {
+            let run = 0;
+            for (let x = bounds.minX; x < size; x++) {
+                if (!isDarkPixel(bounds.data, size, x, bounds.minY)) {
+                    break;
+                }
+                run++;
+            }
+            return run;
+        }
+
+        function roundedRect(ctx, x, y, width, height, radius) {
+            const safeRadius = Math.min(radius, width / 2, height / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + safeRadius, y);
+            ctx.arcTo(x + width, y, x + width, y + height, safeRadius);
+            ctx.arcTo(x + width, y + height, x, y + height, safeRadius);
+            ctx.arcTo(x, y + height, x, y, safeRadius);
+            ctx.arcTo(x, y, x + width, y, safeRadius);
+            ctx.closePath();
+        }
+
+        function drawFinder(ctx, x, y, moduleSize) {
+            const outerSize = moduleSize * 7;
+            const middleSize = moduleSize * 5;
+            const innerSize = moduleSize * 3;
+
+            ctx.fillStyle = qrBrandColor;
+            roundedRect(ctx, x, y, outerSize, outerSize, moduleSize * 0.9);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            roundedRect(ctx, x + moduleSize, y + moduleSize, middleSize, middleSize, moduleSize * 0.65);
+            ctx.fill();
+
+            ctx.fillStyle = qrBrandColor;
+            roundedRect(ctx, x + moduleSize * 2, y + moduleSize * 2, innerSize, innerSize, moduleSize * 0.45);
+            ctx.fill();
+        }
+
+        function drawLogo(ctx, size) {
+            if (!qrLogo.complete || !qrLogo.naturalWidth) {
+                return;
+            }
+
+            const logoSize = Math.round(size * 0.24);
+            const badgePadding = 5;
+            const badgeSize = logoSize + badgePadding * 2;
+            const badgeX = (size - badgeSize) / 2;
+            const badgeY = (size - badgeSize) / 2;
+            const logoX = badgeX + badgePadding;
+            const logoY = badgeY + badgePadding;
+            const badgeRadius = badgeSize / 2;
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(15, 23, 42, 0.18)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 3;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, badgeRadius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            ctx.drawImage(qrLogo, logoX, logoY, logoSize, logoSize);
+        }
+
+        function renderCustomQRCode() {
+            const qr = new QRious({
+                element: qrCanvas,
+                value: qrValue,
+                size: qrSize,
+                level: 'H',
+                background: '#ffffff',
+                foreground: '#111827'
+            });
+
+            const ctx = qrCanvas.getContext('2d');
+            const bounds = findQRBounds(ctx, qrSize);
+            if (!bounds) {
+                return qr;
+            }
+
+            const finderRunLength = getFinderRunLength(bounds, qrSize);
+            const moduleSize = Math.max(1, Math.round(finderRunLength / 7));
+            const matrixSize = Math.round((bounds.maxX - bounds.minX + 1) / moduleSize);
+            const topRightX = bounds.minX + (matrixSize - 7) * moduleSize;
+            const bottomLeftY = bounds.minY + (matrixSize - 7) * moduleSize;
+            const sampledModules = [];
+
+            for (let row = 0; row < matrixSize; row++) {
+                sampledModules[row] = [];
+                for (let col = 0; col < matrixSize; col++) {
+                    const sampleX = Math.min(qrSize - 1, Math.round(bounds.minX + col * moduleSize + moduleSize / 2));
+                    const sampleY = Math.min(qrSize - 1, Math.round(bounds.minY + row * moduleSize + moduleSize / 2));
+                    sampledModules[row][col] = isDarkPixel(bounds.data, qrSize, sampleX, sampleY);
+                }
+            }
+
+            ctx.clearRect(0, 0, qrSize, qrSize);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, qrSize, qrSize);
+            ctx.fillStyle = qrBrandColor;
+
+            for (let row = 0; row < matrixSize; row++) {
+                for (let col = 0; col < matrixSize; col++) {
+                    if (!sampledModules[row][col]) {
+                        continue;
+                    }
+
+                    const inTopLeftFinder = row < 7 && col < 7;
+                    const inTopRightFinder = row < 7 && col >= matrixSize - 7;
+                    const inBottomLeftFinder = row >= matrixSize - 7 && col < 7;
+
+                    if (inTopLeftFinder || inTopRightFinder || inBottomLeftFinder) {
+                        continue;
+                    }
+
+                    const x = bounds.minX + col * moduleSize;
+                    const y = bounds.minY + row * moduleSize;
+                    const dotRadius = Math.max(1.2, moduleSize * 0.36);
+
+                    ctx.beginPath();
+                    ctx.arc(x + moduleSize / 2, y + moduleSize / 2, dotRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            drawFinder(ctx, bounds.minX, bounds.minY, moduleSize);
+            drawFinder(ctx, topRightX, bounds.minY, moduleSize);
+            drawFinder(ctx, bounds.minX, bottomLeftY, moduleSize);
+            drawLogo(ctx, qrSize);
+
+            return qr;
+        }
+
+        renderCustomQRCode();
+        qrLogo.onload = renderCustomQRCode;
         
         // Timer
         let remaining = 300;
         const countdownEl = document.getElementById('countdown');
         const progressEl = document.getElementById('timerProgress');
         const tokenHash = "<?php echo $token_hash; ?>";
+        const csrfToken = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>;
         let qrVerified = false;
         
         // Check if QR was scanned (poll every 2 seconds)
@@ -653,7 +813,7 @@ try {
             
             fetch('check_qr_status.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({ token_hash: tokenHash })
             })
             .then(res => res.json())

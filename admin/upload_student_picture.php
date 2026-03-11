@@ -14,8 +14,13 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// CSRF protection disabled for Dropzone compatibility
-// Will be handled by session check instead
+$headers = getallheaders();
+$csrfToken = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? ($_POST['csrf_token'] ?? '');
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid security token']);
+    exit;
+}
 
 // Validate student_id parameter
 $studentId = $_POST['student_id'] ?? null;
@@ -57,6 +62,18 @@ if ($file['size'] > $max_size) {
 
 try {
     $pdo = pdo();
+
+    $mimeToExtension = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+    ];
+    $extension = $mimeToExtension[$mime_type] ?? null;
+    if ($extension === null) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Unsupported image type']);
+        exit;
+    }
     
     // Verify student exists
     $stmt = $pdo->prepare('SELECT id, profile_picture FROM users WHERE id = ? AND role = "Student"');
@@ -69,8 +86,7 @@ try {
         exit;
     }
     
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    // Generate unique filename from the validated MIME type, not the client filename.
     $filename = 'student_' . $studentId . '_' . time() . '.' . $extension;
     $upload_dir = __DIR__ . '/../assets/images/profiles/';
     $upload_path = $upload_dir . $filename;

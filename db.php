@@ -4,8 +4,23 @@ declare(strict_types=1);
 
 use PHPMailer\PHPMailer\PHPMailer;
 
-// Start session only if not already started
+// Configure secure session settings BEFORE starting the session
 if (session_status() === PHP_SESSION_NONE) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+    session_set_cookie_params([
+        'lifetime' => 0,                // Session cookie — expires when browser closes
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => $isHttps,         // Only send over HTTPS in production
+        'httponly'  => true,             // Prevent JavaScript access
+        'samesite' => 'Strict',         // CSRF protection
+    ]);
+
+    ini_set('session.use_strict_mode', '1');     // Reject uninitialized session IDs
+    ini_set('session.use_only_cookies', '1');     // Prevent session fixation via URL
+
     session_start();
 }
 
@@ -16,6 +31,230 @@ if (empty($_SESSION['csrf_token'])) {
 function csrf_input(): string {
     return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($_SESSION['csrf_token']) . '">';
 }
+
+/**
+ * Send HTTP headers that prevent the browser from caching the page.
+ * Call this at the top of every protected page so the browser back/forward
+ * buttons cannot display stale content after logout.
+ */
+function send_no_cache_headers(): void {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+    header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
+}
+
+/**
+ * Fully destroy the current session: clear data, delete cookie, destroy storage.
+ * After calling this the client has no valid session.
+ */
+function destroy_session_completely(): void {
+    // Unset all session variables
+    $_SESSION = [];
+
+    // Delete the session cookie
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $p['path'],
+            $p['domain'],
+            $p['secure'],
+            $p['httponly']
+        );
+    }
+
+    // Destroy the session storage
+    session_destroy();
+}
+
+/**
+ * Require an authenticated student session.
+ * Redirects to login.php if not logged in, session expired, or account inactive.
+ */
+function require_student_auth(): void {
+    send_no_cache_headers();
+
+    if (!isset($_SESSION['user']) || empty($_SESSION['user']['id']) || empty($_SESSION['user']['email'])) {
+        destroy_session_completely();
+        session_start();
+        $_SESSION['toast'] = 'Please log in to access the system';
+        header('Location: login.php');
+        exit;
+    }
+
+    // Session timeout after 30 minutes of inactivity
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+        destroy_session_completely();
+        session_start();
+        $_SESSION['toast'] = 'Session expired. Please log in again';
+        header('Location: login.php');
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+
+    // Verify account still exists and is active in the database
+    try {
+        $pdo = pdo();
+        $stmt = $pdo->prepare('SELECT id, status FROM users WHERE id = ? AND email = ? LIMIT 1');
+        $stmt->execute([$_SESSION['user']['id'], $_SESSION['user']['email']]);
+        $row = $stmt->fetch();
+
+        if (!$row || $row['status'] !== 'Active') {
+            destroy_session_completely();
+            session_start();
+            $_SESSION['toast'] = 'Your account is no longer active. Please contact support.';
+            header('Location: login.php');
+            exit;
+        }
+    } catch (\Throwable $e) {
+        error_log('Session DB verification failed: ' . $e->getMessage());
+        destroy_session_completely();
+        session_start();
+        $_SESSION['toast'] = 'System error. Please try again later.';
+        header('Location: login.php');
+        exit;
+    }
+}
+
+/**
+ * Require an authenticated admin session.
+ * Redirects to admin_login.php if not logged in or session is invalid.
+ */
+function require_admin_auth(): void {
+    send_no_cache_headers();
+
+    if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+        destroy_session_completely();
+        session_start();
+        header('Location: admin_login.php');
+        exit;
+    }
+
+    if (!isset($_SESSION['admin_id'])) {
+        destroy_session_completely();
+        session_start();
+        header('Location: admin_login.php?error=' . urlencode('Session invalid. Please log in again.'));
+        exit;
+    }
+
+    // Session timeout after 30 minutes of inactivity
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+        destroy_session_completely();
+        session_start();
+        header('Location: admin_login.php?error=' . urlencode('Session expired. Please log in again.'));
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+}
+
+/**
+ * Require an authenticated security guard session.
+ * Redirects to security_login.php if not logged in or session expired.
+ */
+function require_security_auth(): void {
+    send_no_cache_headers();
+
+    if (!isset($_SESSION['security_logged_in']) || $_SESSION['security_logged_in'] !== true) {
+        destroy_session_completely();
+        session_start();
+        header('Location: security_login.php');
+        exit;
+    }
+
+    // Session timeout after 30 minutes of inactivity
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+        destroy_session_completely();
+        session_start();
+        header('Location: security_login.php?timeout=1');
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+
+    // Periodic session ID regeneration (every 5 minutes)
+    if (!isset($_SESSION['created_at'])) {
+        $_SESSION['created_at'] = time();
+    } elseif (time() - $_SESSION['created_at'] > 300) {
+        session_regenerate_id(true);
+        $_SESSION['created_at'] = time();
+    }
+}
+
+/**
+ * Require an authenticated super-admin session.
+ * Redirects to superadmin_login.php if not logged in.
+ */
+function require_superadmin_auth(): void {
+    send_no_cache_headers();
+
+    if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in'] !== true) {
+        destroy_session_completely();
+        session_start();
+        header('Location: superadmin_login.php');
+        exit;
+    }
+
+    // Session timeout after 30 minutes of inactivity
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+        destroy_session_completely();
+        session_start();
+        header('Location: superadmin_login.php?error=' . urlencode('Session expired. Please log in again.'));
+        exit;
+    }
+    $_SESSION['last_activity'] = time();
+}
+
+/**
+ * Output a small inline <script> that forces the browser to reload the page
+ * (hitting the server) whenever the user navigates back/forward.
+ * Because the server will send no-cache headers AND the session is destroyed
+ * on logout, the reload will trigger the auth check and redirect to login.
+ *
+ * Call this inside the <head> of every protected HTML page.
+ *
+ * @param string $loginUrl  Where to redirect if session is gone
+ */
+function session_guard_script(string $loginUrl = 'login.php'): void {
+    $url = htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8');
+    echo <<<HTML
+<script>
+// Force reload when navigating via browser back/forward so server-side
+// auth checks run again instead of showing stale cached content.
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted) { window.location.reload(); }
+});
+</script>
+HTML;
+}
+
+function get_raw_request_body(): string {
+    static $rawBody = null;
+
+    if ($rawBody === null) {
+        $rawBody = file_get_contents('php://input');
+        if ($rawBody === false) {
+            $rawBody = '';
+        }
+    }
+
+    return $rawBody;
+}
+
+function get_json_input(): array {
+    static $decodedBody = null;
+
+    if ($decodedBody === null) {
+        $decodedBody = json_decode(get_raw_request_body(), true);
+        if (!is_array($decodedBody)) {
+            $decodedBody = [];
+        }
+    }
+
+    return $decodedBody;
+}
+
 function verify_csrf(): void {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check for CSRF token in POST data, JSON body, or HTTP header
@@ -23,7 +262,7 @@ function verify_csrf(): void {
         
         // If not in POST, check JSON body
         if (empty($token)) {
-            $json = json_decode(file_get_contents('php://input'), true);
+            $json = get_json_input();
             $token = $json['csrf_token'] ?? '';
         }
         
@@ -36,6 +275,56 @@ function verify_csrf(): void {
             http_response_code(403);
             exit('Invalid CSRF token.');
         }
+    }
+}
+
+function get_jwt_secret(): string {
+    $secret = (string)env('JWT_SECRET', '');
+    $fallbackSecret = 'pcurfid2-default-secret-change-in-production';
+
+    if ($secret === '' || $secret === $fallbackSecret || strlen($secret) < 32) {
+        error_log('[PCU RFID] Weak or missing JWT_SECRET detected. Configure a strong random secret in .env.');
+        return $secret !== '' ? $secret : $fallbackSecret;
+    }
+
+    return $secret;
+}
+
+function is_password_hash_string(string $value): bool {
+    $info = password_get_info($value);
+    return !empty($info['algo']);
+}
+
+function normalize_env_password(string $value): string {
+    return is_password_hash_string($value) ? $value : password_hash($value, PASSWORD_ARGON2ID);
+}
+
+function apply_cors_headers(array $methods, array $headers = []): void {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if ($origin === '') {
+        return;
+    }
+
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    $currentOrigin = '';
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        $currentOrigin = ($isHttps ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'];
+    }
+
+    $configuredOrigins = (string)env('APP_ALLOWED_ORIGINS', env('APP_URL', $currentOrigin));
+    $allowedOrigins = array_values(array_filter(array_map('trim', explode(',', $configuredOrigins))));
+
+    if (!in_array($origin, $allowedOrigins, true)) {
+        header('Vary: Origin');
+        return;
+    }
+
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+    header('Access-Control-Allow-Methods: ' . implode(', ', $methods));
+    if ($headers !== []) {
+        header('Access-Control-Allow-Headers: ' . implode(', ', $headers));
     }
 }
 
@@ -134,6 +423,7 @@ function setup_admin_account(\PDO $pdo): void {
         $adminEmail = env('ADMIN_EMAIL', '');
         $adminPassword = env('ADMIN_PASSWORD', '');
         $adminName = env('ADMIN_NAME', 'System Administrator');
+        $normalizedAdminPassword = normalize_env_password($adminPassword);
         
         // Only proceed if admin credentials are configured
         if (empty($adminEmail) || empty($adminPassword)) {
@@ -147,16 +437,19 @@ function setup_admin_account(\PDO $pdo): void {
         
         if ($existingAdmin) {
             // Admin exists - check if password needs updating
-            if (!password_verify($adminPassword, $existingAdmin['password'])) {
+            $passwordMatches = is_password_hash_string($adminPassword)
+                ? hash_equals($normalizedAdminPassword, $existingAdmin['password'])
+                : password_verify($adminPassword, $existingAdmin['password']);
+
+            if (!$passwordMatches) {
                 // Update password
-                $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID);
                 $updateStmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-                $updateStmt->execute([$hashedPassword, $existingAdmin['id']]);
+                $updateStmt->execute([$normalizedAdminPassword, $existingAdmin['id']]);
                 error_log("[PCU RFID] Admin account password updated from .env configuration");
             }
         } else {
             // Create new admin account
-            $hashedPassword = password_hash($adminPassword, PASSWORD_ARGON2ID);
+            $hashedPassword = $normalizedAdminPassword;
             
             // Check which columns exist in users table
             $columnsStmt = $pdo->query("SHOW COLUMNS FROM users");

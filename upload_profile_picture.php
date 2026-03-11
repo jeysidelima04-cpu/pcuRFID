@@ -45,6 +45,18 @@ if ($file['size'] > $maxSize) {
 
 try {
     $pdo = pdo();
+
+    $mimeToExtension = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+    ];
+    $extension = $mimeToExtension[$fileType] ?? null;
+    if ($extension === null) {
+        throw new Exception('Unsupported image type');
+    }
     
     // Get user's current profile picture to delete old file
     $stmt = $pdo->prepare('SELECT profile_picture FROM users WHERE id = ?');
@@ -57,8 +69,7 @@ try {
         mkdir($uploadDir, 0755, true);
     }
     
-    // Generate unique filename
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    // Generate unique filename from the validated MIME type, not the client filename.
     $filename = 'profile_' . $userId . '_' . time() . '.' . $extension;
     $filepath = $uploadDir . $filename;
     

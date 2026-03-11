@@ -19,12 +19,10 @@ if (isset($_SESSION['superadmin_logged_in']) && $_SESSION['superadmin_logged_in'
     }
 }
 
-// Clear super admin session variables
-unset($_SESSION['superadmin_logged_in']);
-unset($_SESSION['superadmin_id']);
-unset($_SESSION['superadmin_name']);
-unset($_SESSION['superadmin_email']);
+// Fully destroy the session (not just selective unset)
+destroy_session_completely();
 
-// Redirect to login page
+// Redirect to login page with no-cache
+send_no_cache_headers();
 header('Location: superadmin_login.php');
 exit;

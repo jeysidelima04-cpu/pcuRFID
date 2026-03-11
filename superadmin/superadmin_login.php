@@ -72,7 +72,7 @@ try {
             $stmt->execute([$defaultEmail]);
 
             if (!$stmt->fetch()) {
-                $hashedPassword = password_hash($defaultPassword, PASSWORD_ARGON2ID);
+                $hashedPassword = normalize_env_password($defaultPassword);
                 $stmt = $pdo->prepare("INSERT INTO super_admins (username, email, password, status) VALUES (?, ?, ?, 'Active')");
                 $stmt->execute([$defaultName, $defaultEmail, $hashedPassword]);
             }
@@ -94,6 +94,11 @@ $success = '';
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+
+    if (!check_rate_limit('superadmin_login', 5, 900)) {
+        $error = 'Too many login attempts. Please try again in 15 minutes.';
+    } else {
     $email = strtolower(trim($_POST['email'] ?? ''));
     $password = $_POST['password'] ?? '';
 
@@ -123,11 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $rehashStmt->execute([$newHash, $superAdmin['id']]);
                     }
 
+                    reset_rate_limit('superadmin_login');
+
                     // Valid credentials - reset login attempts
                     $stmt = $pdo->prepare("UPDATE super_admins SET login_attempts = 0, locked_until = NULL, last_login = NOW() WHERE id = ?");
                     $stmt->execute([$superAdmin['id']]);
                     
                     // Set session
+                    session_regenerate_id(true);
                     $_SESSION['superadmin_logged_in'] = true;
                     $_SESSION['superadmin_id'] = $superAdmin['id'];
                     $_SESSION['superadmin_name'] = $superAdmin['username'];
@@ -165,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log("Super Admin login error: " . $e->getMessage());
             $error = 'Login system error. Please try again.';
         }
+    }
     }
 }
 ?>
@@ -232,7 +241,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Header -->
             <div class="bg-gradient-to-r from-[#0056b3] to-[#003d82] px-8 py-6 text-center">
                 <div class="flex justify-center mb-4">
-                    <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="w-20 h-20">
+                    <a href="superadmin_login.php" class="inline-flex items-center justify-center" aria-label="Go to Super Admin Login page">
+                        <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="w-20 h-20">
+                    </a>
                 </div>
                 <h1 class="text-2xl font-bold text-white">Super Admin</h1>
                 <p class="text-blue-100 text-sm mt-1">PCU GateWatch</p>
@@ -309,16 +320,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         Sign In
                     </button>
                 </form>
-                
-                <!-- Security Notice -->
-                <div class="mt-6 pt-6 border-t border-slate-200">
-                    <div class="flex items-center gap-2 text-xs text-slate-500">
-                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <span>This is a restricted area. Unauthorized access is prohibited.</span>
-                    </div>
-                </div>
             </div>
         </div>
         

@@ -4,9 +4,11 @@ require_once __DIR__ . '/../db.php';
 
 // Set JSON response header
 header('Content-Type: application/json');
+send_no_cache_headers();
 
 // Check if super admin is logged in
 if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in'] !== true) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
     exit;
 }

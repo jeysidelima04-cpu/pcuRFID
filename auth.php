@@ -38,14 +38,16 @@ try {
             handleResend2FA();
             break;
         case 'logout':
-            session_destroy();
-            session_start(); // Restart session to store the message
+            destroy_session_completely();
+            session_start();
             $_SESSION['toast'] = 'Logged out';
+            send_no_cache_headers();
             header('Location: login.php');
             exit;
         case 'set_toast':
-            // Simple action to set toast message in session (called via AJAX)
-            $_SESSION['toast'] = $_POST['message'] ?? '';
+            // Keep toast content bounded and text-only for safe session storage.
+            $toastMessage = trim((string)($_POST['message'] ?? ''));
+            $_SESSION['toast'] = substr(strip_tags($toastMessage), 0, 255);
             echo json_encode(['success' => true]);
             exit;
         default:
@@ -268,6 +270,9 @@ function handleLogin(): void {
 
     // Reset rate limit on successful login
     reset_rate_limit('login');
+
+        // Prevent session fixation by rotating the session identifier on login.
+        session_regenerate_id(true);
 
     $_SESSION['user'] = [
         'id' => (int)$user['id'],

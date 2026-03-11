@@ -3,14 +3,7 @@
 use Exception;
 
 require_once 'db.php';
-
-// Enhanced session security check
-if (!isset($_SESSION['user']) || empty($_SESSION['user']['id']) || empty($_SESSION['user']['email'])) {
-    session_unset();
-    session_destroy();
-    header('Location: login.php?error=' . urlencode('Please log in to access the system'));
-    exit;
-}
+require_student_auth();
 
 $user = $_SESSION['user'];
 
@@ -80,6 +73,7 @@ try {
             transform: scale(1.05);
         }
     </style>
+    <?php session_guard_script('login.php'); ?>
 </head>
 <body class="text-slate-800">
     <div class="bg-pcu min-h-screen">

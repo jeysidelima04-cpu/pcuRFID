@@ -1,9 +1,6 @@
 <?php
-// Check if admin is logged in
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: admin_login.php');
-    exit;
-}
+// Check if admin is logged in (centralized)
+require_admin_auth();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,6 +28,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
             box-shadow: 0 4px 6px -1px rgba(0, 86, 179, 0.1), 0 2px 4px -1px rgba(0, 86, 179, 0.06);
         }
     </style>
+    <?php session_guard_script('../admin/admin_login.php'); ?>
 </head>
 <body class="bg-slate-50 min-h-screen">
     <nav class="bg-white shadow-md">

@@ -1,11 +1,8 @@
 <?php
 
-// Enable error reporting
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 // Start the session and include database connection
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../includes/audit_helper.php';
 
 // Check if user is logged in as admin
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -76,13 +73,20 @@ try {
         
         // Log the action to audit trail
         try {
-            $adminId = $_SESSION['admin_id'] ?? null;
-            $stmt = $pdo->prepare("INSERT INTO audit_logs (admin_id, action, target_type, target_id, details) VALUES (?, 'clear_violations', 'user', ?, ?)");
-            $stmt->execute([$adminId, $studentId, json_encode([
-                'student_name' => $student['name'],
-                'previous_violation_count' => $student['violation_count'],
-                'violations_deleted' => $deletedViolations
-            ])]);
+            logAuditAction(
+                $pdo,
+                (int)($_SESSION['admin_id'] ?? 0),
+                $_SESSION['admin_name'] ?? 'Admin',
+                'CLEAR_VIOLATIONS',
+                'student',
+                (int)$studentId,
+                $student['name'],
+                "Cleared violations for {$student['name']}",
+                [
+                    'previous_violation_count' => (int)$student['violation_count'],
+                    'violations_deleted' => (int)$deletedViolations,
+                ]
+            );
         } catch (\PDOException $e) {
             error_log('Audit log error: ' . $e->getMessage());
         }
@@ -96,7 +100,7 @@ try {
 } catch (\PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Database error occurred']);
 } catch (\Exception $e) {
     error_log('Error clearing violations: ' . $e->getMessage());
     http_response_code(500);

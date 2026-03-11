@@ -2,11 +2,7 @@
 
 require_once __DIR__ . '/../db.php';
 
-// Check if super admin is logged in
-if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in'] !== true) {
-    header('Location: superadmin_login.php');
-    exit;
-}
+require_superadmin_auth();
 
 $page_title = 'Admin Management Dashboard';
 
@@ -86,16 +82,164 @@ try {
 include 'includes/header.php';
 ?>
 
+<style>
+@media screen and (max-width: 768px) {
+    .superadmin-mobile-fix .mobile-hero {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        padding: 1rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-hero-copy h1 {
+        font-size: 2rem !important;
+        line-height: 1.15 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-hero-copy p {
+        font-size: 1.06rem !important;
+        line-height: 1.45 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-hero-action {
+        width: auto !important;
+        min-width: 8.8rem !important;
+        justify-content: center !important;
+        padding: 0.75rem 0.9rem !important;
+        border-radius: 0.9rem !important;
+        font-size: 1.05rem !important;
+        line-height: 1.25 !important;
+        text-align: center !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-card {
+        padding: 0.95rem 1rem !important;
+        border-radius: 0.9rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-content {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-label {
+        font-size: 1rem !important;
+        margin-bottom: 0.2rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-value {
+        font-size: 1.9rem !important;
+        line-height: 1 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-icon {
+        width: 3rem !important;
+        height: 3rem !important;
+        border-radius: 0.85rem !important;
+        display: grid !important;
+        place-items: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-stat-icon svg {
+        width: 1.4rem !important;
+        height: 1.4rem !important;
+        display: block !important;
+        margin: 0 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-avatar {
+        display: grid !important;
+        place-items: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-avatar span {
+        display: block !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-list {
+        display: grid !important;
+        gap: 0.7rem !important;
+        padding: 0.75rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-row {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.85rem !important;
+        padding: 0.8rem !important;
+        background: #ffffff !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-top {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        align-items: start !important;
+        gap: 0.65rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-left {
+        display: grid !important;
+        grid-template-columns: auto 1fr !important;
+        align-items: center !important;
+        gap: 0.65rem !important;
+        min-width: 0 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-meta {
+        display: grid !important;
+        gap: 0.15rem !important;
+        min-width: 0 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-meta p {
+        margin: 0 !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-actions {
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+    }
+
+    .superadmin-mobile-fix .mobile-admin-footer {
+        display: grid !important;
+        grid-template-columns: 1fr auto !important;
+        align-items: center !important;
+        gap: 0.55rem !important;
+        padding-left: 0 !important;
+    }
+}
+</style>
+
+<div class="superadmin-mobile-fix">
+
 <!-- Page Header -->
-<div class="mb-8 fade-in">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 glass-effect rounded-xl p-6 shadow-lg">
-        <div>
+<div class="mb-6 fade-in">
+    <div class="mobile-hero flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 glass-effect rounded-xl p-4 sm:p-6 shadow-lg">
+        <div class="mobile-hero-copy">
             <h1 class="text-2xl font-bold text-slate-800"><?php echo e($page_title); ?></h1>
             <p class="text-slate-600 mt-1">Manage administrator accounts for the PCU RFID System</p>
         </div>
         <button 
             onclick="openAddAdminModal()"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0056b3] to-[#003d82] text-white rounded-xl font-semibold btn-hover shadow-lg"
+            class="mobile-hero-action inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0056b3] to-[#003d82] text-white rounded-xl font-semibold btn-hover shadow-lg"
         >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -106,16 +250,16 @@ include 'includes/header.php';
 </div>
 
 <!-- Statistics Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+<div class="mobile-stat-grid grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
     <!-- Total Admins -->
-    <div class="glass-effect rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.1s;">
-        <div class="flex items-center justify-between">
+    <div class="mobile-stat-card glass-effect rounded-xl shadow-lg p-4 sm:p-6 card-hover fade-in" style="animation-delay: 0.1s;">
+        <div class="mobile-stat-content flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-slate-500 mb-1">Total Admins</p>
-                <p class="text-3xl font-bold text-slate-800"><?php echo $totalAdmins; ?></p>
+                <p class="mobile-stat-label text-xs sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-1">Total Admins</p>
+                <p class="mobile-stat-value text-xl sm:text-3xl font-bold text-slate-800"><?php echo $totalAdmins; ?></p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="mobile-stat-icon w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg class="w-5 h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
             </div>
@@ -123,14 +267,14 @@ include 'includes/header.php';
     </div>
     
     <!-- Active Admins -->
-    <div class="glass-effect rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.2s;">
-        <div class="flex items-center justify-between">
+    <div class="mobile-stat-card glass-effect rounded-xl shadow-lg p-4 sm:p-6 card-hover fade-in" style="animation-delay: 0.2s;">
+        <div class="mobile-stat-content flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-slate-500 mb-1">Active Admins</p>
-                <p class="text-3xl font-bold text-green-600"><?php echo $activeAdmins; ?></p>
+                <p class="mobile-stat-label text-xs sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-1">Active Admins</p>
+                <p class="mobile-stat-value text-xl sm:text-3xl font-bold text-green-600"><?php echo $activeAdmins; ?></p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="mobile-stat-icon w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg class="w-5 h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
@@ -138,14 +282,14 @@ include 'includes/header.php';
     </div>
     
     <!-- Inactive Admins -->
-    <div class="glass-effect rounded-xl shadow-lg p-6 card-hover fade-in" style="animation-delay: 0.3s;">
-        <div class="flex items-center justify-between">
+    <div class="mobile-stat-card glass-effect rounded-xl shadow-lg p-4 sm:p-6 card-hover fade-in" style="animation-delay: 0.3s;">
+        <div class="mobile-stat-content flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-slate-500 mb-1">Inactive/Suspended</p>
-                <p class="text-3xl font-bold text-amber-600"><?php echo $inactiveAdmins; ?></p>
+                <p class="mobile-stat-label text-xs sm:text-sm font-medium text-slate-500 mb-0.5 sm:mb-1">Inactive/Suspended</p>
+                <p class="mobile-stat-value text-xl sm:text-3xl font-bold text-amber-600"><?php echo $inactiveAdmins; ?></p>
             </div>
-            <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="mobile-stat-icon w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg class="w-5 h-5 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                 </svg>
             </div>
@@ -191,7 +335,73 @@ include 'includes/header.php';
         </button>
     </div>
     <?php else: ?>
-    <div class="overflow-x-auto">
+    <!-- Mobile Card View -->
+    <div class="mobile-admin-list sm:hidden divide-y divide-slate-100">
+        <?php foreach ($admins as $admin): ?>
+        <div class="mobile-admin-row p-4 hover:bg-slate-50 transition-colors admin-row" data-name="<?php echo e(strtolower($admin['name'])); ?>" data-email="<?php echo e(strtolower($admin['email'])); ?>">
+            <div class="mobile-admin-top flex items-center justify-between mb-2">
+                <div class="mobile-admin-left flex items-center gap-3">
+                    <div class="mobile-admin-avatar w-9 h-9 bg-gradient-to-br from-[#0056b3] to-[#003d82] rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-semibold text-xs"><?php echo strtoupper(substr($admin['name'], 0, 2)); ?></span>
+                    </div>
+                    <div class="mobile-admin-meta">
+                        <p class="font-semibold text-slate-800 text-sm"><?php echo e($admin['name']); ?></p>
+                        <p class="text-xs text-slate-500"><?php echo e($admin['email']); ?></p>
+                    </div>
+                </div>
+                <?php 
+                $statusClass = 'bg-green-100 text-green-700';
+                if ($admin['admin_status'] === 'Inactive') {
+                    $statusClass = 'bg-slate-100 text-slate-600';
+                } elseif ($admin['admin_status'] === 'Suspended') {
+                    $statusClass = 'bg-red-100 text-red-700';
+                }
+                ?>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <?php echo $statusClass; ?>">
+                    <?php echo e($admin['admin_status']); ?>
+                </span>
+            </div>
+            <div class="mobile-admin-footer flex items-center justify-between pl-12">
+                <p class="text-xs text-slate-400">ID: <?php echo e($admin['student_id']); ?></p>
+                <div class="mobile-admin-actions flex items-center gap-1">
+                    <?php if ($admin['admin_status'] === 'Active'): ?>
+                    <button 
+                        onclick="toggleAdminStatus(<?php echo $admin['id']; ?>, 'Suspended')"
+                        class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
+                        title="Suspend Admin"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                        </svg>
+                    </button>
+                    <?php else: ?>
+                    <button 
+                        onclick="toggleAdminStatus(<?php echo $admin['id']; ?>, 'Active')"
+                        class="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
+                        title="Activate Admin"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </button>
+                    <?php endif; ?>
+                    <button 
+                        onclick="confirmDeleteAdmin(<?php echo $admin['id']; ?>, '<?php echo e(addslashes($admin['name'])); ?>')"
+                        class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                        title="Remove Admin"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="hidden sm:block overflow-x-auto">
         <table class="w-full" id="adminsTable">
             <thead class="bg-slate-50">
                 <tr>
@@ -286,6 +496,8 @@ include 'includes/header.php';
         </table>
     </div>
     <?php endif; ?>
+</div>
+
 </div>
 
 <!-- Recent Activity / Audit Log -->

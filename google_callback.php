@@ -127,6 +127,7 @@ try {
         }
         
         // Set session in correct format
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             'id' => (int)$user['id'],
             'name' => $user['name'],
@@ -151,8 +152,26 @@ try {
         $existing_user = $stmt->fetch();
         
         if ($existing_user) {
-            // Link Google account to existing user
-            $linkStmt = $pdo->prepare('UPDATE users SET google_id = ?, status = "Active" WHERE id = ?');
+            if (($existing_user['status'] ?? '') === 'Pending') {
+                $_SESSION['info'] = 'Your account is pending for verification. Please wait for approval from the Student Services Office. You will receive an email once your account is verified.';
+                header('Location: login.php');
+                exit;
+            }
+
+            if (($existing_user['status'] ?? '') === 'Locked') {
+                $_SESSION['error'] = 'Your account has been locked. Please contact the Student Services Office for more information.';
+                header('Location: login.php');
+                exit;
+            }
+
+            if (($existing_user['verification_status'] ?? '') === 'denied') {
+                $_SESSION['error'] = 'Your account verification was denied. Please contact the Student Services Office for more information.';
+                header('Location: login.php');
+                exit;
+            }
+
+            // Link Google account to an already approved user without changing status.
+            $linkStmt = $pdo->prepare('UPDATE users SET google_id = ? WHERE id = ?');
             $linkStmt->execute([$google_id, $existing_user['id']]);
             
             // Update last login
@@ -160,6 +179,7 @@ try {
             $updateStmt->execute([$existing_user['id']]);
             
             // Set session in correct format
+            session_regenerate_id(true);
             $_SESSION['user'] = [
                 'id' => (int)$existing_user['id'],
                 'name' => $existing_user['name'],
@@ -180,6 +200,15 @@ try {
         } else {
             // New user - create account with temporary Student ID
             // Admin will update with real student ID later
+
+            $allowedDomains = array_values(array_filter(array_map('trim', explode(',', (string)env('ALLOWED_EMAIL_DOMAINS', '')))));
+            if ($allowedDomains !== []) {
+                $emailDomain = strtolower(substr((string)$email, (int)strrpos((string)$email, '@') + 1));
+                if (!in_array($emailDomain, $allowedDomains, true)) {
+                    header('Location: login.php?error=' . urlencode('Only approved email domains are allowed for Google Sign-In.'));
+                    exit;
+                }
+            }
             
             $temporaryStudentId = 'TEMP-' . time();
             

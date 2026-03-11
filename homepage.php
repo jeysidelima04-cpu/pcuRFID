@@ -297,6 +297,39 @@ try {
             -webkit-backdrop-filter: blur(12px);
         }
 
+        @font-face {
+            font-family: 'old-english-canterbury';
+            src: url('assets/fonts/canterbury-webfont.woff2') format('woff2'),
+                 url('assets/fonts/canterbury-webfont.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .brand-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .brand-wordmark {
+            font-family: 'old-english-canterbury', serif;
+            font-weight: 400;
+            font-size: clamp(1.05rem, 2.2vw, 1.875rem);
+            line-height: 1;
+            letter-spacing: 0;
+            color: #000000;
+            text-rendering: optimizeLegibility;
+            white-space: nowrap;
+        }
+
         .sidebar-button {
             transition: all 0.2s ease;
         }
@@ -333,6 +366,25 @@ try {
             transform: translateY(-1px);
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
         }
+
+        @media (max-width: 768px) {
+            .brand-link {
+                gap: 0.4rem;
+            }
+
+            .brand-logo {
+                width: 2rem;
+                height: 2rem;
+            }
+
+            .brand-wordmark {
+                font-size: clamp(0.88rem, 3.5vw, 1.05rem);
+                white-space: normal;
+                line-height: 1.15;
+                letter-spacing: 0;
+                max-width: calc(100vw - 10rem);
+            }
+        }
     </style>
 </head>
 <body class="text-slate-900">
@@ -344,11 +396,11 @@ try {
 
         <nav class="nav-blur border-b border-slate-200 fixed w-full top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16 items-center">
+                <div class="flex justify-between min-h-[4rem] py-2 items-center">
                     <div class="flex items-center gap-3">
-                        <a href="homepage.php" class="flex items-center hover:opacity-90 transition-opacity">
-                            <img src="pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
-                            <span class="ml-2 text-xl font-semibold text-sky-700">Philippine Christian University</span>
+                        <a href="homepage.php" class="brand-link hover:opacity-90 transition-opacity">
+                            <img src="assets/images/pcu-logo.png" alt="PCU Logo" class="brand-logo">
+                            <span class="brand-wordmark">Philippine Christian University</span>
                         </a>
 
                     </div>

@@ -20,7 +20,8 @@ $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
 // Verify CSRF token
-if (!isset($_SERVER['HTTP_X_CSRF_TOKEN']) || $_SERVER['HTTP_X_CSRF_TOKEN'] !== $_SESSION['csrf_token']) {
+$csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
     exit;

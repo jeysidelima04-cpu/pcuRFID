@@ -1,9 +1,6 @@
 <?php
-// Check if super admin is logged in
-if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in'] !== true) {
-    header('Location: superadmin_login.php');
-    exit;
-}
+// Centralized super admin auth check (includes no-cache headers)
+require_superadmin_auth();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -74,36 +71,132 @@ if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in
             from { opacity: 0; transform: translateX(20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        @font-face {
+            font-family: 'old-english-canterbury';
+            src: url('../assets/fonts/canterbury-webfont.woff2') format('woff2'),
+                 url('../assets/fonts/canterbury-webfont.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .brand-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .brand-wordmark {
+            font-family: 'old-english-canterbury', serif;
+            font-weight: 400;
+            font-size: clamp(1.05rem, 2.2vw, 1.875rem);
+            line-height: 1;
+            letter-spacing: 0;
+            color: #000000;
+            text-rendering: optimizeLegibility;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .brand-link {
+                gap: 0.4rem;
+            }
+
+            .brand-logo {
+                width: 2rem;
+                height: 2rem;
+            }
+
+            .brand-wordmark {
+                font-size: clamp(0.88rem, 3.5vw, 1.05rem);
+                white-space: normal;
+                line-height: 1.15;
+                letter-spacing: 0;
+                max-width: calc(100vw - 10rem);
+            }
+
+            .superadmin-user-trigger {
+                display: inline-flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 0.45rem !important;
+                min-height: 2rem !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
+
+            .superadmin-user-menu {
+                display: flex !important;
+                align-items: center !important;
+                align-self: center !important;
+                transform: translateY(1px) !important;
+            }
+
+            .superadmin-user-avatar {
+                display: grid !important;
+                place-items: center !important;
+                flex-shrink: 0 !important;
+                line-height: 1 !important;
+                padding: 0 !important;
+            }
+
+            .superadmin-user-avatar span {
+                width: 100% !important;
+                height: 100% !important;
+                display: grid !important;
+                place-items: center !important;
+                line-height: 1 !important;
+                margin: 0 !important;
+                text-align: center !important;
+                transform: translateY(0.5px) !important;
+            }
+
+            .superadmin-user-chevron {
+                display: block !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                align-self: center !important;
+                line-height: 1 !important;
+                transform: translateY(0.5px) !important;
+            }
+        }
     </style>
+    <?php session_guard_script('../superadmin/superadmin_login.php'); ?>
 </head>
 <body class="bg-pcu min-h-screen">
     <!-- Navigation -->
     <nav class="glass-effect shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between min-h-[4rem] py-2 items-center">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="homepage.php" class="flex items-center gap-3 transition-transform hover:scale-105">
-                        <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
-                        <div>
-                            <span class="text-lg font-bold text-[#0056b3]">Super Admin</span>
-                            <p class="text-xs text-slate-500">GateWatch</p>
-                        </div>
+                    <a href="homepage.php" class="brand-link transition-transform hover:scale-105 hover:opacity-90">
+                        <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="brand-logo">
+                        <span class="brand-wordmark">Philippine Christian University</span>
                     </a>
                 </div>
                 
                 <!-- User Menu -->
-                <div class="flex items-center gap-4" x-data="{ open: false }">
+                <div class="superadmin-user-menu flex items-center gap-4" x-data="{ open: false }">
                     <div class="relative">
                         <button 
                             @click="open = !open"
-                            class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+                            class="superadmin-user-trigger flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
                         >
-                            <div class="w-8 h-8 bg-gradient-to-br from-[#0056b3] to-[#003d82] rounded-full flex items-center justify-center">
+                            <div class="superadmin-user-avatar w-8 h-8 bg-gradient-to-br from-[#0056b3] to-[#003d82] rounded-full flex items-center justify-center">
                                 <span class="text-white font-semibold text-sm"><?php echo strtoupper(substr($_SESSION['superadmin_name'] ?? 'SA', 0, 2)); ?></span>
                             </div>
                             <span class="text-slate-700 font-medium hidden sm:inline"><?php echo e($_SESSION['superadmin_name'] ?? 'Super Admin'); ?></span>
-                            <svg class="w-4 h-4 text-slate-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="superadmin-user-chevron w-4 h-4 text-slate-400 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
@@ -124,14 +217,6 @@ if (!isset($_SESSION['superadmin_logged_in']) || $_SESSION['superadmin_logged_in
                             <div class="px-4 py-3 border-b border-slate-100">
                                 <p class="text-sm font-semibold text-slate-800"><?php echo e($_SESSION['superadmin_name'] ?? 'Super Admin'); ?></p>
                                 <p class="text-xs text-slate-500"><?php echo e($_SESSION['superadmin_email'] ?? ''); ?></p>
-                            </div>
-                            <div class="py-2">
-                                <a href="homepage.php" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                                    </svg>
-                                    Dashboard
-                                </a>
                             </div>
                             <div class="border-t border-slate-100">
                                 <a href="superadmin_logout.php" class="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">

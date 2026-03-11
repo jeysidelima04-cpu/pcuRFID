@@ -1,8 +1,5 @@
 <?php
 
-use PDO;
-use PDOException;
-
 /**
  * Check QR Token Status API
  * Used by Digital ID page to check if QR code has been scanned
@@ -12,7 +9,13 @@ use PDOException;
 require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+apply_cors_headers(['POST'], ['Content-Type', 'X-CSRF-Token']);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed']);
+    exit;
+}
 
 // Must be logged in as student
 if (!isset($_SESSION['user']) || empty($_SESSION['user']['id'])) {
@@ -20,7 +23,15 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user']['id'])) {
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$headers = getallheaders();
+$csrfToken = $headers['X-CSRF-Token'] ?? $headers['x-csrf-token'] ?? '';
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Invalid CSRF token']);
+    exit;
+}
+
+$data = get_json_input();
 $token_hash = $data['token_hash'] ?? '';
 
 if (empty($token_hash)) {

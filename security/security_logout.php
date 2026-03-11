@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/../db.php';
-session_destroy();
+
+destroy_session_completely();
+
+send_no_cache_headers();
 header('Location: security_login.php');
 exit();

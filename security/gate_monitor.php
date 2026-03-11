@@ -6,18 +6,8 @@ require_once __DIR__ . '/../db.php';
 // SECURITY CONFIGURATION
 // ============================================
 
-// Configure secure session settings (if not already set in php.ini)
-if (session_status() === PHP_SESSION_ACTIVE) {
-    // Set secure session cookie parameters
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-               (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-    
-    ini_set('session.cookie_httponly', '1');  // Prevent JavaScript access to session cookie
-    ini_set('session.cookie_secure', $isHttps ? '1' : '0');  // Send cookie only over HTTPS (in production)
-    ini_set('session.cookie_samesite', 'Strict');  // CSRF protection
-    ini_set('session.use_strict_mode', '1');  // Reject uninitialized session IDs
-    ini_set('session.use_only_cookies', '1');  // Prevent session fixation via URL
-}
+// Centralized auth check (includes no-cache headers + session timeout + regeneration)
+require_security_auth();
 
 // Security Headers - Protect against common web vulnerabilities
 header('X-Frame-Options: DENY');  // Prevent clickjacking
@@ -34,35 +24,6 @@ $csp .= "font-src 'self' data:; ";
 $csp .= "connect-src 'self'; ";
 $csp .= "frame-ancestors 'none';";
 header("Content-Security-Policy: " . $csp);
-
-// Session timeout configuration (30 minutes of inactivity)
-define('SESSION_TIMEOUT', 1800); // 30 minutes
-
-// Check if security guard is logged in
-if (!isset($_SESSION['security_logged_in'])) {
-    header('Location: security_login.php');
-    exit;
-}
-
-// Session timeout check - logout if inactive for too long
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
-    // Session expired due to inactivity
-    session_unset();
-    session_destroy();
-    header('Location: security_login.php?timeout=1');
-    exit;
-}
-
-// Update last activity timestamp
-$_SESSION['last_activity'] = time();
-
-// Session regeneration - regenerate session ID periodically to prevent session fixation
-if (!isset($_SESSION['created_at'])) {
-    $_SESSION['created_at'] = time();
-} elseif (time() - $_SESSION['created_at'] > 300) { // Regenerate every 5 minutes
-    session_regenerate_id(true);
-    $_SESSION['created_at'] = time();
-}
 
 $guard_username = $_SESSION['security_username'] ?? 'Security Guard';
 
@@ -148,7 +109,7 @@ try {
     <?php endif; ?>
     <style type="text/tailwindcss">
         .fade-in {
-            /* instant - no animation */
+            animation: none;
         }
         .btn-hover {
             transition: all 0.3s ease;
@@ -301,7 +262,60 @@ try {
             background-color: #0284c7;
             color: white;
         }
+
+        @font-face {
+            font-family: 'old-english-canterbury';
+            src: url('../assets/fonts/canterbury-webfont.woff2') format('woff2'),
+                 url('../assets/fonts/canterbury-webfont.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .brand-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .brand-wordmark {
+            font-family: 'old-english-canterbury', serif;
+            font-weight: 400;
+            font-size: clamp(1.05rem, 2.2vw, 1.875rem);
+            line-height: 1;
+            letter-spacing: 0;
+            color: #000000;
+            text-rendering: optimizeLegibility;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .brand-link {
+                gap: 0.4rem;
+            }
+
+            .brand-logo {
+                width: 2rem;
+                height: 2rem;
+            }
+
+            .brand-wordmark {
+                font-size: clamp(0.88rem, 3.5vw, 1.05rem);
+                white-space: normal;
+                line-height: 1.15;
+                letter-spacing: 0;
+                max-width: calc(100vw - 10rem);
+            }
+        }
     </style>
+    <?php session_guard_script('security_login.php'); ?>
 </head>
 <body class="text-slate-900">
     <div class="page-shell">
@@ -313,11 +327,11 @@ try {
         <!-- Header -->
         <nav class="nav-blur border-b border-slate-200 fixed w-full top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16 items-center">
+                <div class="flex justify-between min-h-[4rem] py-2 items-center">
                     <div class="flex items-center gap-3">
-                        <a href="gate_monitor.php" class="flex items-center hover:opacity-90 transition-opacity">
-                            <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="h-10 w-10">
-                            <span class="ml-2 text-xl font-semibold text-sky-700">Philippine Christian University</span>
+                        <a href="gate_monitor.php" class="brand-link hover:opacity-90 transition-opacity">
+                            <img src="../assets/images/pcu-logo.png" alt="PCU Logo" class="brand-logo">
+                            <span class="brand-wordmark">Philippine Christian University</span>
                         </a>
                     </div>
 

@@ -13,9 +13,7 @@ use Firebase\JWT\Key;
 use Firebase\JWT\ExpiredException;
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type, X-CSRF-Token');
+apply_cors_headers(['POST'], ['Content-Type', 'X-CSRF-Token']);
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
@@ -46,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get the JWT token from request
-$data = json_decode(file_get_contents('php://input'), true);
+$data = get_json_input();
 $jwt_token = trim($data['token'] ?? '');
 
 if (empty($jwt_token)) {
@@ -56,7 +54,7 @@ if (empty($jwt_token)) {
 
 try {
     $pdo = pdo();
-    $jwt_secret = env('JWT_SECRET', 'pcurfid2-default-secret-change-in-production');
+    $jwt_secret = get_jwt_secret();
     
     // First check if this token has already been used
     $stmt = $pdo->prepare('SELECT id, used_at FROM used_qr_tokens WHERE token_hash = ? LIMIT 1');
