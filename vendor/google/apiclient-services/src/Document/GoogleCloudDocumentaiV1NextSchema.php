@@ -26,13 +26,13 @@ class GoogleCloudDocumentaiV1NextSchema extends \Google\Model
    */
   public $createTime;
   /**
-   * Optional. The user-defined name of the Schema.
+   * Required. The user-defined name of the Schema.
    *
    * @var string
    */
   public $displayName;
   /**
-   * Optional. The GCP labels for the Schema.
+   * Optional. The {{gcp_name_short}} labels for the Schema.
    *
    * @var string[]
    */
@@ -68,7 +68,7 @@ class GoogleCloudDocumentaiV1NextSchema extends \Google\Model
     return $this->createTime;
   }
   /**
-   * Optional. The user-defined name of the Schema.
+   * Required. The user-defined name of the Schema.
    *
    * @param string $displayName
    */
@@ -84,7 +84,7 @@ class GoogleCloudDocumentaiV1NextSchema extends \Google\Model
     return $this->displayName;
   }
   /**
-   * Optional. The GCP labels for the Schema.
+   * Optional. The {{gcp_name_short}} labels for the Schema.
    *
    * @param string[] $labels
    */

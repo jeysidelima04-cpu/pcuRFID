@@ -34,7 +34,7 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   /**
    * The connector is in error. The error details can be found in
    * DataConnector.errors. If the error is unfixable, the DataConnector can be
-   * deleted by [CollectionService.DeleteCollection] API.
+   * deleted by CollectionService.DeleteCollection API.
    */
   public const ACTION_STATE_FAILED = 'FAILED';
   /**
@@ -105,6 +105,18 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
    */
   public const CONNECTOR_TYPE_GCNV = 'GCNV';
   /**
+   * Google Chat connector.
+   */
+  public const CONNECTOR_TYPE_GOOGLE_CHAT = 'GOOGLE_CHAT';
+  /**
+   * Google Sites connector.
+   */
+  public const CONNECTOR_TYPE_GOOGLE_SITES = 'GOOGLE_SITES';
+  /**
+   * Remote MCP based connector.
+   */
+  public const CONNECTOR_TYPE_REMOTE_MCP = 'REMOTE_MCP';
+  /**
    * Default value.
    */
   public const REALTIME_STATE_STATE_UNSPECIFIED = 'STATE_UNSPECIFIED';
@@ -119,7 +131,7 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   /**
    * The connector is in error. The error details can be found in
    * DataConnector.errors. If the error is unfixable, the DataConnector can be
-   * deleted by [CollectionService.DeleteCollection] API.
+   * deleted by CollectionService.DeleteCollection API.
    */
   public const REALTIME_STATE_FAILED = 'FAILED';
   /**
@@ -155,7 +167,7 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   /**
    * The connector is in error. The error details can be found in
    * DataConnector.errors. If the error is unfixable, the DataConnector can be
-   * deleted by [CollectionService.DeleteCollection] API.
+   * deleted by CollectionService.DeleteCollection API.
    */
   public const STATE_FAILED = 'FAILED';
   /**
@@ -263,6 +275,16 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   public $dataSource;
   protected $destinationConfigsType = GoogleCloudDiscoveryengineV1DestinationConfig::class;
   protected $destinationConfigsDataType = 'array';
+  /**
+   * Output only. The list of FQDNs of the data connector can egress to. This
+   * includes both FQDN derived from the customer provided instance URL and
+   * default per connector type FQDNs. Note: This field is derived from both the
+   * DataConnector.params, and connector source spec. It should only be used for
+   * CAIS and Org Policy evaluation purposes.
+   *
+   * @var string[]
+   */
+  public $egressFqdns;
   protected $endUserConfigType = GoogleCloudDiscoveryengineV1DataConnectorEndUserConfig::class;
   protected $endUserConfigDataType = '';
   protected $entitiesType = GoogleCloudDiscoveryengineV1DataConnectorSourceEntity::class;
@@ -426,6 +448,13 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
    * @var string
    */
   public $updateTime;
+  /**
+   * Output only. Whether the connector is created with VPC-SC enabled. This is
+   * only used for CuOP evaluation purpose.
+   *
+   * @var bool
+   */
+  public $vpcscEnabled;
 
   /**
    * Optional. Whether the connector will be created with an ACL config.
@@ -572,7 +601,8 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
    *
    * Accepted values: CONNECTOR_TYPE_UNSPECIFIED, THIRD_PARTY, GCP_FHIR,
    * BIG_QUERY, GCS, GOOGLE_MAIL, GOOGLE_CALENDAR, GOOGLE_DRIVE,
-   * NATIVE_CLOUD_IDENTITY, THIRD_PARTY_FEDERATED, THIRD_PARTY_EUA, GCNV
+   * NATIVE_CLOUD_IDENTITY, THIRD_PARTY_FEDERATED, THIRD_PARTY_EUA, GCNV,
+   * GOOGLE_CHAT, GOOGLE_SITES, REMOTE_MCP
    *
    * @param self::CONNECTOR_TYPE_* $connectorType
    */
@@ -651,6 +681,26 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   public function getDestinationConfigs()
   {
     return $this->destinationConfigs;
+  }
+  /**
+   * Output only. The list of FQDNs of the data connector can egress to. This
+   * includes both FQDN derived from the customer provided instance URL and
+   * default per connector type FQDNs. Note: This field is derived from both the
+   * DataConnector.params, and connector source spec. It should only be used for
+   * CAIS and Org Policy evaluation purposes.
+   *
+   * @param string[] $egressFqdns
+   */
+  public function setEgressFqdns($egressFqdns)
+  {
+    $this->egressFqdns = $egressFqdns;
+  }
+  /**
+   * @return string[]
+   */
+  public function getEgressFqdns()
+  {
+    return $this->egressFqdns;
   }
   /**
    * Optional. Any params and credentials used specifically for EUA connectors.
@@ -1121,6 +1171,23 @@ class GoogleCloudDiscoveryengineV1DataConnector extends \Google\Collection
   public function getUpdateTime()
   {
     return $this->updateTime;
+  }
+  /**
+   * Output only. Whether the connector is created with VPC-SC enabled. This is
+   * only used for CuOP evaluation purpose.
+   *
+   * @param bool $vpcscEnabled
+   */
+  public function setVpcscEnabled($vpcscEnabled)
+  {
+    $this->vpcscEnabled = $vpcscEnabled;
+  }
+  /**
+   * @return bool
+   */
+  public function getVpcscEnabled()
+  {
+    return $this->vpcscEnabled;
   }
 }
 

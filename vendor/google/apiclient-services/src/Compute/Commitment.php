@@ -53,16 +53,42 @@ class Commitment extends \Google\Collection
   public const TYPE_GENERAL_PURPOSE_N2 = 'GENERAL_PURPOSE_N2';
   public const TYPE_GENERAL_PURPOSE_N2D = 'GENERAL_PURPOSE_N2D';
   public const TYPE_GENERAL_PURPOSE_N4 = 'GENERAL_PURPOSE_N4';
+  public const TYPE_GENERAL_PURPOSE_N4A = 'GENERAL_PURPOSE_N4A';
   public const TYPE_GENERAL_PURPOSE_N4D = 'GENERAL_PURPOSE_N4D';
   public const TYPE_GENERAL_PURPOSE_T2D = 'GENERAL_PURPOSE_T2D';
   public const TYPE_GRAPHICS_OPTIMIZED = 'GRAPHICS_OPTIMIZED';
+  public const TYPE_GRAPHICS_OPTIMIZED_G4 = 'GRAPHICS_OPTIMIZED_G4';
   public const TYPE_MEMORY_OPTIMIZED = 'MEMORY_OPTIMIZED';
   public const TYPE_MEMORY_OPTIMIZED_M3 = 'MEMORY_OPTIMIZED_M3';
   public const TYPE_MEMORY_OPTIMIZED_M4 = 'MEMORY_OPTIMIZED_M4';
   public const TYPE_MEMORY_OPTIMIZED_M4_6TB = 'MEMORY_OPTIMIZED_M4_6TB';
+  /**
+   * CUD bucket for X4 machine with 1440 vCPUs and 24TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_1440_24T = 'MEMORY_OPTIMIZED_X4_1440_24T';
   public const TYPE_MEMORY_OPTIMIZED_X4_16TB = 'MEMORY_OPTIMIZED_X4_16TB';
+  /**
+   * CUD bucket for X4 machine with 1920 vCPUs and 32TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_1920_32T = 'MEMORY_OPTIMIZED_X4_1920_32T';
   public const TYPE_MEMORY_OPTIMIZED_X4_24TB = 'MEMORY_OPTIMIZED_X4_24TB';
   public const TYPE_MEMORY_OPTIMIZED_X4_32TB = 'MEMORY_OPTIMIZED_X4_32TB';
+  /**
+   * CUD bucket for X4 machine with 480 vCPUs and 6TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_480_6T = 'MEMORY_OPTIMIZED_X4_480_6T';
+  /**
+   * CUD bucket for X4 machine with 480 vCPUs and 8TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_480_8T = 'MEMORY_OPTIMIZED_X4_480_8T';
+  /**
+   * CUD bucket for X4 machine with 960 vCPUs and 12TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_960_12T = 'MEMORY_OPTIMIZED_X4_960_12T';
+  /**
+   * CUD bucket for X4 machine with 960 vCPUs and 16TB of memory.
+   */
+  public const TYPE_MEMORY_OPTIMIZED_X4_960_16T = 'MEMORY_OPTIMIZED_X4_960_16T';
   public const TYPE_STORAGE_OPTIMIZED_Z3 = 'STORAGE_OPTIMIZED_Z3';
   /**
    * Note for internal users: When adding a new enum Type for v1, make sure to
@@ -96,7 +122,7 @@ class Commitment extends \Google\Collection
    */
   public $category;
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
@@ -117,7 +143,7 @@ class Commitment extends \Google\Collection
    */
   public $description;
   /**
-   * [Output Only] Commitment end time inRFC3339 text format.
+   * Output only. [Output Only] Commitment end time inRFC3339 text format.
    *
    * @var string
    */
@@ -127,15 +153,15 @@ class Commitment extends \Google\Collection
    */
   public $existingReservations;
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @var string
    */
   public $id;
   /**
-   * [Output Only] Type of the resource. Always compute#commitment for
-   * commitments.
+   * Output only. [Output Only] Type of the resource. Always compute#commitment
+   * for commitments.
    *
    * @var string
    */
@@ -173,8 +199,8 @@ class Commitment extends \Google\Collection
    */
   public $plan;
   /**
-   * [Output Only] URL of the region where the commitment and committed
-   * resources are located.
+   * Output only. [Output Only] URL of the region where the commitment and
+   * committed resources are located.
    *
    * @var string
    */
@@ -186,7 +212,7 @@ class Commitment extends \Google\Collection
   protected $resourcesType = ResourceCommitment::class;
   protected $resourcesDataType = 'array';
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @var string
    */
@@ -199,21 +225,22 @@ class Commitment extends \Google\Collection
    */
   public $splitSourceCommitment;
   /**
-   * [Output Only] Commitment start time inRFC3339 text format.
+   * Output only. [Output Only] Commitment start time inRFC3339 text format.
    *
    * @var string
    */
   public $startTimestamp;
   /**
-   * [Output Only] Status of the commitment with regards to eventual expiration
-   * (each commitment has an end date defined). Status can be one of the
-   * following values: NOT_YET_ACTIVE, ACTIVE, orEXPIRED.
+   * Output only. [Output Only] Status of the commitment with regards to
+   * eventual expiration (each commitment has an end date defined). Status can
+   * be one of the following values: NOT_YET_ACTIVE, ACTIVE, orEXPIRED.
    *
    * @var string
    */
   public $status;
   /**
-   * [Output Only] An optional, human-readable explanation of the status.
+   * Output only. [Output Only] An optional, human-readable explanation of the
+   * status.
    *
    * @var string
    */
@@ -230,9 +257,9 @@ class Commitment extends \Google\Collection
    * GENERAL_PURPOSE,GENERAL_PURPOSE_C4, GENERAL_PURPOSE_E2,GENERAL_PURPOSE_N2,
    * GENERAL_PURPOSE_N2D,GENERAL_PURPOSE_N4,
    * GENERAL_PURPOSE_T2D,GRAPHICS_OPTIMIZED,
-   * MEMORY_OPTIMIZED,MEMORY_OPTIMIZED_M3,
-   * MEMORY_OPTIMIZED_X4,STORAGE_OPTIMIZED_Z3. For example, type
-   * MEMORY_OPTIMIZED specifies a commitment that applies only to eligible
+   * GRAPHICS_OPTIMIZED_G4,MEMORY_OPTIMIZED,
+   * MEMORY_OPTIMIZED_M3,MEMORY_OPTIMIZED_X4, STORAGE_OPTIMIZED_Z3. For example,
+   * type MEMORY_OPTIMIZED specifies a commitment that applies only to eligible
    * resources of memory optimized M1 and M2 machine series. Type
    * GENERAL_PURPOSE specifies a commitment that applies only to eligible
    * resources of general purpose N1 machine series.
@@ -288,7 +315,7 @@ class Commitment extends \Google\Collection
     return $this->category;
   }
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -339,7 +366,7 @@ class Commitment extends \Google\Collection
     return $this->description;
   }
   /**
-   * [Output Only] Commitment end time inRFC3339 text format.
+   * Output only. [Output Only] Commitment end time inRFC3339 text format.
    *
    * @param string $endTimestamp
    */
@@ -369,8 +396,8 @@ class Commitment extends \Google\Collection
     return $this->existingReservations;
   }
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @param string $id
    */
@@ -386,8 +413,8 @@ class Commitment extends \Google\Collection
     return $this->id;
   }
   /**
-   * [Output Only] Type of the resource. Always compute#commitment for
-   * commitments.
+   * Output only. [Output Only] Type of the resource. Always compute#commitment
+   * for commitments.
    *
    * @param string $kind
    */
@@ -481,8 +508,8 @@ class Commitment extends \Google\Collection
     return $this->plan;
   }
   /**
-   * [Output Only] URL of the region where the commitment and committed
-   * resources are located.
+   * Output only. [Output Only] URL of the region where the commitment and
+   * committed resources are located.
    *
    * @param string $region
    */
@@ -523,7 +550,7 @@ class Commitment extends \Google\Collection
     return $this->reservations;
   }
   /**
-   * [Output Only] Status information for Commitment resource.
+   * Output only. [Output Only] Status information for Commitment resource.
    *
    * @param CommitmentResourceStatus $resourceStatus
    */
@@ -557,7 +584,7 @@ class Commitment extends \Google\Collection
     return $this->resources;
   }
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @param string $selfLink
    */
@@ -590,7 +617,7 @@ class Commitment extends \Google\Collection
     return $this->splitSourceCommitment;
   }
   /**
-   * [Output Only] Commitment start time inRFC3339 text format.
+   * Output only. [Output Only] Commitment start time inRFC3339 text format.
    *
    * @param string $startTimestamp
    */
@@ -606,9 +633,9 @@ class Commitment extends \Google\Collection
     return $this->startTimestamp;
   }
   /**
-   * [Output Only] Status of the commitment with regards to eventual expiration
-   * (each commitment has an end date defined). Status can be one of the
-   * following values: NOT_YET_ACTIVE, ACTIVE, orEXPIRED.
+   * Output only. [Output Only] Status of the commitment with regards to
+   * eventual expiration (each commitment has an end date defined). Status can
+   * be one of the following values: NOT_YET_ACTIVE, ACTIVE, orEXPIRED.
    *
    * Accepted values: ACTIVE, CANCELLED, CREATING, EXPIRED, NOT_YET_ACTIVE
    *
@@ -626,7 +653,8 @@ class Commitment extends \Google\Collection
     return $this->status;
   }
   /**
-   * [Output Only] An optional, human-readable explanation of the status.
+   * Output only. [Output Only] An optional, human-readable explanation of the
+   * status.
    *
    * @param string $statusMessage
    */
@@ -653,9 +681,9 @@ class Commitment extends \Google\Collection
    * GENERAL_PURPOSE,GENERAL_PURPOSE_C4, GENERAL_PURPOSE_E2,GENERAL_PURPOSE_N2,
    * GENERAL_PURPOSE_N2D,GENERAL_PURPOSE_N4,
    * GENERAL_PURPOSE_T2D,GRAPHICS_OPTIMIZED,
-   * MEMORY_OPTIMIZED,MEMORY_OPTIMIZED_M3,
-   * MEMORY_OPTIMIZED_X4,STORAGE_OPTIMIZED_Z3. For example, type
-   * MEMORY_OPTIMIZED specifies a commitment that applies only to eligible
+   * GRAPHICS_OPTIMIZED_G4,MEMORY_OPTIMIZED,
+   * MEMORY_OPTIMIZED_M3,MEMORY_OPTIMIZED_X4, STORAGE_OPTIMIZED_Z3. For example,
+   * type MEMORY_OPTIMIZED specifies a commitment that applies only to eligible
    * resources of memory optimized M1 and M2 machine series. Type
    * GENERAL_PURPOSE specifies a commitment that applies only to eligible
    * resources of general purpose N1 machine series.
@@ -667,11 +695,14 @@ class Commitment extends \Google\Collection
    * COMPUTE_OPTIMIZED_H4D, GENERAL_PURPOSE, GENERAL_PURPOSE_C4,
    * GENERAL_PURPOSE_C4A, GENERAL_PURPOSE_C4D, GENERAL_PURPOSE_E2,
    * GENERAL_PURPOSE_N2, GENERAL_PURPOSE_N2D, GENERAL_PURPOSE_N4,
-   * GENERAL_PURPOSE_N4D, GENERAL_PURPOSE_T2D, GRAPHICS_OPTIMIZED,
-   * MEMORY_OPTIMIZED, MEMORY_OPTIMIZED_M3, MEMORY_OPTIMIZED_M4,
-   * MEMORY_OPTIMIZED_M4_6TB, MEMORY_OPTIMIZED_X4_16TB,
-   * MEMORY_OPTIMIZED_X4_24TB, MEMORY_OPTIMIZED_X4_32TB, STORAGE_OPTIMIZED_Z3,
-   * TYPE_UNSPECIFIED
+   * GENERAL_PURPOSE_N4A, GENERAL_PURPOSE_N4D, GENERAL_PURPOSE_T2D,
+   * GRAPHICS_OPTIMIZED, GRAPHICS_OPTIMIZED_G4, MEMORY_OPTIMIZED,
+   * MEMORY_OPTIMIZED_M3, MEMORY_OPTIMIZED_M4, MEMORY_OPTIMIZED_M4_6TB,
+   * MEMORY_OPTIMIZED_X4_1440_24T, MEMORY_OPTIMIZED_X4_16TB,
+   * MEMORY_OPTIMIZED_X4_1920_32T, MEMORY_OPTIMIZED_X4_24TB,
+   * MEMORY_OPTIMIZED_X4_32TB, MEMORY_OPTIMIZED_X4_480_6T,
+   * MEMORY_OPTIMIZED_X4_480_8T, MEMORY_OPTIMIZED_X4_960_12T,
+   * MEMORY_OPTIMIZED_X4_960_16T, STORAGE_OPTIMIZED_Z3, TYPE_UNSPECIFIED
    *
    * @param self::TYPE_* $type
    */

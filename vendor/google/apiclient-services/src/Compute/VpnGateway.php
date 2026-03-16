@@ -41,7 +41,7 @@ class VpnGateway extends \Google\Collection
   public const STACK_TYPE_IPV6_ONLY = 'IPV6_ONLY';
   protected $collection_key = 'vpnInterfaces';
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
@@ -61,14 +61,15 @@ class VpnGateway extends \Google\Collection
    */
   public $gatewayIpVersion;
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @var string
    */
   public $id;
   /**
-   * [Output Only] Type of resource. Always compute#vpnGateway for VPN gateways.
+   * Output only. [Output Only] Type of resource. Always compute#vpnGateway for
+   * VPN gateways.
    *
    * @var string
    */
@@ -114,14 +115,16 @@ class VpnGateway extends \Google\Collection
    * @var string
    */
   public $network;
+  protected $paramsType = VpnGatewayParams::class;
+  protected $paramsDataType = '';
   /**
-   * [Output Only] URL of the region where the VPN gateway resides.
+   * Output only. [Output Only] URL of the region where the VPN gateway resides.
    *
    * @var string
    */
   public $region;
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @var string
    */
@@ -139,7 +142,7 @@ class VpnGateway extends \Google\Collection
   protected $vpnInterfacesDataType = 'array';
 
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -191,8 +194,8 @@ class VpnGateway extends \Google\Collection
     return $this->gatewayIpVersion;
   }
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @param string $id
    */
@@ -208,7 +211,8 @@ class VpnGateway extends \Google\Collection
     return $this->id;
   }
   /**
-   * [Output Only] Type of resource. Always compute#vpnGateway for VPN gateways.
+   * Output only. [Output Only] Type of resource. Always compute#vpnGateway for
+   * VPN gateways.
    *
    * @param string $kind
    */
@@ -305,7 +309,24 @@ class VpnGateway extends \Google\Collection
     return $this->network;
   }
   /**
-   * [Output Only] URL of the region where the VPN gateway resides.
+   * Input only. [Input Only] Additional params passed with the request, but not
+   * persisted as part of resource payload.
+   *
+   * @param VpnGatewayParams $params
+   */
+  public function setParams(VpnGatewayParams $params)
+  {
+    $this->params = $params;
+  }
+  /**
+   * @return VpnGatewayParams
+   */
+  public function getParams()
+  {
+    return $this->params;
+  }
+  /**
+   * Output only. [Output Only] URL of the region where the VPN gateway resides.
    *
    * @param string $region
    */
@@ -321,7 +342,7 @@ class VpnGateway extends \Google\Collection
     return $this->region;
   }
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @param string $selfLink
    */

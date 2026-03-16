@@ -81,11 +81,16 @@ class NodeNetworkConfig extends \Google\Collection
    */
   public $podRange;
   /**
-   * Output only. The subnetwork path for the node pool. Format:
+   * Optional. The subnetwork name/path for the node pool. Format:
    * projects/{project}/regions/{region}/subnetworks/{subnetwork} If the cluster
-   * is associated with multiple subnetworks, the subnetwork for the node pool
-   * is picked based on the IP utilization during node pool creation and is
-   * immutable.
+   * is associated with multiple subnetworks, the subnetwork can be either: - A
+   * user supplied subnetwork name during node pool creation (e.g., `my-
+   * subnet`). The name must be between 1 and 63 characters long, start with a
+   * letter, contain only letters, numbers, and hyphens, and end with a letter
+   * or a number. - A full subnetwork path during node pool creation, such as
+   * `projects/gke-project/regions/us-central1/subnetworks/my-subnet` - A
+   * subnetwork path picked based on the IP utilization during node pool
+   * creation and is immutable.
    *
    * @var string
    */
@@ -272,11 +277,16 @@ class NodeNetworkConfig extends \Google\Collection
     return $this->podRange;
   }
   /**
-   * Output only. The subnetwork path for the node pool. Format:
+   * Optional. The subnetwork name/path for the node pool. Format:
    * projects/{project}/regions/{region}/subnetworks/{subnetwork} If the cluster
-   * is associated with multiple subnetworks, the subnetwork for the node pool
-   * is picked based on the IP utilization during node pool creation and is
-   * immutable.
+   * is associated with multiple subnetworks, the subnetwork can be either: - A
+   * user supplied subnetwork name during node pool creation (e.g., `my-
+   * subnet`). The name must be between 1 and 63 characters long, start with a
+   * letter, contain only letters, numbers, and hyphens, and end with a letter
+   * or a number. - A full subnetwork path during node pool creation, such as
+   * `projects/gke-project/regions/us-central1/subnetworks/my-subnet` - A
+   * subnetwork path picked based on the IP utilization during node pool
+   * creation and is immutable.
    *
    * @param string $subnetwork
    */

@@ -130,7 +130,8 @@ class NetworkPeering extends \Google\Model
    */
   public $network;
   /**
-   * [Output Only] Maximum Transmission Unit in bytes of the peer network.
+   * Output only. [Output Only] Maximum Transmission Unit in bytes of the peer
+   * network.
    *
    * @var int
    */
@@ -143,15 +144,13 @@ class NetworkPeering extends \Google\Model
    */
   public $stackType;
   /**
-   * [Output Only] State for the peering, either `ACTIVE` or `INACTIVE`. The
-   * peering is `ACTIVE` when there's a matching configuration in the peer
-   * network.
+   * Output only. [Output Only] State for the peering.
    *
    * @var string
    */
   public $state;
   /**
-   * [Output Only] Details about the current state of the peering.
+   * Output only. [Output Only] Details about the current state of the peering.
    *
    * @var string
    */
@@ -185,7 +184,8 @@ class NetworkPeering extends \Google\Model
     return $this->autoCreateRoutes;
   }
   /**
-   * [Output Only] The effective state of the peering connection as a whole.
+   * Output only. [Output Only] The effective state of the peering connection as
+   * a whole.
    *
    * @param NetworkPeeringConnectionStatus $connectionStatus
    */
@@ -330,7 +330,8 @@ class NetworkPeering extends \Google\Model
     return $this->network;
   }
   /**
-   * [Output Only] Maximum Transmission Unit in bytes of the peer network.
+   * Output only. [Output Only] Maximum Transmission Unit in bytes of the peer
+   * network.
    *
    * @param int $peerMtu
    */
@@ -365,9 +366,7 @@ class NetworkPeering extends \Google\Model
     return $this->stackType;
   }
   /**
-   * [Output Only] State for the peering, either `ACTIVE` or `INACTIVE`. The
-   * peering is `ACTIVE` when there's a matching configuration in the peer
-   * network.
+   * Output only. [Output Only] State for the peering.
    *
    * Accepted values: ACTIVE, INACTIVE
    *
@@ -385,7 +384,7 @@ class NetworkPeering extends \Google\Model
     return $this->state;
   }
   /**
-   * [Output Only] Details about the current state of the peering.
+   * Output only. [Output Only] Details about the current state of the peering.
    *
    * @param string $stateDetails
    */

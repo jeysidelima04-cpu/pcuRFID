@@ -210,6 +210,8 @@ class ClusterUpdate extends \Google\Collection
    * @var string
    */
   public $desiredLoggingService;
+  protected $desiredManagedOpentelemetryConfigType = ManagedOpenTelemetryConfig::class;
+  protected $desiredManagedOpentelemetryConfigDataType = '';
   protected $desiredMasterAuthorizedNetworksConfigType = MasterAuthorizedNetworksConfig::class;
   protected $desiredMasterAuthorizedNetworksConfigDataType = '';
   /**
@@ -488,8 +490,12 @@ class ClusterUpdate extends \Google\Collection
     return $this->desiredClusterAutoscaling;
   }
   /**
-   * Enable/Disable Compliance Posture features for the cluster.
+   * Deprecated: Compliance Posture is no longer supported. For more details,
+   * see https://cloud.google.com/kubernetes-engine/docs/deprecations/posture-
+   * management-deprecation. Enable/Disable Compliance Posture features for the
+   * cluster.
    *
+   * @deprecated
    * @param CompliancePostureConfig $desiredCompliancePostureConfig
    */
   public function setDesiredCompliancePostureConfig(CompliancePostureConfig $desiredCompliancePostureConfig)
@@ -497,6 +503,7 @@ class ClusterUpdate extends \Google\Collection
     $this->desiredCompliancePostureConfig = $desiredCompliancePostureConfig;
   }
   /**
+   * @deprecated
    * @return CompliancePostureConfig
    */
   public function getDesiredCompliancePostureConfig()
@@ -948,6 +955,22 @@ class ClusterUpdate extends \Google\Collection
   public function getDesiredLoggingService()
   {
     return $this->desiredLoggingService;
+  }
+  /**
+   * The desired managed open telemetry configuration.
+   *
+   * @param ManagedOpenTelemetryConfig $desiredManagedOpentelemetryConfig
+   */
+  public function setDesiredManagedOpentelemetryConfig(ManagedOpenTelemetryConfig $desiredManagedOpentelemetryConfig)
+  {
+    $this->desiredManagedOpentelemetryConfig = $desiredManagedOpentelemetryConfig;
+  }
+  /**
+   * @return ManagedOpenTelemetryConfig
+   */
+  public function getDesiredManagedOpentelemetryConfig()
+  {
+    return $this->desiredManagedOpentelemetryConfig;
   }
   /**
    * The desired configuration options for master authorized networks feature.

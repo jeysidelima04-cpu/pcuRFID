@@ -138,6 +138,14 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
   protected $naturalLanguageQueryUnderstandingSpecType = GoogleCloudDiscoveryengineV1alphaSearchRequestNaturalLanguageQueryUnderstandingSpec::class;
   protected $naturalLanguageQueryUnderstandingSpecDataType = '';
   /**
+   * Optional. The maximum number of results to retrieve from each data store.
+   * If not specified, it will use the SearchRequest.DataStoreSpec.num_results
+   * if provided, otherwise there is no limit.
+   *
+   * @var int
+   */
+  public $numResultsPerDataStore;
+  /**
    * A 0-indexed integer that specifies the current offset (that is, starting
    * result location, amongst the Documents deemed by the API as relevant) in
    * search results. This field is only considered if page_token is unset. If
@@ -172,10 +180,11 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
   /**
    * Optional. The categories associated with a category page. Must be set for
    * category navigation queries to achieve good search quality. The format
-   * should be the same as UserEvent.PageInfo.page_category. This field is the
-   * equivalent of the query for browse (navigation) queries. It's used by the
-   * browse model when the query is empty. If the field is empty, it will not be
-   * used by the browse model. To represent full path of a category, use '>'
+   * should be the same as PageInfo.page_category. This field is the equivalent
+   * of the query for browse (navigation) queries. It's used by the browse model
+   * when the query is empty. If the field is empty, it will not be used by the
+   * browse model. If the field contains more than one element, only the first
+   * element will be used. To represent full path of a category, use '>'
    * character to separate different hierarchies. If '>' is part of the category
    * name, replace it with other character(s). For example, `Graphics Cards >
    * RTX>4090 > Founders Edition` where "RTX > 4090" represents one level, can
@@ -302,13 +311,17 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
    * @var string
    */
   public $regionCode;
+  protected $relevanceFilterSpecType = GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceFilterSpec::class;
+  protected $relevanceFilterSpecDataType = '';
   protected $relevanceScoreSpecType = GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceScoreSpec::class;
   protected $relevanceScoreSpecDataType = '';
   /**
-   * The relevance threshold of the search results. Default to Google defined
-   * threshold, leveraging a balance of precision and recall to deliver both
-   * highly accurate results and comprehensive coverage of relevant information.
-   * This feature is not supported for healthcare search.
+   * The global relevance threshold of the search results. Defaults to Google
+   * defined threshold, leveraging a balance of precision and recall to deliver
+   * both highly accurate results and comprehensive coverage of relevant
+   * information. If more granular relevance filtering is required, use the
+   * `relevance_filter_spec` instead. This feature is not supported for
+   * healthcare search.
    *
    * @var string
    */
@@ -675,6 +688,24 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
     return $this->naturalLanguageQueryUnderstandingSpec;
   }
   /**
+   * Optional. The maximum number of results to retrieve from each data store.
+   * If not specified, it will use the SearchRequest.DataStoreSpec.num_results
+   * if provided, otherwise there is no limit.
+   *
+   * @param int $numResultsPerDataStore
+   */
+  public function setNumResultsPerDataStore($numResultsPerDataStore)
+  {
+    $this->numResultsPerDataStore = $numResultsPerDataStore;
+  }
+  /**
+   * @return int
+   */
+  public function getNumResultsPerDataStore()
+  {
+    return $this->numResultsPerDataStore;
+  }
+  /**
    * A 0-indexed integer that specifies the current offset (that is, starting
    * result location, amongst the Documents deemed by the API as relevant) in
    * search results. This field is only considered if page_token is unset. If
@@ -739,10 +770,11 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
   /**
    * Optional. The categories associated with a category page. Must be set for
    * category navigation queries to achieve good search quality. The format
-   * should be the same as UserEvent.PageInfo.page_category. This field is the
-   * equivalent of the query for browse (navigation) queries. It's used by the
-   * browse model when the query is empty. If the field is empty, it will not be
-   * used by the browse model. To represent full path of a category, use '>'
+   * should be the same as PageInfo.page_category. This field is the equivalent
+   * of the query for browse (navigation) queries. It's used by the browse model
+   * when the query is empty. If the field is empty, it will not be used by the
+   * browse model. If the field contains more than one element, only the first
+   * element will be used. To represent full path of a category, use '>'
    * character to separate different hierarchies. If '>' is part of the category
    * name, replace it with other character(s). For example, `Graphics Cards >
    * RTX>4090 > Founders Edition` where "RTX > 4090" represents one level, can
@@ -985,6 +1017,26 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
     return $this->regionCode;
   }
   /**
+   * Optional. The granular relevance filtering specification. If not specified,
+   * the global `relevance_threshold` will be used for all sub-searches. If
+   * specified, this overrides the global `relevance_threshold` to use
+   * thresholds on a per sub-search basis. This feature is currently supported
+   * only for custom and site search.
+   *
+   * @param GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceFilterSpec $relevanceFilterSpec
+   */
+  public function setRelevanceFilterSpec(GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceFilterSpec $relevanceFilterSpec)
+  {
+    $this->relevanceFilterSpec = $relevanceFilterSpec;
+  }
+  /**
+   * @return GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceFilterSpec
+   */
+  public function getRelevanceFilterSpec()
+  {
+    return $this->relevanceFilterSpec;
+  }
+  /**
    * Optional. The specification for returning the relevance score.
    *
    * @param GoogleCloudDiscoveryengineV1alphaSearchRequestRelevanceScoreSpec $relevanceScoreSpec
@@ -1001,10 +1053,12 @@ class GoogleCloudDiscoveryengineV1alphaSearchRequest extends \Google\Collection
     return $this->relevanceScoreSpec;
   }
   /**
-   * The relevance threshold of the search results. Default to Google defined
-   * threshold, leveraging a balance of precision and recall to deliver both
-   * highly accurate results and comprehensive coverage of relevant information.
-   * This feature is not supported for healthcare search.
+   * The global relevance threshold of the search results. Defaults to Google
+   * defined threshold, leveraging a balance of precision and recall to deliver
+   * both highly accurate results and comprehensive coverage of relevant
+   * information. If more granular relevance filtering is required, use the
+   * `relevance_filter_spec` instead. This feature is not supported for
+   * healthcare search.
    *
    * Accepted values: RELEVANCE_THRESHOLD_UNSPECIFIED, LOWEST, LOW, MEDIUM, HIGH
    *

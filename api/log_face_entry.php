@@ -70,6 +70,14 @@ try {
         throw new Exception('Invalid confidence score');
     }
     
+    // Server-side confidence floor: with threshold 0.4, valid matches have confidence >= 0.6
+    // Use 0.55 as floor with small margin for average-distance rounding
+    if ($confidenceScore < 0.55) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Confidence too low to accept face entry']);
+        exit;
+    }
+    
     $pdo = pdo();
     
     // Get security guard ID from session for audit trail

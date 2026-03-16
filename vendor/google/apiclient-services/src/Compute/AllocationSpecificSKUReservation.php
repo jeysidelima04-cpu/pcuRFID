@@ -20,7 +20,8 @@ namespace Google\Service\Compute;
 class AllocationSpecificSKUReservation extends \Google\Model
 {
   /**
-   * [Output Only] Indicates how many instances are actually usable currently.
+   * Output only. [Output Only] Indicates how many instances are actually usable
+   * currently.
    *
    * @var string
    */
@@ -32,7 +33,7 @@ class AllocationSpecificSKUReservation extends \Google\Model
    */
   public $count;
   /**
-   * [Output Only] Indicates how many instances are in use.
+   * Output only. [Output Only] Indicates how many instances are in use.
    *
    * @var string
    */
@@ -44,7 +45,7 @@ class AllocationSpecificSKUReservation extends \Google\Model
    * field, you must exclude the instanceProperties field.
    *
    * This field is optional, and it can be a full or partial URL. For example,
-   * the following are all valid URLs to an instance template:                - 
+   * the following are all valid URLs to an instance template:                -
    * https://www.googleapis.com/compute/v1/projects/project/global/instanceTempl
    * ates/instanceTemplate       -
    * projects/project/global/instanceTemplates/instanceTemplate       -
@@ -55,7 +56,8 @@ class AllocationSpecificSKUReservation extends \Google\Model
   public $sourceInstanceTemplate;
 
   /**
-   * [Output Only] Indicates how many instances are actually usable currently.
+   * Output only. [Output Only] Indicates how many instances are actually usable
+   * currently.
    *
    * @param string $assuredCount
    */
@@ -87,7 +89,7 @@ class AllocationSpecificSKUReservation extends \Google\Model
     return $this->count;
   }
   /**
-   * [Output Only] Indicates how many instances are in use.
+   * Output only. [Output Only] Indicates how many instances are in use.
    *
    * @param string $inUseCount
    */
@@ -123,7 +125,7 @@ class AllocationSpecificSKUReservation extends \Google\Model
    * field, you must exclude the instanceProperties field.
    *
    * This field is optional, and it can be a full or partial URL. For example,
-   * the following are all valid URLs to an instance template:                - 
+   * the following are all valid URLs to an instance template:                -
    * https://www.googleapis.com/compute/v1/projects/project/global/instanceTempl
    * ates/instanceTemplate       -
    * projects/project/global/instanceTemplates/instanceTemplate       -

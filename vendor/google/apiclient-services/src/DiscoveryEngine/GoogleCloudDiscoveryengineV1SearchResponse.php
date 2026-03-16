@@ -19,6 +19,18 @@ namespace Google\Service\DiscoveryEngine;
 
 class GoogleCloudDiscoveryengineV1SearchResponse extends \Google\Collection
 {
+  /**
+   * Default value. Should not be used.
+   */
+  public const SEMANTIC_STATE_SEMANTIC_STATE_UNSPECIFIED = 'SEMANTIC_STATE_UNSPECIFIED';
+  /**
+   * Semantic search was disabled for this search response.
+   */
+  public const SEMANTIC_STATE_DISABLED = 'DISABLED';
+  /**
+   * Semantic search was enabled for this search response.
+   */
+  public const SEMANTIC_STATE_ENABLED = 'ENABLED';
   protected $collection_key = 'searchLinkPromotions';
   /**
    * A unique search token. This should be included in the UserEvent logs
@@ -39,6 +51,8 @@ class GoogleCloudDiscoveryengineV1SearchResponse extends \Google\Collection
   public $correctedQuery;
   protected $facetsType = GoogleCloudDiscoveryengineV1SearchResponseFacet::class;
   protected $facetsDataType = 'array';
+  protected $naturalLanguageQueryUnderstandingInfoType = GoogleCloudDiscoveryengineV1SearchResponseNaturalLanguageQueryUnderstandingInfo::class;
+  protected $naturalLanguageQueryUnderstandingInfoDataType = '';
   /**
    * A token that can be sent as SearchRequest.page_token to retrieve the next
    * page. If this field is omitted, there are no subsequent pages.
@@ -60,6 +74,12 @@ class GoogleCloudDiscoveryengineV1SearchResponse extends \Google\Collection
   protected $resultsDataType = 'array';
   protected $searchLinkPromotionsType = GoogleCloudDiscoveryengineV1SearchLinkPromotion::class;
   protected $searchLinkPromotionsDataType = 'array';
+  /**
+   * Output only. Indicates the semantic state of the search response.
+   *
+   * @var string
+   */
+  public $semanticState;
   protected $sessionInfoType = GoogleCloudDiscoveryengineV1SearchResponseSessionInfo::class;
   protected $sessionInfoDataType = '';
   protected $summaryType = GoogleCloudDiscoveryengineV1SearchResponseSummary::class;
@@ -125,6 +145,23 @@ class GoogleCloudDiscoveryengineV1SearchResponse extends \Google\Collection
   public function getFacets()
   {
     return $this->facets;
+  }
+  /**
+   * Output only. Natural language query understanding information for the
+   * returned results.
+   *
+   * @param GoogleCloudDiscoveryengineV1SearchResponseNaturalLanguageQueryUnderstandingInfo $naturalLanguageQueryUnderstandingInfo
+   */
+  public function setNaturalLanguageQueryUnderstandingInfo(GoogleCloudDiscoveryengineV1SearchResponseNaturalLanguageQueryUnderstandingInfo $naturalLanguageQueryUnderstandingInfo)
+  {
+    $this->naturalLanguageQueryUnderstandingInfo = $naturalLanguageQueryUnderstandingInfo;
+  }
+  /**
+   * @return GoogleCloudDiscoveryengineV1SearchResponseNaturalLanguageQueryUnderstandingInfo
+   */
+  public function getNaturalLanguageQueryUnderstandingInfo()
+  {
+    return $this->naturalLanguageQueryUnderstandingInfo;
   }
   /**
    * A token that can be sent as SearchRequest.page_token to retrieve the next
@@ -208,6 +245,24 @@ class GoogleCloudDiscoveryengineV1SearchResponse extends \Google\Collection
   public function getSearchLinkPromotions()
   {
     return $this->searchLinkPromotions;
+  }
+  /**
+   * Output only. Indicates the semantic state of the search response.
+   *
+   * Accepted values: SEMANTIC_STATE_UNSPECIFIED, DISABLED, ENABLED
+   *
+   * @param self::SEMANTIC_STATE_* $semanticState
+   */
+  public function setSemanticState($semanticState)
+  {
+    $this->semanticState = $semanticState;
+  }
+  /**
+   * @return self::SEMANTIC_STATE_*
+   */
+  public function getSemanticState()
+  {
+    return $this->semanticState;
   }
   /**
    * Session information. Only set if SearchRequest.session is provided. See its

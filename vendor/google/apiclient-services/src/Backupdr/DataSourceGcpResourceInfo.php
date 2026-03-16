@@ -19,29 +19,48 @@ namespace Google\Service\Backupdr;
 
 class DataSourceGcpResourceInfo extends \Google\Model
 {
+  protected $alloyDbClusterPropertiesType = AlloyDBClusterDataSourceReferenceProperties::class;
+  protected $alloyDbClusterPropertiesDataType = '';
   protected $cloudSqlInstancePropertiesType = CloudSqlInstanceDataSourceReferenceProperties::class;
   protected $cloudSqlInstancePropertiesDataType = '';
   /**
-   * Output only. The resource name of the GCP resource. Ex:
+   * Output only. The resource name of the Google Cloud resource. Ex:
    * projects/{project}/zones/{zone}/instances/{instance}
    *
    * @var string
    */
   public $gcpResourcename;
   /**
-   * Output only. The location of the GCP resource. Ex: //"global"/"unspecified"
+   * Output only. The location of the Google Cloud resource. Ex:
+   * //"global"/"unspecified"
    *
    * @var string
    */
   public $location;
   /**
-   * Output only. The type of the GCP resource. Ex:
+   * Output only. The type of the Google Cloud resource. Ex:
    * compute.googleapis.com/Instance
    *
    * @var string
    */
   public $type;
 
+  /**
+   * Output only. The properties of the AlloyDB cluster.
+   *
+   * @param AlloyDBClusterDataSourceReferenceProperties $alloyDbClusterProperties
+   */
+  public function setAlloyDbClusterProperties(AlloyDBClusterDataSourceReferenceProperties $alloyDbClusterProperties)
+  {
+    $this->alloyDbClusterProperties = $alloyDbClusterProperties;
+  }
+  /**
+   * @return AlloyDBClusterDataSourceReferenceProperties
+   */
+  public function getAlloyDbClusterProperties()
+  {
+    return $this->alloyDbClusterProperties;
+  }
   /**
    * Output only. The properties of the Cloud SQL instance.
    *
@@ -59,7 +78,7 @@ class DataSourceGcpResourceInfo extends \Google\Model
     return $this->cloudSqlInstanceProperties;
   }
   /**
-   * Output only. The resource name of the GCP resource. Ex:
+   * Output only. The resource name of the Google Cloud resource. Ex:
    * projects/{project}/zones/{zone}/instances/{instance}
    *
    * @param string $gcpResourcename
@@ -76,7 +95,8 @@ class DataSourceGcpResourceInfo extends \Google\Model
     return $this->gcpResourcename;
   }
   /**
-   * Output only. The location of the GCP resource. Ex: //"global"/"unspecified"
+   * Output only. The location of the Google Cloud resource. Ex:
+   * //"global"/"unspecified"
    *
    * @param string $location
    */
@@ -92,7 +112,7 @@ class DataSourceGcpResourceInfo extends \Google\Model
     return $this->location;
   }
   /**
-   * Output only. The type of the GCP resource. Ex:
+   * Output only. The type of the Google Cloud resource. Ex:
    * compute.googleapis.com/Instance
    *
    * @param string $type

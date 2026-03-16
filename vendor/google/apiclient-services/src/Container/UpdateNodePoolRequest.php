@@ -34,6 +34,14 @@ class UpdateNodePoolRequest extends \Google\Collection
   public $clusterId;
   protected $confidentialNodesType = ConfidentialNodes::class;
   protected $confidentialNodesDataType = '';
+  /**
+   * Consolidation delay defines duration after which the Cluster Autoscaler can
+   * scale down underutilized nodes. If not set, nodes are scaled down by
+   * default behavior, i.e. according to the chosen autoscaling profile.
+   *
+   * @var string
+   */
+  public $consolidationDelay;
   protected $containerdConfigType = ContainerdConfig::class;
   protected $containerdConfigDataType = '';
   /**
@@ -128,6 +136,8 @@ class UpdateNodePoolRequest extends \Google\Collection
    * @var string
    */
   public $name;
+  protected $nodeDrainConfigType = NodeDrainConfig::class;
+  protected $nodeDrainConfigDataType = '';
   protected $nodeNetworkConfigType = NodeNetworkConfig::class;
   protected $nodeNetworkConfigDataType = '';
   /**
@@ -264,6 +274,24 @@ class UpdateNodePoolRequest extends \Google\Collection
   public function getConfidentialNodes()
   {
     return $this->confidentialNodes;
+  }
+  /**
+   * Consolidation delay defines duration after which the Cluster Autoscaler can
+   * scale down underutilized nodes. If not set, nodes are scaled down by
+   * default behavior, i.e. according to the chosen autoscaling profile.
+   *
+   * @param string $consolidationDelay
+   */
+  public function setConsolidationDelay($consolidationDelay)
+  {
+    $this->consolidationDelay = $consolidationDelay;
+  }
+  /**
+   * @return string
+   */
+  public function getConsolidationDelay()
+  {
+    return $this->consolidationDelay;
   }
   /**
    * The desired containerd config for nodes in the node pool. Initiates an
@@ -563,6 +591,22 @@ class UpdateNodePoolRequest extends \Google\Collection
   public function getName()
   {
     return $this->name;
+  }
+  /**
+   * The desired node drain configuration for nodes in the node pool.
+   *
+   * @param NodeDrainConfig $nodeDrainConfig
+   */
+  public function setNodeDrainConfig(NodeDrainConfig $nodeDrainConfig)
+  {
+    $this->nodeDrainConfig = $nodeDrainConfig;
+  }
+  /**
+   * @return NodeDrainConfig
+   */
+  public function getNodeDrainConfig()
+  {
+    return $this->nodeDrainConfig;
   }
   /**
    * Node network config.

@@ -15,7 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
         'domain'   => '',
         'secure'   => $isHttps,         // Only send over HTTPS in production
         'httponly'  => true,             // Prevent JavaScript access
-        'samesite' => 'Strict',         // CSRF protection
+        'samesite' => 'Lax',            // Allows OAuth redirect callbacks while still blocking CSRF on POST/AJAX
     ]);
 
     ini_set('session.use_strict_mode', '1');     // Reject uninitialized session IDs

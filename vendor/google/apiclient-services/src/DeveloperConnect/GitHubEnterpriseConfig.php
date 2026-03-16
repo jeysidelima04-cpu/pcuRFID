@@ -51,8 +51,17 @@ class GitHubEnterpriseConfig extends \Google\Model
    */
   public $installationUri;
   /**
+   * Optional. Immutable. GitHub Enterprise organization in which the GitHub App
+   * is created.
+   *
+   * @var string
+   */
+  public $organization;
+  /**
    * Optional. SecretManager resource containing the private key of the GitHub
-   * App, formatted as `projects/secrets/versions`.
+   * App, formatted as `projects/secrets/versions` or
+   * `projects/locations/secrets/versions` (if regional secrets are supported in
+   * that location).
    *
    * @var string
    */
@@ -73,7 +82,9 @@ class GitHubEnterpriseConfig extends \Google\Model
   public $sslCaCertificate;
   /**
    * Optional. SecretManager resource containing the webhook secret of the
-   * GitHub App, formatted as `projects/secrets/versions`.
+   * GitHub App, formatted as `projects/secrets/versions` or
+   * `projects/locations/secrets/versions` (if regional secrets are supported in
+   * that location).
    *
    * @var string
    */
@@ -161,8 +172,27 @@ class GitHubEnterpriseConfig extends \Google\Model
     return $this->installationUri;
   }
   /**
+   * Optional. Immutable. GitHub Enterprise organization in which the GitHub App
+   * is created.
+   *
+   * @param string $organization
+   */
+  public function setOrganization($organization)
+  {
+    $this->organization = $organization;
+  }
+  /**
+   * @return string
+   */
+  public function getOrganization()
+  {
+    return $this->organization;
+  }
+  /**
    * Optional. SecretManager resource containing the private key of the GitHub
-   * App, formatted as `projects/secrets/versions`.
+   * App, formatted as `projects/secrets/versions` or
+   * `projects/locations/secrets/versions` (if regional secrets are supported in
+   * that location).
    *
    * @param string $privateKeySecretVersion
    */
@@ -231,7 +261,9 @@ class GitHubEnterpriseConfig extends \Google\Model
   }
   /**
    * Optional. SecretManager resource containing the webhook secret of the
-   * GitHub App, formatted as `projects/secrets/versions`.
+   * GitHub App, formatted as `projects/secrets/versions` or
+   * `projects/locations/secrets/versions` (if regional secrets are supported in
+   * that location).
    *
    * @param string $webhookSecretSecretVersion
    */

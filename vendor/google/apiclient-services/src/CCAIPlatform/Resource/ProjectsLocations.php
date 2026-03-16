@@ -18,8 +18,10 @@
 namespace Google\Service\CCAIPlatform\Resource;
 
 use Google\Service\CCAIPlatform\ContactCenterQuota;
+use Google\Service\CCAIPlatform\GenerateShiftsRequest;
 use Google\Service\CCAIPlatform\ListLocationsResponse;
 use Google\Service\CCAIPlatform\Location;
+use Google\Service\CCAIPlatform\Operation;
 
 /**
  * The "locations" collection of methods.
@@ -31,6 +33,23 @@ use Google\Service\CCAIPlatform\Location;
  */
 class ProjectsLocations extends \Google\Service\Resource
 {
+  /**
+   * Generates shifts constrained by various parameters.
+   * (locations.generateShifts)
+   *
+   * @param string $parent Required. Name of the parent resource associated with
+   * the request. Format: projects/{project}/locations/{location}
+   * @param GenerateShiftsRequest $postBody
+   * @param array $optParams Optional parameters.
+   * @return Operation
+   * @throws \Google\Service\Exception
+   */
+  public function generateShifts($parent, GenerateShiftsRequest $postBody, $optParams = [])
+  {
+    $params = ['parent' => $parent, 'postBody' => $postBody];
+    $params = array_merge($params, $optParams);
+    return $this->call('generateShifts', [$params], Operation::class);
+  }
   /**
    * Gets information about a location. (locations.get)
    *
@@ -46,7 +65,11 @@ class ProjectsLocations extends \Google\Service\Resource
     return $this->call('get', [$params], Location::class);
   }
   /**
-   * Lists information about the supported locations for this service.
+   * Lists information about the supported locations for this service. This method
+   * can be called in two ways: * **List all public locations:** Use the path `GET
+   * /v1/locations`. * **List project-visible locations:** Use the path `GET
+   * /v1/projects/{project_id}/locations`. This may include public locations as
+   * well as private or other locations specifically visible to the project.
    * (locations.listProjectsLocations)
    *
    * @param string $name The resource that owns the locations collection, if

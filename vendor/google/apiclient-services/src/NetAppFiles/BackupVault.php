@@ -32,6 +32,26 @@ class BackupVault extends \Google\Model
    */
   public const BACKUP_VAULT_TYPE_CROSS_REGION = 'CROSS_REGION';
   /**
+   * Encryption state not set.
+   */
+  public const ENCRYPTION_STATE_ENCRYPTION_STATE_UNSPECIFIED = 'ENCRYPTION_STATE_UNSPECIFIED';
+  /**
+   * Encryption state is pending.
+   */
+  public const ENCRYPTION_STATE_ENCRYPTION_STATE_PENDING = 'ENCRYPTION_STATE_PENDING';
+  /**
+   * Encryption is complete.
+   */
+  public const ENCRYPTION_STATE_ENCRYPTION_STATE_COMPLETED = 'ENCRYPTION_STATE_COMPLETED';
+  /**
+   * Encryption is in progress.
+   */
+  public const ENCRYPTION_STATE_ENCRYPTION_STATE_IN_PROGRESS = 'ENCRYPTION_STATE_IN_PROGRESS';
+  /**
+   * Encryption has failed.
+   */
+  public const ENCRYPTION_STATE_ENCRYPTION_STATE_FAILED = 'ENCRYPTION_STATE_FAILED';
+  /**
    * State not set.
    */
   public const STATE_STATE_UNSPECIFIED = 'STATE_UNSPECIFIED';
@@ -71,6 +91,14 @@ class BackupVault extends \Google\Model
    */
   public $backupVaultType;
   /**
+   * Output only. The crypto key version used to encrypt the backup vault.
+   * Format: `projects/{project}/locations/{location}/keyRings/{key_ring}/crypto
+   * Keys/{crypto_key}/cryptoKeyVersions/{crypto_key_version}`
+   *
+   * @var string
+   */
+  public $backupsCryptoKeyVersion;
+  /**
    * Output only. Create time of the backup vault.
    *
    * @var string
@@ -89,6 +117,20 @@ class BackupVault extends \Google\Model
    * @var string
    */
   public $destinationBackupVault;
+  /**
+   * Output only. Field indicating encryption state of CMEK backups.
+   *
+   * @var string
+   */
+  public $encryptionState;
+  /**
+   * Optional. Specifies the Key Management System (KMS) configuration to be
+   * used for backup encryption. Format:
+   * `projects/{project}/locations/{location}/kmsConfigs/{kms_config}`
+   *
+   * @var string
+   */
+  public $kmsConfig;
   /**
    * Resource labels to represent user provided metadata.
    *
@@ -141,7 +183,7 @@ class BackupVault extends \Google\Model
     return $this->backupRegion;
   }
   /**
-   * Optional. Backup retention policy defining the retenton of backups.
+   * Optional. Backup retention policy defining the retention of backups.
    *
    * @param BackupRetentionPolicy $backupRetentionPolicy
    */
@@ -173,6 +215,24 @@ class BackupVault extends \Google\Model
   public function getBackupVaultType()
   {
     return $this->backupVaultType;
+  }
+  /**
+   * Output only. The crypto key version used to encrypt the backup vault.
+   * Format: `projects/{project}/locations/{location}/keyRings/{key_ring}/crypto
+   * Keys/{crypto_key}/cryptoKeyVersions/{crypto_key_version}`
+   *
+   * @param string $backupsCryptoKeyVersion
+   */
+  public function setBackupsCryptoKeyVersion($backupsCryptoKeyVersion)
+  {
+    $this->backupsCryptoKeyVersion = $backupsCryptoKeyVersion;
+  }
+  /**
+   * @return string
+   */
+  public function getBackupsCryptoKeyVersion()
+  {
+    return $this->backupsCryptoKeyVersion;
   }
   /**
    * Output only. Create time of the backup vault.
@@ -222,6 +282,44 @@ class BackupVault extends \Google\Model
   public function getDestinationBackupVault()
   {
     return $this->destinationBackupVault;
+  }
+  /**
+   * Output only. Field indicating encryption state of CMEK backups.
+   *
+   * Accepted values: ENCRYPTION_STATE_UNSPECIFIED, ENCRYPTION_STATE_PENDING,
+   * ENCRYPTION_STATE_COMPLETED, ENCRYPTION_STATE_IN_PROGRESS,
+   * ENCRYPTION_STATE_FAILED
+   *
+   * @param self::ENCRYPTION_STATE_* $encryptionState
+   */
+  public function setEncryptionState($encryptionState)
+  {
+    $this->encryptionState = $encryptionState;
+  }
+  /**
+   * @return self::ENCRYPTION_STATE_*
+   */
+  public function getEncryptionState()
+  {
+    return $this->encryptionState;
+  }
+  /**
+   * Optional. Specifies the Key Management System (KMS) configuration to be
+   * used for backup encryption. Format:
+   * `projects/{project}/locations/{location}/kmsConfigs/{kms_config}`
+   *
+   * @param string $kmsConfig
+   */
+  public function setKmsConfig($kmsConfig)
+  {
+    $this->kmsConfig = $kmsConfig;
+  }
+  /**
+   * @return string
+   */
+  public function getKmsConfig()
+  {
+    return $this->kmsConfig;
   }
   /**
    * Resource labels to represent user provided metadata.

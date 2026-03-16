@@ -589,12 +589,6 @@ try {
                             </div>
                         </div>
                         <p class="text-slate-600 leading-relaxed">Have your <strong class="text-slate-800">RFID card</strong> ready in hand, or open your <strong class="text-slate-800">Digital ID</strong> on your phone before reaching the gate. This keeps the line moving for everyone.</p>
-                        <button onclick="window.location.href='digital_id.php'" class="mt-auto hover-button pill px-4 py-2.5 bg-sky-50 border border-sky-200 text-sky-700 font-semibold text-sm flex items-center gap-2 w-full justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                            </svg>
-                            Open Digital ID
-                        </button>
                     </div>
 
                     <!-- Step 2 -->
@@ -804,9 +798,9 @@ try {
             <!-- Bottom copyright bar -->
             <div style="background: rgba(4, 8, 18, 0.96); border-top: 1px solid rgba(255,255,255,0.05);">
                 <div class="w-full px-5 sm:px-10 lg:px-20 py-3 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1.5 lg:gap-2 text-center">
-                    <span class="text-xs font-medium text-slate-500">Made by: GROUP-INGS</span>
+                    <span class="text-xs font-medium text-slate-500 whitespace-nowrap">Made by: GROUP-INGS</span>
                     <span class="text-xs text-slate-400" style="text-align: center; width: 100%; display: block;">Copyright&copy; 2026. All Rights Reserved Philippine Christian University</span>
-                    <span class="text-xs font-medium text-slate-500">Ver 1.25</span>
+                    <span class="text-xs font-medium text-slate-500 whitespace-nowrap">Ver 1.25</span>
                 </div>
             </div>
         </footer>

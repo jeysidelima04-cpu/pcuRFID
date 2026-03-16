@@ -61,6 +61,8 @@ class LogEntry extends \Google\Collection
   protected $apphubDataType = '';
   protected $apphubDestinationType = AppHub::class;
   protected $apphubDestinationDataType = '';
+  protected $apphubSourceType = AppHub::class;
+  protected $apphubSourceDataType = '';
   protected $errorGroupsType = LogErrorGroup::class;
   protected $errorGroupsDataType = 'array';
   protected $httpRequestType = HttpRequest::class;
@@ -89,7 +91,7 @@ class LogEntry extends \Google\Collection
    * Optional. A map of key, value pairs that provides additional information
    * about the log entry. The labels can be user-defined or system-defined.User-
    * defined labels are arbitrary key, value pairs that you can use to classify
-   * logs.System-defined labels are defined by GCP services for platform logs.
+   * logs.System-defined labels are defined by cloud services for platform logs.
    * They have two components - a service namespace component and the attribute
    * name. For example: compute.googleapis.com/resource_name.Cloud Logging
    * truncates label keys that exceed 512 B and label values that exceed 64 KB
@@ -107,7 +109,7 @@ class LogEntry extends \Google\Collection
    * "folders/[FOLDER_ID]/logs/[LOG_ID]" A project number may be used in place
    * of PROJECT_ID. The project number is translated to its corresponding
    * PROJECT_ID internally and the log_name field will contain PROJECT_ID in
-   * queries and exports.[LOG_ID] must be URL-encoded within log_name. Example: 
+   * queries and exports.[LOG_ID] must be URL-encoded within log_name. Example:
    * "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivi
    * ty".[LOG_ID] must be less than 512 characters long and can only include the
    * following characters: upper and lower case alphanumeric characters,
@@ -152,24 +154,22 @@ class LogEntry extends \Google\Collection
   protected $sourceLocationType = LogEntrySourceLocation::class;
   protected $sourceLocationDataType = '';
   /**
-   * Optional. The ID of the Cloud Trace (https://cloud.google.com/trace) span
-   * associated with the current operation in which the log is being written.
-   * For example, if a span has the REST resource name of "projects/some-
-   * project/traces/some-trace/spans/some-span-id", then the span_id field is
-   * "some-span-id".A Span (https://cloud.google.com/trace/docs/reference/v2/res
-   * t/v2/projects.traces/batchWrite#Span) represents a single operation within
-   * a trace. Whereas a trace may involve multiple different microservices
-   * running on multiple different machines, a span generally corresponds to a
-   * single logical operation being performed in a single instance of a
-   * microservice on one specific machine. Spans are the nodes within the tree
-   * that is a trace.Applications that are instrumented for tracing
-   * (https://cloud.google.com/trace/docs/setup) will generally assign a new,
-   * unique span ID on each incoming request. It is also common to create and
-   * record additional spans corresponding to internal processing elements as
-   * well as issuing requests to dependencies.The span ID is expected to be a
-   * 16-character, hexadecimal encoding of an 8-byte array and should not be
-   * zero. It should be unique within the trace and should, ideally, be
-   * generated in a manner that is uniformly random.Example values:
+   * Optional. The ID of the Cloud Trace
+   * (https://docs.cloud.google.com/trace/docs) span associated with the current
+   * operation in which the log is being written.A Span (https://docs.cloud.goog
+   * le.com/trace/docs/reference/v2/rest/v2/projects.traces/batchWrite#Span)
+   * represents a single operation within a trace. Whereas a trace may involve
+   * multiple different microservices running on multiple different machines, a
+   * span generally corresponds to a single logical operation being performed in
+   * a single instance of a microservice on one specific machine. Spans are the
+   * nodes within the tree that is a trace.Applications that are instrumented
+   * for tracing (https://docs.cloud.google.com/trace/docs/setup) will generally
+   * assign a new, unique span ID on each incoming request. It is also common to
+   * create and record additional spans corresponding to internal processing
+   * elements as well as issuing requests to dependencies.The span ID is
+   * expected to be a 16-character, hexadecimal encoding of an 8-byte array and
+   * should not be zero. It should be unique within the trace and should,
+   * ideally, be generated in a manner that is uniformly random.Example values:
    * 000000000000004a 7a2190356c3fc94b 0000f00300090021 d39223e101960076
    *
    * @var string
@@ -199,14 +199,16 @@ class LogEntry extends \Google\Collection
    */
   public $timestamp;
   /**
-   * Optional. The REST resource name of the trace being written to Cloud Trace
-   * (https://cloud.google.com/trace) in association with this log entry. For
-   * example, if your trace data is stored in the Cloud project "my-trace-
-   * project" and if the service that is creating the log entry receives a trace
-   * header that includes the trace ID "12345", then the service should use
-   * "projects/my-trace-project/traces/12345".The trace field provides the link
-   * between logs and traces. By using this field, you can navigate from a log
-   * entry to a trace.
+   * Optional. The trace ID being written to Cloud Trace
+   * (https://docs.cloud.google.com/trace/docs) in association with this log
+   * entry. For example, if your trace data is stored in the Cloud project "my-
+   * trace-project" and if the service that is creating the log entry receives a
+   * trace header that includes the trace ID "12345", then the service should
+   * use "12345".The REST resource name of the trace is also supported, but
+   * using this format is not recommended. An example trace REST resource name
+   * is similar to "projects/my-trace-project/traces/12345".The trace field
+   * provides the link between logs and traces. By using this field, you can
+   * navigate from a log entry to a trace.
    *
    * @var string
    */
@@ -244,7 +246,7 @@ class LogEntry extends \Google\Collection
   /**
    * Output only. AppHub application metadata associated with the destination
    * application. This is only populated if the log represented "edge"-like data
-   * (such as for VPC flow logs) with a source and destination.
+   * (such as for VPC flow logs) with a destination.
    *
    * @param AppHub $apphubDestination
    */
@@ -258,6 +260,24 @@ class LogEntry extends \Google\Collection
   public function getApphubDestination()
   {
     return $this->apphubDestination;
+  }
+  /**
+   * Output only. AppHub application metadata associated with the source
+   * application. This is only populated if the log represented "edge"-like data
+   * (such as for VPC flow logs) with a source.
+   *
+   * @param AppHub $apphubSource
+   */
+  public function setApphubSource(AppHub $apphubSource)
+  {
+    $this->apphubSource = $apphubSource;
+  }
+  /**
+   * @return AppHub
+   */
+  public function getApphubSource()
+  {
+    return $this->apphubSource;
   }
   /**
    * Output only. The Error Reporting (https://cloud.google.com/error-reporting)
@@ -341,7 +361,7 @@ class LogEntry extends \Google\Collection
    * Optional. A map of key, value pairs that provides additional information
    * about the log entry. The labels can be user-defined or system-defined.User-
    * defined labels are arbitrary key, value pairs that you can use to classify
-   * logs.System-defined labels are defined by GCP services for platform logs.
+   * logs.System-defined labels are defined by cloud services for platform logs.
    * They have two components - a service namespace component and the attribute
    * name. For example: compute.googleapis.com/resource_name.Cloud Logging
    * truncates label keys that exceed 512 B and label values that exceed 64 KB
@@ -369,7 +389,7 @@ class LogEntry extends \Google\Collection
    * "folders/[FOLDER_ID]/logs/[LOG_ID]" A project number may be used in place
    * of PROJECT_ID. The project number is translated to its corresponding
    * PROJECT_ID internally and the log_name field will contain PROJECT_ID in
-   * queries and exports.[LOG_ID] must be URL-encoded within log_name. Example: 
+   * queries and exports.[LOG_ID] must be URL-encoded within log_name. Example:
    * "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivi
    * ty".[LOG_ID] must be less than 512 characters long and can only include the
    * following characters: upper and lower case alphanumeric characters,
@@ -521,24 +541,22 @@ class LogEntry extends \Google\Collection
     return $this->sourceLocation;
   }
   /**
-   * Optional. The ID of the Cloud Trace (https://cloud.google.com/trace) span
-   * associated with the current operation in which the log is being written.
-   * For example, if a span has the REST resource name of "projects/some-
-   * project/traces/some-trace/spans/some-span-id", then the span_id field is
-   * "some-span-id".A Span (https://cloud.google.com/trace/docs/reference/v2/res
-   * t/v2/projects.traces/batchWrite#Span) represents a single operation within
-   * a trace. Whereas a trace may involve multiple different microservices
-   * running on multiple different machines, a span generally corresponds to a
-   * single logical operation being performed in a single instance of a
-   * microservice on one specific machine. Spans are the nodes within the tree
-   * that is a trace.Applications that are instrumented for tracing
-   * (https://cloud.google.com/trace/docs/setup) will generally assign a new,
-   * unique span ID on each incoming request. It is also common to create and
-   * record additional spans corresponding to internal processing elements as
-   * well as issuing requests to dependencies.The span ID is expected to be a
-   * 16-character, hexadecimal encoding of an 8-byte array and should not be
-   * zero. It should be unique within the trace and should, ideally, be
-   * generated in a manner that is uniformly random.Example values:
+   * Optional. The ID of the Cloud Trace
+   * (https://docs.cloud.google.com/trace/docs) span associated with the current
+   * operation in which the log is being written.A Span (https://docs.cloud.goog
+   * le.com/trace/docs/reference/v2/rest/v2/projects.traces/batchWrite#Span)
+   * represents a single operation within a trace. Whereas a trace may involve
+   * multiple different microservices running on multiple different machines, a
+   * span generally corresponds to a single logical operation being performed in
+   * a single instance of a microservice on one specific machine. Spans are the
+   * nodes within the tree that is a trace.Applications that are instrumented
+   * for tracing (https://docs.cloud.google.com/trace/docs/setup) will generally
+   * assign a new, unique span ID on each incoming request. It is also common to
+   * create and record additional spans corresponding to internal processing
+   * elements as well as issuing requests to dependencies.The span ID is
+   * expected to be a 16-character, hexadecimal encoding of an 8-byte array and
+   * should not be zero. It should be unique within the trace and should,
+   * ideally, be generated in a manner that is uniformly random.Example values:
    * 000000000000004a 7a2190356c3fc94b 0000f00300090021 d39223e101960076
    *
    * @param string $spanId
@@ -613,14 +631,16 @@ class LogEntry extends \Google\Collection
     return $this->timestamp;
   }
   /**
-   * Optional. The REST resource name of the trace being written to Cloud Trace
-   * (https://cloud.google.com/trace) in association with this log entry. For
-   * example, if your trace data is stored in the Cloud project "my-trace-
-   * project" and if the service that is creating the log entry receives a trace
-   * header that includes the trace ID "12345", then the service should use
-   * "projects/my-trace-project/traces/12345".The trace field provides the link
-   * between logs and traces. By using this field, you can navigate from a log
-   * entry to a trace.
+   * Optional. The trace ID being written to Cloud Trace
+   * (https://docs.cloud.google.com/trace/docs) in association with this log
+   * entry. For example, if your trace data is stored in the Cloud project "my-
+   * trace-project" and if the service that is creating the log entry receives a
+   * trace header that includes the trace ID "12345", then the service should
+   * use "12345".The REST resource name of the trace is also supported, but
+   * using this format is not recommended. An example trace REST resource name
+   * is similar to "projects/my-trace-project/traces/12345".The trace field
+   * provides the link between logs and traces. By using this field, you can
+   * navigate from a log entry to a trace.
    *
    * @param string $trace
    */

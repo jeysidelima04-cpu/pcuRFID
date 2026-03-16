@@ -62,7 +62,7 @@ class StoragePool extends \Google\Model
    */
   public $capacityProvisioningType;
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
@@ -74,16 +74,18 @@ class StoragePool extends \Google\Model
    * @var string
    */
   public $description;
+  protected $exapoolProvisionedCapacityGbType = StoragePoolExapoolProvisionedCapacityGb::class;
+  protected $exapoolProvisionedCapacityGbDataType = '';
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @var string
    */
   public $id;
   /**
-   * [Output Only] Type of the resource. Always compute#storagePool for storage
-   * pools.
+   * Output only. [Output Only] Type of the resource. Always compute#storagePool
+   * for storage pools.
    *
    * @var string
    */
@@ -121,6 +123,8 @@ class StoragePool extends \Google\Model
    * @var string
    */
   public $name;
+  protected $paramsType = StoragePoolParams::class;
+  protected $paramsDataType = '';
   /**
    * Provisioning type of the performance-related parameters of the pool, such
    * as throughput and IOPS.
@@ -152,22 +156,24 @@ class StoragePool extends \Google\Model
   protected $resourceStatusType = StoragePoolResourceStatus::class;
   protected $resourceStatusDataType = '';
   /**
-   * [Output Only] Server-defined fully-qualified URL for this resource.
+   * Output only. [Output Only] Server-defined fully-qualified URL for this
+   * resource.
    *
    * @var string
    */
   public $selfLink;
   /**
-   * [Output Only] Server-defined URL for this resource's resource id.
+   * Output only. [Output Only] Server-defined URL for this resource's resource
+   * id.
    *
    * @var string
    */
   public $selfLinkWithId;
   /**
-   * [Output Only] The status of storage pool creation.              - CREATING:
-   * Storage pool is provisioning.      storagePool.      - FAILED: Storage pool
-   * creation failed.      - READY: Storage pool is ready for use.      -
-   * DELETING: Storage pool is deleting.
+   * Output only. [Output Only] The status of storage pool creation.
+   * - CREATING: Storage pool is provisioning.      storagePool.      - FAILED:
+   * Storage pool creation failed.      - READY: Storage pool is ready for use.
+   * - DELETING: Storage pool is deleting.
    *
    * @var string
    */
@@ -181,9 +187,9 @@ class StoragePool extends \Google\Model
    */
   public $storagePoolType;
   /**
-   * [Output Only] URL of the zone where the storage pool resides. You must
-   * specify this field as part of the HTTP request URL. It is not settable as a
-   * field in the request body.
+   * Output only. [Output Only] URL of the zone where the storage pool resides.
+   * You must specify this field as part of the HTTP request URL. It is not
+   * settable as a field in the request body.
    *
    * @var string
    */
@@ -208,7 +214,7 @@ class StoragePool extends \Google\Model
     return $this->capacityProvisioningType;
   }
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -241,8 +247,25 @@ class StoragePool extends \Google\Model
     return $this->description;
   }
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] Provisioned capacities for each SKU for this
+   * Exapool in GiB
+   *
+   * @param StoragePoolExapoolProvisionedCapacityGb $exapoolProvisionedCapacityGb
+   */
+  public function setExapoolProvisionedCapacityGb(StoragePoolExapoolProvisionedCapacityGb $exapoolProvisionedCapacityGb)
+  {
+    $this->exapoolProvisionedCapacityGb = $exapoolProvisionedCapacityGb;
+  }
+  /**
+   * @return StoragePoolExapoolProvisionedCapacityGb
+   */
+  public function getExapoolProvisionedCapacityGb()
+  {
+    return $this->exapoolProvisionedCapacityGb;
+  }
+  /**
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @param string $id
    */
@@ -258,8 +281,8 @@ class StoragePool extends \Google\Model
     return $this->id;
   }
   /**
-   * [Output Only] Type of the resource. Always compute#storagePool for storage
-   * pools.
+   * Output only. [Output Only] Type of the resource. Always compute#storagePool
+   * for storage pools.
    *
    * @param string $kind
    */
@@ -338,6 +361,23 @@ class StoragePool extends \Google\Model
     return $this->name;
   }
   /**
+   * Input only. Additional params passed with the request, but not persisted as
+   * part of resource payload.
+   *
+   * @param StoragePoolParams $params
+   */
+  public function setParams(StoragePoolParams $params)
+  {
+    $this->params = $params;
+  }
+  /**
+   * @return StoragePoolParams
+   */
+  public function getParams()
+  {
+    return $this->params;
+  }
+  /**
    * Provisioning type of the performance-related parameters of the pool, such
    * as throughput and IOPS.
    *
@@ -408,7 +448,8 @@ class StoragePool extends \Google\Model
     return $this->poolProvisionedThroughput;
   }
   /**
-   * [Output Only] Status information for the storage pool resource.
+   * Output only. [Output Only] Status information for the storage pool
+   * resource.
    *
    * @param StoragePoolResourceStatus $resourceStatus
    */
@@ -424,7 +465,8 @@ class StoragePool extends \Google\Model
     return $this->resourceStatus;
   }
   /**
-   * [Output Only] Server-defined fully-qualified URL for this resource.
+   * Output only. [Output Only] Server-defined fully-qualified URL for this
+   * resource.
    *
    * @param string $selfLink
    */
@@ -440,7 +482,8 @@ class StoragePool extends \Google\Model
     return $this->selfLink;
   }
   /**
-   * [Output Only] Server-defined URL for this resource's resource id.
+   * Output only. [Output Only] Server-defined URL for this resource's resource
+   * id.
    *
    * @param string $selfLinkWithId
    */
@@ -456,10 +499,10 @@ class StoragePool extends \Google\Model
     return $this->selfLinkWithId;
   }
   /**
-   * [Output Only] The status of storage pool creation.              - CREATING:
-   * Storage pool is provisioning.      storagePool.      - FAILED: Storage pool
-   * creation failed.      - READY: Storage pool is ready for use.      -
-   * DELETING: Storage pool is deleting.
+   * Output only. [Output Only] The status of storage pool creation.
+   * - CREATING: Storage pool is provisioning.      storagePool.      - FAILED:
+   * Storage pool creation failed.      - READY: Storage pool is ready for use.
+   * - DELETING: Storage pool is deleting.
    *
    * Accepted values: CREATING, DELETING, FAILED, READY
    *
@@ -477,7 +520,8 @@ class StoragePool extends \Google\Model
     return $this->state;
   }
   /**
-   * [Output Only] Status information for the storage pool resource.
+   * Output only. [Output Only] Status information for the storage pool
+   * resource.
    *
    * @param StoragePoolResourceStatus $status
    */
@@ -509,9 +553,9 @@ class StoragePool extends \Google\Model
     return $this->storagePoolType;
   }
   /**
-   * [Output Only] URL of the zone where the storage pool resides. You must
-   * specify this field as part of the HTTP request URL. It is not settable as a
-   * field in the request body.
+   * Output only. [Output Only] URL of the zone where the storage pool resides.
+   * You must specify this field as part of the HTTP request URL. It is not
+   * settable as a field in the request body.
    *
    * @param string $zone
    */

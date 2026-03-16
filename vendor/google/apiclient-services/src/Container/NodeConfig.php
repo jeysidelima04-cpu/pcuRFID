@@ -70,6 +70,14 @@ class NodeConfig extends \Google\Collection
   public $bootDiskKmsKey;
   protected $confidentialNodesType = ConfidentialNodes::class;
   protected $confidentialNodesDataType = '';
+  /**
+   * Consolidation delay defines duration after which the Cluster Autoscaler can
+   * scale down underutilized nodes. If not set, nodes are scaled down by
+   * default behavior, i.e. according to the chosen autoscaling profile.
+   *
+   * @var string
+   */
+  public $consolidationDelay;
   protected $containerdConfigType = ContainerdConfig::class;
   protected $containerdConfigDataType = '';
   /**
@@ -113,6 +121,8 @@ class NodeConfig extends \Google\Collection
   public $flexStart;
   protected $gcfsConfigType = GcfsConfig::class;
   protected $gcfsConfigDataType = '';
+  protected $gpuDirectConfigType = GPUDirectConfig::class;
+  protected $gpuDirectConfigDataType = '';
   protected $gvnicType = VirtualNIC::class;
   protected $gvnicDataType = '';
   /**
@@ -385,6 +395,24 @@ class NodeConfig extends \Google\Collection
     return $this->confidentialNodes;
   }
   /**
+   * Consolidation delay defines duration after which the Cluster Autoscaler can
+   * scale down underutilized nodes. If not set, nodes are scaled down by
+   * default behavior, i.e. according to the chosen autoscaling profile.
+   *
+   * @param string $consolidationDelay
+   */
+  public function setConsolidationDelay($consolidationDelay)
+  {
+    $this->consolidationDelay = $consolidationDelay;
+  }
+  /**
+   * @return string
+   */
+  public function getConsolidationDelay()
+  {
+    return $this->consolidationDelay;
+  }
+  /**
    * Parameters for containerd customization.
    *
    * @param ContainerdConfig $containerdConfig
@@ -536,6 +564,22 @@ class NodeConfig extends \Google\Collection
   public function getGcfsConfig()
   {
     return $this->gcfsConfig;
+  }
+  /**
+   * The configuration for GPU Direct
+   *
+   * @param GPUDirectConfig $gpuDirectConfig
+   */
+  public function setGpuDirectConfig(GPUDirectConfig $gpuDirectConfig)
+  {
+    $this->gpuDirectConfig = $gpuDirectConfig;
+  }
+  /**
+   * @return GPUDirectConfig
+   */
+  public function getGpuDirectConfig()
+  {
+    return $this->gpuDirectConfig;
   }
   /**
    * Enable or disable gvnic in the node pool.

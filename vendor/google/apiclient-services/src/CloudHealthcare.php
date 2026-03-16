@@ -1464,6 +1464,16 @@ class CloudHealthcare extends \Google\Service
                   'type' => 'string',
                 ],
               ],
+            ],'bulkDelete' => [
+              'path' => 'v1/{+name}:bulkDelete',
+              'httpMethod' => 'POST',
+              'parameters' => [
+                'name' => [
+                  'location' => 'path',
+                  'type' => 'string',
+                  'required' => true,
+                ],
+              ],
             ],'create' => [
               'path' => 'v1/{+parent}/fhirStores',
               'httpMethod' => 'POST',
@@ -1939,6 +1949,10 @@ class CloudHealthcare extends \Google\Service
                   'location' => 'path',
                   'type' => 'string',
                   'required' => true,
+                ],
+                'resourceType' => [
+                  'location' => 'query',
+                  'type' => 'string',
                 ],
               ],
             ],'search-type' => [

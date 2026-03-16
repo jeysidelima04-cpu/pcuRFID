@@ -76,8 +76,9 @@ class KmsConfig extends \Google\Model
    */
   public $createTime;
   /**
-   * Required. Customer managed crypto key resource full name. Format: projects/
-   * {project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}.
+   * Required. Customer-managed crypto key resource full name. Format: `projects
+   * /{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}
+   * `
    *
    * @var string
    */
@@ -102,7 +103,8 @@ class KmsConfig extends \Google\Model
    */
   public $labels;
   /**
-   * Identifier. Name of the KmsConfig.
+   * Identifier. Name of the KmsConfig. Format:
+   * `projects/{project}/locations/{location}/kmsConfigs/{kms_config}`
    *
    * @var string
    */
@@ -144,8 +146,9 @@ class KmsConfig extends \Google\Model
     return $this->createTime;
   }
   /**
-   * Required. Customer managed crypto key resource full name. Format: projects/
-   * {project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}.
+   * Required. Customer-managed crypto key resource full name. Format: `projects
+   * /{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}
+   * `
    *
    * @param string $cryptoKeyName
    */
@@ -210,7 +213,8 @@ class KmsConfig extends \Google\Model
     return $this->labels;
   }
   /**
-   * Identifier. Name of the KmsConfig.
+   * Identifier. Name of the KmsConfig. Format:
+   * `projects/{project}/locations/{location}/kmsConfigs/{kms_config}`
    *
    * @param string $name
    */

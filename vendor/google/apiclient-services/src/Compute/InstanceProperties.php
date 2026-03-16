@@ -127,10 +127,10 @@ class InstanceProperties extends \Google\Collection
   protected $reservationAffinityType = ReservationAffinity::class;
   protected $reservationAffinityDataType = '';
   /**
-   * Resource manager tags to be bound to the instance. Tag keys and values have
-   * the same definition as resource manager tags. Keys must be in the format
-   * `tagKeys/{tag_key_id}`, and values are in the format `tagValues/456`. The
-   * field is ignored (both PUT & PATCH) when empty.
+   * Input only. Resource manager tags to be bound to the instance. Tag keys and
+   * values have the same definition as resource manager tags. Keys must be in
+   * the format `tagKeys/{tag_key_id}`, and values are in the format
+   * `tagValues/456`. The field is ignored (both PUT & PATCH) when empty.
    *
    * @var string[]
    */
@@ -150,6 +150,8 @@ class InstanceProperties extends \Google\Collection
   protected $shieldedInstanceConfigDataType = '';
   protected $tagsType = Tags::class;
   protected $tagsDataType = '';
+  protected $workloadIdentityConfigType = WorkloadIdentityConfig::class;
+  protected $workloadIdentityConfigDataType = '';
 
   /**
    * Controls for advanced machine-related behavior features. Note that for
@@ -422,10 +424,10 @@ class InstanceProperties extends \Google\Collection
     return $this->reservationAffinity;
   }
   /**
-   * Resource manager tags to be bound to the instance. Tag keys and values have
-   * the same definition as resource manager tags. Keys must be in the format
-   * `tagKeys/{tag_key_id}`, and values are in the format `tagValues/456`. The
-   * field is ignored (both PUT & PATCH) when empty.
+   * Input only. Resource manager tags to be bound to the instance. Tag keys and
+   * values have the same definition as resource manager tags. Keys must be in
+   * the format `tagKeys/{tag_key_id}`, and values are in the format
+   * `tagValues/456`. The field is ignored (both PUT & PATCH) when empty.
    *
    * @param string[] $resourceManagerTags
    */
@@ -527,6 +529,20 @@ class InstanceProperties extends \Google\Collection
   public function getTags()
   {
     return $this->tags;
+  }
+  /**
+   * @param WorkloadIdentityConfig $workloadIdentityConfig
+   */
+  public function setWorkloadIdentityConfig(WorkloadIdentityConfig $workloadIdentityConfig)
+  {
+    $this->workloadIdentityConfig = $workloadIdentityConfig;
+  }
+  /**
+   * @return WorkloadIdentityConfig
+   */
+  public function getWorkloadIdentityConfig()
+  {
+    return $this->workloadIdentityConfig;
   }
 }
 

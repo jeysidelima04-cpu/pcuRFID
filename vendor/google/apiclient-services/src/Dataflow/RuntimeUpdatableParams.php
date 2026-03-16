@@ -20,6 +20,21 @@ namespace Google\Service\Dataflow;
 class RuntimeUpdatableParams extends \Google\Model
 {
   /**
+   * Optional. Deprecated: Use `autoscaling_tier` instead. The backlog threshold
+   * duration in seconds for autoscaling. Value must be non-negative.
+   *
+   * @deprecated
+   * @var string
+   */
+  public $acceptableBacklogDuration;
+  /**
+   * Optional. The backlog threshold tier for autoscaling. Value must be one of
+   * "low-latency", "medium-latency", or "high-latency".
+   *
+   * @var string
+   */
+  public $autoscalingTier;
+  /**
    * The maximum number of workers to cap autoscaling at. This field is
    * currently only supported for Streaming Engine jobs.
    *
@@ -45,6 +60,42 @@ class RuntimeUpdatableParams extends \Google\Model
    */
   public $workerUtilizationHint;
 
+  /**
+   * Optional. Deprecated: Use `autoscaling_tier` instead. The backlog threshold
+   * duration in seconds for autoscaling. Value must be non-negative.
+   *
+   * @deprecated
+   * @param string $acceptableBacklogDuration
+   */
+  public function setAcceptableBacklogDuration($acceptableBacklogDuration)
+  {
+    $this->acceptableBacklogDuration = $acceptableBacklogDuration;
+  }
+  /**
+   * @deprecated
+   * @return string
+   */
+  public function getAcceptableBacklogDuration()
+  {
+    return $this->acceptableBacklogDuration;
+  }
+  /**
+   * Optional. The backlog threshold tier for autoscaling. Value must be one of
+   * "low-latency", "medium-latency", or "high-latency".
+   *
+   * @param string $autoscalingTier
+   */
+  public function setAutoscalingTier($autoscalingTier)
+  {
+    $this->autoscalingTier = $autoscalingTier;
+  }
+  /**
+   * @return string
+   */
+  public function getAutoscalingTier()
+  {
+    return $this->autoscalingTier;
+  }
   /**
    * The maximum number of workers to cap autoscaling at. This field is
    * currently only supported for Streaming Engine jobs.

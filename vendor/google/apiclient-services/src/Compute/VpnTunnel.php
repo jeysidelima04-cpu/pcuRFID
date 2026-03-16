@@ -78,7 +78,7 @@ class VpnTunnel extends \Google\Collection
   protected $cipherSuiteType = VpnTunnelCipherSuite::class;
   protected $cipherSuiteDataType = '';
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
@@ -111,7 +111,8 @@ class VpnTunnel extends \Google\Collection
    */
   public $ikeVersion;
   /**
-   * [Output Only] Type of resource. Always compute#vpnTunnel for VPN tunnels.
+   * Output only. [Output Only] Type of resource. Always compute#vpnTunnel for
+   * VPN tunnels.
    *
    * @var string
    */
@@ -159,6 +160,8 @@ class VpnTunnel extends \Google\Collection
    * @var string
    */
   public $name;
+  protected $paramsType = VpnTunnelParams::class;
+  protected $paramsDataType = '';
   /**
    * URL of the peer side external VPN gateway to which this VPN tunnel is
    * connected. Provided by the client when the VPN tunnel is created. This
@@ -303,7 +306,7 @@ class VpnTunnel extends \Google\Collection
     return $this->cipherSuite;
   }
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -386,7 +389,8 @@ class VpnTunnel extends \Google\Collection
     return $this->ikeVersion;
   }
   /**
-   * [Output Only] Type of resource. Always compute#vpnTunnel for VPN tunnels.
+   * Output only. [Output Only] Type of resource. Always compute#vpnTunnel for
+   * VPN tunnels.
    *
    * @param string $kind
    */
@@ -483,6 +487,23 @@ class VpnTunnel extends \Google\Collection
   public function getName()
   {
     return $this->name;
+  }
+  /**
+   * Input only. [Input Only] Additional params passed with the request, but not
+   * persisted as part of resource payload.
+   *
+   * @param VpnTunnelParams $params
+   */
+  public function setParams(VpnTunnelParams $params)
+  {
+    $this->params = $params;
+  }
+  /**
+   * @return VpnTunnelParams
+   */
+  public function getParams()
+  {
+    return $this->params;
   }
   /**
    * URL of the peer side external VPN gateway to which this VPN tunnel is

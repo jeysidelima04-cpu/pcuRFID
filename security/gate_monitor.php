@@ -126,6 +126,50 @@ try {
         .pulse-ring {
             animation: pulse-ring 2s ease-in-out infinite;
         }
+
+        .rfid-ready-mark {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(8rem, 18vw, 10.5rem);
+            aspect-ratio: 1;
+            border-radius: 999px;
+            padding: 1.15rem;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.98), rgba(224, 242, 254, 0.92));
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 18px 48px rgba(2, 132, 199, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+            isolation: isolate;
+        }
+
+        .rfid-ready-mark::before,
+        .rfid-ready-mark::after {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .rfid-ready-mark::before {
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.16), transparent 68%);
+            filter: blur(8px);
+            z-index: -2;
+        }
+
+        .rfid-ready-mark::after {
+            inset: -18px;
+            border: 1px solid rgba(2, 132, 199, 0.16);
+            z-index: -1;
+        }
+
+        .rfid-ready-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.16));
+        }
+
     </style>
     <style>
         :root {
@@ -425,13 +469,12 @@ try {
                 </div>
                 <!-- Scan Status Display -->
                 <div id="scanStatus" class="p-8 md:p-12 text-center min-h-[300px] md:min-h-[400px] flex items-center justify-center">
-                    <div>
-                        <div class="mb-6 relative inline-block">
-                            <div class="pulse-ring absolute inset-0 bg-blue-400 rounded-full opacity-20"></div>
-                            <svg class="w-24 h-24 md:w-32 md:h-32 text-slate-300 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                <circle cx="12" cy="12" r="3" stroke-width="1.5"/>
-                            </svg>
+                    <div class="max-w-md mx-auto">
+                        <div class="mb-4 relative inline-block">
+                            <div class="pulse-ring absolute inset-0 bg-sky-300 rounded-full opacity-20 scale-[1.18]"></div>
+                            <div class="rfid-ready-mark">
+                                <img src="../assets/images/gatewatch-logo.png" alt="GateWatch Logo" class="rfid-ready-logo">
+                            </div>
                         </div>
                         <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">Ready to Scan</h2>
                         <p class="text-slate-500 text-sm md:text-base">Hold RFID card near scanner to verify student entry</p>
@@ -456,6 +499,10 @@ try {
                             </button>
                             <button id="btnStopFace" onclick="stopFaceDetection()" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors font-medium hidden">
                                 &#9632; Stop
+                            </button>
+                            <button id="btnStudentDisplay" onclick="openStudentDisplay()" class="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors font-medium flex items-center gap-1.5" title="Open student-facing display in a new tab">
+                                <span class="sd-dot w-2 h-2 rounded-full bg-slate-400 inline-block"></span>
+                                &#x1F4FA; Student View
                             </button>
                         </div>
                     </div>
@@ -828,16 +875,16 @@ try {
 
     function resetScanDisplay() {
         document.getElementById('scanStatus').innerHTML = `
-            <div class="fade-in">
-                <div class="mb-6 relative inline-block">
-                    <div class="pulse-ring absolute inset-0 bg-blue-400 rounded-full opacity-20"></div>
-                    <svg class="w-24 h-24 md:w-32 md:h-32 text-slate-300 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                        <circle cx="12" cy="12" r="3" stroke-width="1.5"/>
-                    </svg>
+            <div class="fade-in max-w-md mx-auto">
+                <div class="mb-4 relative inline-block">
+                    <div class="pulse-ring absolute inset-0 bg-sky-300 rounded-full opacity-20 scale-[1.18]"></div>
+                    <div class="rfid-ready-mark">
+                        <img src="../assets/images/gatewatch-logo.png" alt="GateWatch Logo" class="rfid-ready-logo">
+                    </div>
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-2">Ready to Scan</h2>
-                <p class="text-slate-500 text-sm md:text-base">Hold RFID card near scanner</p>
+                <p class="text-slate-500 text-sm md:text-base">Hold RFID card near scanner to verify student entry</p>
+                <p class="text-slate-400 text-xs md:text-sm mt-2">System Active • Waiting for card...</p>
             </div>
         `;
     }
@@ -900,6 +947,102 @@ try {
     let lastFaceMatchUserId = null;
     let lastFaceMatchTime = 0;
     const FACE_COOLDOWN_MS = 5000; // 5 second cooldown between same-person matches
+    let facePreloadPromise = null;
+    let facePreloadedSystem = null;
+    let facePreloadedCount = 0;
+    let facePreloadStarted = false;
+    let keepAliveAudioCtx = null;
+    let keepAliveOsc = null;
+    let keepAliveGain = null;
+
+    function startRecognitionKeepAlive() {
+        try {
+            if (keepAliveAudioCtx) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+
+            keepAliveAudioCtx = new AC();
+            keepAliveOsc = keepAliveAudioCtx.createOscillator();
+            keepAliveGain = keepAliveAudioCtx.createGain();
+
+            // Practically silent keepalive signal.
+            keepAliveOsc.type = 'sine';
+            keepAliveOsc.frequency.value = 20;
+            keepAliveGain.gain.value = 0.00001;
+
+            keepAliveOsc.connect(keepAliveGain);
+            keepAliveGain.connect(keepAliveAudioCtx.destination);
+            keepAliveOsc.start();
+        } catch (e) {
+            // Non-fatal: continue without keepalive on unsupported browsers.
+        }
+    }
+
+    function stopRecognitionKeepAlive() {
+        try {
+            if (keepAliveOsc) {
+                keepAliveOsc.stop();
+                keepAliveOsc.disconnect();
+            }
+            if (keepAliveGain) {
+                keepAliveGain.disconnect();
+            }
+            if (keepAliveAudioCtx) {
+                keepAliveAudioCtx.close();
+            }
+        } catch (e) {
+        } finally {
+            keepAliveOsc = null;
+            keepAliveGain = null;
+            keepAliveAudioCtx = null;
+        }
+    }
+
+    function buildFaceSystem(statusEl, silent = false) {
+        return new FaceRecognitionSystem({
+            modelPath: '../assets/models',
+            matchThreshold: FACE_THRESHOLD,
+            minConfidence: 0.6,
+            csrfToken: CSRF_TOKEN,
+            detectionIntervalMs: 80,
+            ssdInputSize: 224,
+            livenessEnabled: true,
+            requiredConsecutiveFrames: 3,
+            livenessMinFrames: 5,
+            unrecognizedFramesThreshold: 5,
+            livenessFailFramesThreshold: 10,
+            minFaceSizePx: 80,
+            minFaceSizeRatio: 0.08,
+            onStatusChange: (status, msg) => {
+                if (!silent && statusEl) statusEl.textContent = msg;
+            },
+            onError: (msg, err) => {
+                if (!silent && statusEl) statusEl.textContent = '❌ ' + msg;
+                console.error('[FaceRec]', msg, err);
+            },
+            onDetection: handleFaceDetection,
+            descriptorChunkSize: 40
+        });
+    }
+
+    function startFaceEnginePreload() {
+        if (facePreloadStarted || faceReady || faceInitialized) return;
+        facePreloadStarted = true;
+
+        facePreloadPromise = (async () => {
+            const preloader = buildFaceSystem(null, true);
+            const modelsOk = await preloader.loadModels();
+            if (!modelsOk) return { modelsOk: false, faceCount: 0, system: null };
+
+            // Yield once before descriptor hydration to keep page interactions fluid.
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const faceCount = await preloader.loadKnownFaces('../api/get_face_descriptors.php');
+
+            facePreloadedSystem = preloader;
+            facePreloadedCount = faceCount;
+            return { modelsOk: true, faceCount, system: preloader };
+        })();
+    }
 
     function switchMode(mode) {
         currentMode = mode;
@@ -922,7 +1065,10 @@ try {
                 faceSystem.stopCamera();
             }
             stopFaceAutoRefresh();
+            stopRecognitionKeepAlive();
             cameraRunning = false;
+            stopFrameBroadcast();
+            broadcastToStudent({ type: 'stopped' });
             // Hide Start/Stop buttons while in RFID mode
             document.getElementById('btnStartFace').classList.add('hidden');
             document.getElementById('btnStopFace').classList.add('hidden');
@@ -968,6 +1114,7 @@ try {
         );
         if (cameraOk) {
             cameraRunning = true;
+            if (studentDisplayConnected) startFrameBroadcast();
             const faceCount = parseInt(document.getElementById('faceLoadedCount').textContent) || 0;
             statusEl.textContent = `Ready - ${faceCount} faces loaded. Click Start to begin detection.`;
             document.getElementById('btnStartFace').classList.remove('hidden');
@@ -975,6 +1122,27 @@ try {
         } else {
             statusEl.textContent = '❌ Camera failed. Check permissions.';
             cameraRunning = false;
+        }
+    }
+
+    async function ensureStudentDisplayFeedReady() {
+        if (!studentDisplayConnected) return;
+
+        if (currentMode !== 'face') {
+            switchMode('face');
+            return;
+        }
+
+        if (!faceInitialized) {
+            populateCameraSelector();
+            initFaceRecognition();
+            return;
+        }
+
+        if (!cameraRunning) {
+            await restartCamera();
+        } else {
+            startFrameBroadcast();
         }
     }
 
@@ -1059,22 +1227,19 @@ try {
         const statusEl = document.getElementById('faceStatus');
         const initEl = document.getElementById('faceInitStatus');
 
-        faceSystem = new FaceRecognitionSystem({
-            modelPath: '../assets/models',
-            matchThreshold: FACE_THRESHOLD,
-            minConfidence: 0.5,
-            csrfToken: CSRF_TOKEN,
-            detectionIntervalMs: 120,  // Faster detection loop for near-instant start
-            ssdInputSize: 160,         // Much faster inference on CPU while keeping usable accuracy
-            onStatusChange: (status, msg) => {
-                statusEl.textContent = msg;
-            },
-            onError: (msg, err) => {
+        // Prefer preloaded engine to avoid first-click hiccups.
+        if (facePreloadedSystem && facePreloadedSystem.modelsLoaded) {
+            faceSystem = facePreloadedSystem;
+            faceSystem.onStatusChange = (status, msg) => { statusEl.textContent = msg; };
+            faceSystem.onError = (msg, err) => {
                 statusEl.textContent = '❌ ' + msg;
                 console.error('[FaceRec]', msg, err);
-            },
-            onDetection: handleFaceDetection
-        });
+            };
+            faceSystem.onDetection = handleFaceDetection;
+            faceSystem.csrfToken = CSRF_TOKEN;
+        } else {
+            faceSystem = buildFaceSystem(statusEl, false);
+        }
 
         // Step 1: Immediately show panel and start camera preview (non-blocking UX)
         faceInitialized = true;
@@ -1086,20 +1251,43 @@ try {
         statusEl.textContent = 'Starting camera preview...';
         restartCamera();
 
-        // Step 2: Load models + face descriptors in parallel while preview is already visible
+        // Step 2: Ensure models/descriptors are ready (reuse preload if available).
         statusEl.textContent = 'Initializing face engine...';
-        const [modelsOk, faceCount] = await Promise.all([
-            faceSystem.loadModels(),
-            faceSystem.loadKnownFaces('../api/get_face_descriptors.php')
-        ]);
+        let faceCount = 0;
+
+        if (facePreloadPromise) {
+            const pre = await facePreloadPromise;
+            if (!pre.modelsOk) {
+                statusEl.textContent = '❌ Failed to load face models. Check model files in assets/models.';
+                faceReady = false;
+                return;
+            }
+            if (!faceSystem.modelsLoaded) {
+                // Safety: if preloader finished but instance was rebuilt, load models once.
+                const ok = await faceSystem.loadModels();
+                if (!ok) {
+                    statusEl.textContent = '❌ Failed to load face models. Check model files in assets/models.';
+                    faceReady = false;
+                    return;
+                }
+            }
+            if (!faceSystem.knownDescriptors || faceSystem.knownDescriptors.length === 0) {
+                faceCount = await faceSystem.loadKnownFaces('../api/get_face_descriptors.php');
+            } else {
+                faceCount = faceSystem.knownDescriptors.length || facePreloadedCount || 0;
+            }
+        } else {
+            const modelsOk = await faceSystem.loadModels();
+            if (!modelsOk) {
+                statusEl.textContent = '❌ Failed to load face models. Check model files in assets/models.';
+                faceReady = false;
+                return;
+            }
+            await new Promise(resolve => setTimeout(resolve, 0));
+            faceCount = await faceSystem.loadKnownFaces('../api/get_face_descriptors.php');
+        }
 
         document.getElementById('faceLoadedCount').textContent = faceCount;
-
-        if (!modelsOk) {
-            statusEl.textContent = '❌ Failed to load face models. Check model files in assets/models.';
-            faceReady = false;
-            return;
-        }
 
         // Ready for instant Start
         faceReady = true;
@@ -1107,6 +1295,9 @@ try {
         document.getElementById('btnStartFace').classList.remove('hidden');
         await populateCameraSelector();
     }
+
+    // Start model/descriptor preload in background while guard is on RFID mode.
+    setTimeout(() => { startFaceEnginePreload(); }, 1200);
 
     async function startFaceDetection() {
         if (!faceSystem) return;
@@ -1144,25 +1335,30 @@ try {
 
             cameraRunning = true;
             document.getElementById('faceVideoContainer').classList.remove('hidden');
+            if (studentDisplayConnected) startFrameBroadcast();
             // Permission is now granted, refresh labels/device IDs
             await populateCameraSelector();
         }
 
         faceSystem.startContinuousDetection();
+        startRecognitionKeepAlive();
         document.getElementById('btnStartFace').classList.add('hidden');
         document.getElementById('btnStopFace').classList.remove('hidden');
-        document.getElementById('faceStatus').textContent = '🟢 Detection active - scanning faces...';
+        document.getElementById('faceStatus').textContent = '🟢 Detection active — verifying face (multi-frame + liveness)...';
         
         // Start periodic face database refresh (every 30 seconds)
         startFaceAutoRefresh();
+        broadcastToStudent({ type: 'scanning' });
     }
 
     function stopFaceDetection() {
         if (!faceSystem) return;
         faceSystem.stopContinuousDetection();
+        stopRecognitionKeepAlive();
         document.getElementById('btnStopFace').classList.add('hidden');
         document.getElementById('btnStartFace').classList.remove('hidden');
         document.getElementById('faceStatus').textContent = '⏸ Detection paused';
+        broadcastToStudent({ type: 'idle' });
         
         // Stop auto-refresh when detection is paused
         stopFaceAutoRefresh();
@@ -1200,12 +1396,79 @@ try {
     }
 
     async function handleFaceDetection(result) {
-        if (!result.matched || !result.match) {
-            // No match - hide overlay
-            document.getElementById('faceMatchOverlay').classList.add('hidden');
+        // ─── NOT MATCHED: Unrecognized person or liveness failure ───
+        if (!result.matched) {
+            const overlay = document.getElementById('faceMatchOverlay');
+            const infoEl = document.getElementById('faceMatchInfo');
+            const resultEl = document.getElementById('faceScanResult');
+
+            if (result.reason === 'not_recognized') {
+                // Person is NOT in the system — show big red alert
+                overlay.classList.remove('hidden');
+                infoEl.innerHTML = `
+                    <p class="font-bold text-lg text-red-300">⚠ NOT RECOGNIZED</p>
+                    <p class="text-sm text-red-200">This person is not registered in the system</p>
+                `;
+                resultEl.classList.remove('hidden');
+                resultEl.innerHTML = `
+                    <div class="bg-red-50 border-4 border-red-600 rounded-2xl p-6 md:p-8 text-center fade-in">
+                        <div class="text-5xl md:text-6xl mb-4">🚫</div>
+                        <h3 class="text-2xl md:text-3xl font-bold text-red-900 mb-3">PERSON NOT RECOGNIZED</h3>
+                        <p class="text-red-700 text-lg mb-2">This person is <strong>NOT registered</strong> in the system.</p>
+                        <p class="text-red-600 text-sm mb-4">Face does not match any enrolled student.</p>
+                        <div class="bg-red-100 border-2 border-red-300 rounded-lg p-4 inline-block">
+                            <p class="text-red-800 font-semibold text-sm">⚠ Ask the person to identify themselves or contact administration.</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('faceStatus').textContent = '🔴 Unrecognized person detected';
+                broadcastToStudent({ type: 'not_recognized' });
+                // Auto-clear after a few seconds, detection continues
+                setTimeout(() => {
+                    resultEl.classList.add('hidden');
+                    resultEl.innerHTML = '';
+                    overlay.classList.add('hidden');
+                    broadcastToStudent({ type: 'clear' });
+                }, 5000);
+                return;
+            }
+
+            if (result.reason === 'liveness_failed') {
+                // Photo or screen detected — show warning
+                overlay.classList.remove('hidden');
+                infoEl.innerHTML = `
+                    <p class="font-bold text-lg text-orange-300">⚠ PHOTO/SCREEN DETECTED</p>
+                    <p class="text-sm text-orange-200">A live face is required for verification</p>
+                `;
+                resultEl.classList.remove('hidden');
+                resultEl.innerHTML = `
+                    <div class="bg-orange-50 border-4 border-orange-500 rounded-2xl p-6 md:p-8 text-center fade-in">
+                        <div class="text-5xl md:text-6xl mb-4">📷</div>
+                        <h3 class="text-2xl md:text-3xl font-bold text-orange-900 mb-3">PHOTO / SCREEN DETECTED</h3>
+                        <p class="text-orange-700 text-lg mb-2">A <strong>printed photo or screen image</strong> was detected.</p>
+                        <p class="text-orange-600 text-sm mb-4">Only live faces are accepted for gate entry.</p>
+                        <div class="bg-orange-100 border-2 border-orange-300 rounded-lg p-4 inline-block">
+                            <p class="text-orange-800 font-semibold text-sm">🔒 The student must be physically present and face the camera.</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('faceStatus').textContent = '🟠 Photo/screen detected — live face required';
+                broadcastToStudent({ type: 'liveness_failed' });
+                setTimeout(() => {
+                    resultEl.classList.add('hidden');
+                    resultEl.innerHTML = '';
+                    overlay.classList.add('hidden');
+                    broadcastToStudent({ type: 'clear' });
+                }, 5000);
+                return;
+            }
+
+            // Generic no-match (shouldn't reach here normally, but handle gracefully)
+            overlay.classList.add('hidden');
             return;
         }
 
+        // ─── MATCHED: Verified student ───
         const match = result.match;
         const now = Date.now();
 
@@ -1213,9 +1476,12 @@ try {
         const overlay = document.getElementById('faceMatchOverlay');
         const infoEl = document.getElementById('faceMatchInfo');
         overlay.classList.remove('hidden');
+        const liveness = result.liveness || {};
+        const livenessText = liveness.reasons ? liveness.reasons.join(', ') : '';
         infoEl.innerHTML = `
             <p class="font-bold text-lg">${escHtml(match.name)}</p>
             <p class="text-sm opacity-80">${escHtml(match.studentId)} • Confidence: ${(match.confidence * 100).toFixed(1)}%</p>
+            <p class="text-xs opacity-60">Verified: ${result.verifiedFrames || 0} frames • Liveness: ${livenessText || 'n/a'}</p>
         `;
 
         // Cooldown check - prevent duplicate entries for same person
@@ -1240,6 +1506,13 @@ try {
         // Display result (same style as RFID)
         displayFaceScanResult(response, match);
 
+        // Broadcast to student display
+        if (response.access_denied) {
+            broadcastToStudent({ type: 'access_denied', student: response.student || {}, match: { confidence: match.confidence } });
+        } else if (response.success) {
+            broadcastToStudent({ type: 'match', student: response.student, match: { confidence: match.confidence } });
+        }
+
         // Stop detection completely — guard must press Start for next student
         stopFaceAutoRefresh();
         document.getElementById('btnStopFace').classList.add('hidden');
@@ -1251,6 +1524,7 @@ try {
             const resultEl = document.getElementById('faceScanResult');
             resultEl.classList.add('hidden');
             overlay.classList.add('hidden');
+            broadcastToStudent({ type: 'clear' });
         }, 4000);
     }
 
@@ -1350,6 +1624,180 @@ try {
                 <div class="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 text-center fade-in">
                     <p class="text-yellow-800 font-medium">${escHtml(response.error || 'Unknown error')}</p>
                 </div>`;
+        }
+    }
+
+    // ================================================================
+    // STUDENT DISPLAY BROADCAST
+    // ================================================================
+    let studentFrameTimer = null;
+    let studentDisplayConnected = false;
+    let broadcastCanvas = document.createElement('canvas');
+    let broadcastCtx = broadcastCanvas.getContext('2d');
+
+    // Initialize channel immediately so the student display can connect
+    // even before the guard switches to Face Recognition mode.
+    const studentChannel = new BroadcastChannel('gatewatch-student-display');
+    studentChannel.onmessage = function(e) {
+        if (!e.data) return;
+        if (e.data.type === 'student_display_connected') {
+            studentDisplayConnected = true;
+            updateStudentDisplayBtn(true);
+            broadcastToStudent({
+                type: 'connected',
+                cameraRunning: cameraRunning,
+                currentMode: currentMode,
+                detectionRunning: !!(faceSystem && faceSystem._continuousRunning),
+                csrfToken: CSRF_TOKEN,
+                faceConfig: {
+                    modelPath: '../assets/models',
+                    matchThreshold: FACE_THRESHOLD,
+                    minConfidence: 0.6,
+                    detectionIntervalMs: 80,
+                    ssdInputSize: 224,
+                    livenessEnabled: true,
+                    requiredConsecutiveFrames: 3,
+                    livenessMinFrames: 5,
+                    unrecognizedFramesThreshold: 5,
+                    livenessFailFramesThreshold: 10,
+                    minFaceSizePx: 80,
+                    minFaceSizeRatio: 0.08,
+                    descriptorChunkSize: 40,
+                    tickWorkerPath: '../assets/js/frame_tick_worker.js'
+                }
+            });
+            ensureStudentDisplayFeedReady();
+        } else if (e.data.type === 'student_display_disconnected') {
+            studentDisplayConnected = false;
+            updateStudentDisplayBtn(false);
+            stopFrameBroadcast();
+        } else if (e.data.type === 'popup_takeover') {
+            // Popup window has focus and is taking over detection.
+            // Pause our detection loop (keeps scheduler alive, accumulators intact).
+            if (faceSystem && faceSystem._continuousRunning) {
+                faceSystem.pauseContinuousDetection();
+                // Clear overlay so broadcast frames show clean video.
+                var fc = document.getElementById('faceCanvas');
+                if (fc) { var cx = fc.getContext('2d'); cx.clearRect(0, 0, fc.width, fc.height); }
+            }
+        } else if (e.data.type === 'popup_release') {
+            // Popup lost focus, resume our detection.
+            if (faceSystem && faceSystem._continuousRunning) {
+                faceSystem.resumeContinuousDetection();
+            }
+        } else if (e.data.type === 'student_detection_result') {
+            if (!faceSystem || !faceSystem._continuousRunning || currentMode !== 'face') return;
+            handleFaceDetection(e.data.result);
+        }
+    };
+
+    function openStudentDisplay() {
+        // Open as popup window (not a tab) so the security scanner tab stays
+        // focused and is never backgrounded. Positioned at right edge for
+        // dual-monitor setups where screen 2 faces students at the gate.
+        var w = Math.min(1024, screen.availWidth);
+        var h = Math.min(768, screen.availHeight);
+        var left = screen.availWidth - w;
+        window.open(
+            'student_display.php',
+            'gatewatch_student_display',
+            'width=' + w + ',height=' + h + ',left=' + left + ',top=0,resizable=yes,scrollbars=no,menubar=no,toolbar=no,location=no,status=no'
+        );
+        // Refocus security tab immediately so it never becomes a background tab.
+        setTimeout(function() { window.focus(); }, 200);
+        ensureStudentDisplayFeedReady();
+    }
+
+    function broadcastToStudent(msg) {
+        if (!studentChannel) return;
+        try { studentChannel.postMessage(msg); } catch(e) {}
+    }
+
+    // Student display stream settings only (does NOT affect face recognition matching).
+    // Keep full source resolution for close visual parity with security preview.
+    const BROADCAST_MAX_W = 4096;
+    const BROADCAST_INTERVAL_MS = 42; // ~24 fps target
+    const BROADCAST_MIME = 'image/webp';
+    const BROADCAST_QUALITY = 0.88;
+    let _bcBusy = false;
+    let _tickWorker = null;
+    let _intervalTimer = null;
+
+    // Send one frame to student display.
+    function _broadcastFrameTick() {
+        if (!studentDisplayConnected) return;
+        const video = document.getElementById('faceVideo');
+        const overlay = document.getElementById('faceCanvas');
+        if (!video || video.paused || !video.videoWidth) return;
+        if (_bcBusy) return;
+
+        const scale = Math.min(1, BROADCAST_MAX_W / video.videoWidth);
+        const w = Math.round(video.videoWidth * scale);
+        const h = Math.round(video.videoHeight * scale);
+        if (broadcastCanvas.width !== w) broadcastCanvas.width = w;
+        if (broadcastCanvas.height !== h) broadcastCanvas.height = h;
+
+        broadcastCtx.drawImage(video, 0, 0, w, h);
+        if (overlay && overlay.width > 0 && overlay.height > 0) {
+            broadcastCtx.drawImage(overlay, 0, 0, w, h);
+        }
+
+        _bcBusy = true;
+        broadcastCanvas.toBlob(function(blob) {
+            _bcBusy = false;
+            if (!blob || !studentDisplayConnected) return;
+            broadcastToStudent({ type: 'frame', blob: blob });
+        }, BROADCAST_MIME, BROADCAST_QUALITY);
+    }
+
+    function _createTickWorker() {
+        if (_tickWorker) return _tickWorker;
+        try {
+            // Dedicated worker file is more reliable than blob workers under strict CSP.
+            _tickWorker = new Worker('../assets/js/frame_tick_worker.js');
+            _tickWorker.onmessage = function(ev) {
+                if (ev && ev.data && ev.data.type === 'tick') _broadcastFrameTick();
+            };
+            _tickWorker.onerror = function() {
+                _tickWorker = null;
+                if (!_intervalTimer) _intervalTimer = setInterval(_broadcastFrameTick, BROADCAST_INTERVAL_MS);
+            };
+        } catch (e) {
+            _tickWorker = null;
+        }
+        return _tickWorker;
+    }
+
+    function startFrameBroadcast() {
+        if (studentFrameTimer) return;
+        if (!studentChannel) return;
+        studentFrameTimer = true;
+
+        const worker = _createTickWorker();
+        if (worker) {
+            worker.postMessage({ type: 'start', intervalMs: BROADCAST_INTERVAL_MS });
+        } else {
+            _intervalTimer = setInterval(_broadcastFrameTick, BROADCAST_INTERVAL_MS);
+        }
+    }
+
+    function stopFrameBroadcast() {
+        if (!studentFrameTimer) return;
+        studentFrameTimer = null;
+        _bcBusy = false;
+        if (_tickWorker) _tickWorker.postMessage({ type: 'stop' });
+        if (_intervalTimer) {
+            clearInterval(_intervalTimer);
+            _intervalTimer = null;
+        }
+    }
+
+    function updateStudentDisplayBtn(connected) {
+        var btn = document.getElementById('btnStudentDisplay');
+        if (!btn) return;
+        var dot = btn.querySelector('.sd-dot');
+        if (dot) {
+            dot.className = 'sd-dot w-2 h-2 rounded-full inline-block ' + (connected ? 'bg-green-400' : 'bg-slate-400');
         }
     }
     <?php endif; ?>

@@ -19,6 +19,7 @@ namespace Google\Service\CloudRedis\Resource;
 
 use Google\Service\CloudRedis\ListLocationsResponse;
 use Google\Service\CloudRedis\Location;
+use Google\Service\CloudRedis\SharedRegionalCertificateAuthority;
 
 /**
  * The "locations" collection of methods.
@@ -45,7 +46,28 @@ class ProjectsLocations extends \Google\Service\Resource
     return $this->call('get', [$params], Location::class);
   }
   /**
-   * Lists information about the supported locations for this service.
+   * Gets the details of regional certificate authority information for Redis
+   * cluster. (locations.getSharedRegionalCertificateAuthority)
+   *
+   * @param string $name Required. Regional certificate authority resource name
+   * using the form: `projects/{project_id}/locations/{location_id}/sharedRegional
+   * CertificateAuthority` where `location_id` refers to a Google Cloud region.
+   * @param array $optParams Optional parameters.
+   * @return SharedRegionalCertificateAuthority
+   * @throws \Google\Service\Exception
+   */
+  public function getSharedRegionalCertificateAuthority($name, $optParams = [])
+  {
+    $params = ['name' => $name];
+    $params = array_merge($params, $optParams);
+    return $this->call('getSharedRegionalCertificateAuthority', [$params], SharedRegionalCertificateAuthority::class);
+  }
+  /**
+   * Lists information about the supported locations for this service. This method
+   * can be called in two ways: * **List all public locations:** Use the path `GET
+   * /v1/locations`. * **List project-visible locations:** Use the path `GET
+   * /v1/projects/{project_id}/locations`. This may include public locations as
+   * well as private or other locations specifically visible to the project.
    * (locations.listProjectsLocations)
    *
    * @param string $name The resource that owns the locations collection, if

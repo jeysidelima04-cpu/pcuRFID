@@ -26,13 +26,13 @@ class GoogleCloudDocumentaiV1SchemaVersion extends \Google\Model
    */
   public $createTime;
   /**
-   * Optional. The user-defined name of the SchemaVersion.
+   * Required. The user-defined name of the SchemaVersion.
    *
    * @var string
    */
   public $displayName;
   /**
-   * Optional. The GCP labels for the SchemaVersion.
+   * Optional. The {{gcp_name_short}} labels for the SchemaVersion.
    *
    * @var string[]
    */
@@ -64,7 +64,7 @@ class GoogleCloudDocumentaiV1SchemaVersion extends \Google\Model
     return $this->createTime;
   }
   /**
-   * Optional. The user-defined name of the SchemaVersion.
+   * Required. The user-defined name of the SchemaVersion.
    *
    * @param string $displayName
    */
@@ -80,7 +80,7 @@ class GoogleCloudDocumentaiV1SchemaVersion extends \Google\Model
     return $this->displayName;
   }
   /**
-   * Optional. The GCP labels for the SchemaVersion.
+   * Optional. The {{gcp_name_short}} labels for the SchemaVersion.
    *
    * @param string[] $labels
    */

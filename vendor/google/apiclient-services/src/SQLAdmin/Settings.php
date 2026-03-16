@@ -142,6 +142,13 @@ class Settings extends \Google\Collection
   public const REPLICATION_TYPE_ASYNCHRONOUS = 'ASYNCHRONOUS';
   protected $collection_key = 'denyMaintenancePeriods';
   /**
+   * Optional. Whether the replica is in accelerated mode. This feature is in
+   * private preview and requires allowlisting to take effect.
+   *
+   * @var bool
+   */
+  public $acceleratedReplicaMode;
+  /**
    * The activation policy specifies when the instance is activated; it is
    * applicable only when the instance state is RUNNABLE. Valid values: *
    * `ALWAYS`: The instance is on, and remains so even in the absence of
@@ -311,6 +318,8 @@ class Settings extends \Google\Collection
   protected $maintenanceWindowDataType = '';
   protected $passwordValidationPolicyType = PasswordValidationPolicy::class;
   protected $passwordValidationPolicyDataType = '';
+  protected $performanceCaptureConfigType = PerformanceCaptureConfig::class;
+  protected $performanceCaptureConfigDataType = '';
   /**
    * The pricing plan for this instance. This can be either `PER_USE` or
    * `PACKAGE`. Only `PER_USE` is supported for Second Generation instances.
@@ -391,6 +400,23 @@ class Settings extends \Google\Collection
    */
   public $userLabels;
 
+  /**
+   * Optional. Whether the replica is in accelerated mode. This feature is in
+   * private preview and requires allowlisting to take effect.
+   *
+   * @param bool $acceleratedReplicaMode
+   */
+  public function setAcceleratedReplicaMode($acceleratedReplicaMode)
+  {
+    $this->acceleratedReplicaMode = $acceleratedReplicaMode;
+  }
+  /**
+   * @return bool
+   */
+  public function getAcceleratedReplicaMode()
+  {
+    return $this->acceleratedReplicaMode;
+  }
   /**
    * The activation policy specifies when the instance is activated; it is
    * applicable only when the instance state is RUNNABLE. Valid values: *
@@ -960,6 +986,23 @@ class Settings extends \Google\Collection
   public function getPasswordValidationPolicy()
   {
     return $this->passwordValidationPolicy;
+  }
+  /**
+   * Optional. Configuration for Performance Capture, provides diagnostic
+   * metrics during high load situations.
+   *
+   * @param PerformanceCaptureConfig $performanceCaptureConfig
+   */
+  public function setPerformanceCaptureConfig(PerformanceCaptureConfig $performanceCaptureConfig)
+  {
+    $this->performanceCaptureConfig = $performanceCaptureConfig;
+  }
+  /**
+   * @return PerformanceCaptureConfig
+   */
+  public function getPerformanceCaptureConfig()
+  {
+    return $this->performanceCaptureConfig;
   }
   /**
    * The pricing plan for this instance. This can be either `PER_USE` or

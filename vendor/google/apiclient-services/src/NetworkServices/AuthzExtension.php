@@ -45,7 +45,7 @@ class AuthzExtension extends \Google\Collection
   public const WIRE_FORMAT_EXT_PROC_GRPC = 'EXT_PROC_GRPC';
   /**
    * The extension service uses Envoy's `ext_authz` gRPC API. The backend
-   * service for the extension must use HTTP2, or H2C as the protocol.
+   * service for the extension must use HTTP2 or H2C as the protocol.
    * `EXT_AUTHZ_GRPC` is only supported for regional `AuthzExtension` resources.
    */
   public const WIRE_FORMAT_EXT_AUTHZ_GRPC = 'EXT_AUTHZ_GRPC';
@@ -101,9 +101,10 @@ class AuthzExtension extends \Google\Collection
    */
   public $labels;
   /**
-   * Required. All backend services and forwarding rules referenced by this
+   * Optional. All backend services and forwarding rules referenced by this
    * extension must share the same load balancing scheme. Supported values:
-   * `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to
+   * `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. Can be omitted for AuthzExtensions
+   * that do not reference a backend service. For more information, refer to
    * [Backend services overview](https://cloud.google.com/load-
    * balancing/docs/backend-service).
    *
@@ -156,7 +157,9 @@ class AuthzExtension extends \Google\Collection
   public $updateTime;
   /**
    * Optional. The format of communication supported by the callout extension.
-   * If not specified, the default value `EXT_PROC_GRPC` is used.
+   * This field is supported only for regional `AuthzExtension` resources. If
+   * not specified, the default value `EXT_PROC_GRPC` is used. Global
+   * `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
    *
    * @var string
    */
@@ -273,9 +276,10 @@ class AuthzExtension extends \Google\Collection
     return $this->labels;
   }
   /**
-   * Required. All backend services and forwarding rules referenced by this
+   * Optional. All backend services and forwarding rules referenced by this
    * extension must share the same load balancing scheme. Supported values:
-   * `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to
+   * `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. Can be omitted for AuthzExtensions
+   * that do not reference a backend service. For more information, refer to
    * [Backend services overview](https://cloud.google.com/load-
    * balancing/docs/backend-service).
    *
@@ -391,7 +395,9 @@ class AuthzExtension extends \Google\Collection
   }
   /**
    * Optional. The format of communication supported by the callout extension.
-   * If not specified, the default value `EXT_PROC_GRPC` is used.
+   * This field is supported only for regional `AuthzExtension` resources. If
+   * not specified, the default value `EXT_PROC_GRPC` is used. Global
+   * `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
    *
    * Accepted values: WIRE_FORMAT_UNSPECIFIED, EXT_PROC_GRPC, EXT_AUTHZ_GRPC
    *

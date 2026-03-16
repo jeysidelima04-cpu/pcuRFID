@@ -62,6 +62,16 @@ class ValidationConfig extends \Google\Collection
    */
   public $disableRequiredFieldValidation;
   /**
+   * Optional. Whether to enable FHIRPath validation for incoming resource types
+   * that have profiles configured for them in the
+   * `enabled_implementation_guides` list. Set this to true to enable checking
+   * incoming resources for conformance against FHIRPath requirements defined in
+   * the configured profiles.
+   *
+   * @var bool
+   */
+  public $enableFhirpathProfileValidation;
+  /**
    * Optional. A list of implementation guide URLs in this FHIR store that are
    * used to configure the profiles to use for validation. For example, to use
    * the US Core profiles for validation, set `enabled_implementation_guides` to
@@ -73,9 +83,10 @@ class ValidationConfig extends \Google\Collection
    * Healthcare API does not currently enforce all of the rules in a
    * StructureDefinition. The following rules are supported: - min/max -
    * minValue/maxValue - maxLength - type - fixed[x] - pattern[x] on simple
-   * types - slicing, when using "value" as the discriminator type When a URL
-   * cannot be resolved (for example, in a type assertion), the server does not
-   * return an error.
+   * types - slicing, when using "value" as the discriminator type - FHIRPath
+   * constraints (only when `enable_fhirpath_profile_validation` is true) When a
+   * URL cannot be resolved (for example, in a type assertion), the server does
+   * not return an error.
    *
    * @var string[]
    */
@@ -163,6 +174,26 @@ class ValidationConfig extends \Google\Collection
     return $this->disableRequiredFieldValidation;
   }
   /**
+   * Optional. Whether to enable FHIRPath validation for incoming resource types
+   * that have profiles configured for them in the
+   * `enabled_implementation_guides` list. Set this to true to enable checking
+   * incoming resources for conformance against FHIRPath requirements defined in
+   * the configured profiles.
+   *
+   * @param bool $enableFhirpathProfileValidation
+   */
+  public function setEnableFhirpathProfileValidation($enableFhirpathProfileValidation)
+  {
+    $this->enableFhirpathProfileValidation = $enableFhirpathProfileValidation;
+  }
+  /**
+   * @return bool
+   */
+  public function getEnableFhirpathProfileValidation()
+  {
+    return $this->enableFhirpathProfileValidation;
+  }
+  /**
    * Optional. A list of implementation guide URLs in this FHIR store that are
    * used to configure the profiles to use for validation. For example, to use
    * the US Core profiles for validation, set `enabled_implementation_guides` to
@@ -174,9 +205,10 @@ class ValidationConfig extends \Google\Collection
    * Healthcare API does not currently enforce all of the rules in a
    * StructureDefinition. The following rules are supported: - min/max -
    * minValue/maxValue - maxLength - type - fixed[x] - pattern[x] on simple
-   * types - slicing, when using "value" as the discriminator type When a URL
-   * cannot be resolved (for example, in a type assertion), the server does not
-   * return an error.
+   * types - slicing, when using "value" as the discriminator type - FHIRPath
+   * constraints (only when `enable_fhirpath_profile_validation` is true) When a
+   * URL cannot be resolved (for example, in a type assertion), the server does
+   * not return an error.
    *
    * @param string[] $enabledImplementationGuides
    */

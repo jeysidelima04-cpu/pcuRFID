@@ -27,6 +27,17 @@ class OneTimeProductTaxAndComplianceSettings extends \Google\Collection
    * @var bool
    */
   public $isTokenizedDigitalAsset;
+  /**
+   * Product tax category code to assign to the one-time product. Product tax
+   * category determines the transaction tax rates applied to the product. Refer
+   * to the [Help Center article](https://support.google.com/googleplay/android-
+   * developer/answer/16408159) for more information.
+   *
+   * @var string
+   */
+  public $productTaxCategoryCode;
+  protected $regionalProductAgeRatingInfosType = RegionalProductAgeRatingInfo::class;
+  protected $regionalProductAgeRatingInfosDataType = 'array';
   protected $regionalTaxConfigsType = RegionalTaxConfig::class;
   protected $regionalTaxConfigsDataType = 'array';
 
@@ -46,6 +57,42 @@ class OneTimeProductTaxAndComplianceSettings extends \Google\Collection
   public function getIsTokenizedDigitalAsset()
   {
     return $this->isTokenizedDigitalAsset;
+  }
+  /**
+   * Product tax category code to assign to the one-time product. Product tax
+   * category determines the transaction tax rates applied to the product. Refer
+   * to the [Help Center article](https://support.google.com/googleplay/android-
+   * developer/answer/16408159) for more information.
+   *
+   * @param string $productTaxCategoryCode
+   */
+  public function setProductTaxCategoryCode($productTaxCategoryCode)
+  {
+    $this->productTaxCategoryCode = $productTaxCategoryCode;
+  }
+  /**
+   * @return string
+   */
+  public function getProductTaxCategoryCode()
+  {
+    return $this->productTaxCategoryCode;
+  }
+  /**
+   * Regional age rating information. Currently this field is only supported for
+   * region code `US`.
+   *
+   * @param RegionalProductAgeRatingInfo[] $regionalProductAgeRatingInfos
+   */
+  public function setRegionalProductAgeRatingInfos($regionalProductAgeRatingInfos)
+  {
+    $this->regionalProductAgeRatingInfos = $regionalProductAgeRatingInfos;
+  }
+  /**
+   * @return RegionalProductAgeRatingInfo[]
+   */
+  public function getRegionalProductAgeRatingInfos()
+  {
+    return $this->regionalProductAgeRatingInfos;
   }
   /**
    * Regional tax configuration.

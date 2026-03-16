@@ -39,9 +39,9 @@ class ProjectsLocations extends \Google\Service\Resource
    * static IPs should be returned. Must be in the format `projects/locations`.
    * @param array $optParams Optional parameters.
    *
-   * @opt_param int pageSize Maximum number of Ips to return, will likely not be
-   * specified.
-   * @opt_param string pageToken A page token, received from a previous
+   * @opt_param int pageSize Optional. Maximum number of Ips to return, will
+   * likely not be specified.
+   * @opt_param string pageToken Optional. A page token, received from a previous
    * `ListStaticIps` call. will likely not be specified.
    * @return FetchStaticIpsResponse
    * @throws \Google\Service\Exception
@@ -67,7 +67,11 @@ class ProjectsLocations extends \Google\Service\Resource
     return $this->call('get', [$params], Location::class);
   }
   /**
-   * Lists information about the supported locations for this service.
+   * Lists information about the supported locations for this service. This method
+   * can be called in two ways: * **List all public locations:** Use the path `GET
+   * /v1/locations`. * **List project-visible locations:** Use the path `GET
+   * /v1/projects/{project_id}/locations`. This may include public locations as
+   * well as private or other locations specifically visible to the project.
    * (locations.listProjectsLocations)
    *
    * @param string $name The resource that owns the locations collection, if

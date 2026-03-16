@@ -59,7 +59,8 @@ class GooglePrivacyDlpV2CustomInfoType extends \Google\Collection
   protected $dictionaryDataType = '';
   /**
    * If set to EXCLUSION_TYPE_EXCLUDE this infoType will not cause a finding to
-   * be returned. It still can be used for rules matching.
+   * be returned. It still can be used for rules matching. Not supported for the
+   * `metadata_key_value_expression` and `prompt` CustomInfoType.
    *
    * @var string
    */
@@ -86,7 +87,8 @@ class GooglePrivacyDlpV2CustomInfoType extends \Google\Collection
   /**
    * Set of detection rules to apply to all findings of this CustomInfoType.
    * Rules are applied in order that they are specified. Not supported for the
-   * `surrogate_type` CustomInfoType.
+   * `surrogate_type`, `metadata_key_value_expression`, and `prompt`
+   * CustomInfoType.
    *
    * @param GooglePrivacyDlpV2DetectionRule[] $detectionRules
    */
@@ -119,7 +121,8 @@ class GooglePrivacyDlpV2CustomInfoType extends \Google\Collection
   }
   /**
    * If set to EXCLUSION_TYPE_EXCLUDE this infoType will not cause a finding to
-   * be returned. It still can be used for rules matching.
+   * be returned. It still can be used for rules matching. Not supported for the
+   * `metadata_key_value_expression` and `prompt` CustomInfoType.
    *
    * Accepted values: EXCLUSION_TYPE_UNSPECIFIED, EXCLUSION_TYPE_EXCLUDE
    *
@@ -214,8 +217,7 @@ class GooglePrivacyDlpV2CustomInfoType extends \Google\Collection
     return $this->sensitivityScore;
   }
   /**
-   * Load an existing `StoredInfoType` resource for use in `InspectDataSource`.
-   * Not currently supported in `InspectContent`.
+   * Loads an existing `StoredInfoType` resource.
    *
    * @param GooglePrivacyDlpV2StoredType $storedType
    */

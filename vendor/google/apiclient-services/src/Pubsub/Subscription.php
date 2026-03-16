@@ -127,7 +127,7 @@ class Subscription extends \Google\Collection
   protected $messageTransformsType = MessageTransform::class;
   protected $messageTransformsDataType = 'array';
   /**
-   * Required. The name of the subscription. It must have the format
+   * Required. Identifier. The name of the subscription. It must have the format
    * `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
    * start with a letter, and contain only letters (`[A-Za-z]`), numbers
    * (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
@@ -219,7 +219,7 @@ class Subscription extends \Google\Collection
   }
   /**
    * Output only. Information about the associated Analytics Hub subscription.
-   * Only set if the subscritpion is created by Analytics Hub.
+   * Only set if the subscription is created by Analytics Hub.
    *
    * @param AnalyticsHubSubscriptionInfo $analyticsHubSubscriptionInfo
    */
@@ -449,7 +449,7 @@ class Subscription extends \Google\Collection
     return $this->messageTransforms;
   }
   /**
-   * Required. The name of the subscription. It must have the format
+   * Required. Identifier. The name of the subscription. It must have the format
    * `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
    * start with a letter, and contain only letters (`[A-Za-z]`), numbers
    * (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),

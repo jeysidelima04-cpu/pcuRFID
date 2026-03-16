@@ -264,7 +264,7 @@ class BackendService extends \Google\Collection
   protected $consistentHashType = ConsistentHashLoadBalancerSettings::class;
   protected $consistentHashDataType = '';
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
@@ -411,8 +411,8 @@ class BackendService extends \Google\Collection
    */
   public $ipAddressSelectionPolicy;
   /**
-   * [Output Only] Type of resource. Always compute#backendService for backend
-   * services.
+   * Output only. [Output Only] Type of resource. Always compute#backendService
+   * for backend services.
    *
    * @var string
    */
@@ -504,6 +504,10 @@ class BackendService extends \Google\Collection
    * @var string
    */
   public $network;
+  protected $networkPassThroughLbTrafficPolicyType = BackendServiceNetworkPassThroughLbTrafficPolicy::class;
+  protected $networkPassThroughLbTrafficPolicyDataType = '';
+  protected $orchestrationInfoType = BackendServiceOrchestrationInfo::class;
+  protected $orchestrationInfoDataType = '';
   protected $outlierDetectionType = OutlierDetection::class;
   protected $outlierDetectionDataType = '';
   protected $paramsType = BackendServiceParams::class;
@@ -543,10 +547,10 @@ class BackendService extends \Google\Collection
    */
   public $protocol;
   /**
-   * [Output Only] URL of the region where the regional backend service resides.
-   * This field is not applicable to global backend services. You must specify
-   * this field as part of the HTTP request URL. It is not settable as a field
-   * in the request body.
+   * Output only. [Output Only] URL of the region where the regional backend
+   * service resides. This field is not applicable to global backend services.
+   * You must specify this field as part of the HTTP request URL. It is not
+   * settable as a field in the request body.
    *
    * @var string
    */
@@ -779,7 +783,7 @@ class BackendService extends \Google\Collection
     return $this->consistentHash;
   }
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -1145,8 +1149,8 @@ class BackendService extends \Google\Collection
     return $this->ipAddressSelectionPolicy;
   }
   /**
-   * [Output Only] Type of resource. Always compute#backendService for backend
-   * services.
+   * Output only. [Output Only] Type of resource. Always compute#backendService
+   * for backend services.
    *
    * @param string $kind
    */
@@ -1373,6 +1377,41 @@ class BackendService extends \Google\Collection
     return $this->network;
   }
   /**
+   * Configures traffic steering properties of internal passthrough Network Load
+   * Balancers.
+   *
+   * networkPassThroughLbTrafficPolicy cannot be specified with haPolicy.
+   *
+   * @param BackendServiceNetworkPassThroughLbTrafficPolicy $networkPassThroughLbTrafficPolicy
+   */
+  public function setNetworkPassThroughLbTrafficPolicy(BackendServiceNetworkPassThroughLbTrafficPolicy $networkPassThroughLbTrafficPolicy)
+  {
+    $this->networkPassThroughLbTrafficPolicy = $networkPassThroughLbTrafficPolicy;
+  }
+  /**
+   * @return BackendServiceNetworkPassThroughLbTrafficPolicy
+   */
+  public function getNetworkPassThroughLbTrafficPolicy()
+  {
+    return $this->networkPassThroughLbTrafficPolicy;
+  }
+  /**
+   * Information about the resource or system that manages the backend service.
+   *
+   * @param BackendServiceOrchestrationInfo $orchestrationInfo
+   */
+  public function setOrchestrationInfo(BackendServiceOrchestrationInfo $orchestrationInfo)
+  {
+    $this->orchestrationInfo = $orchestrationInfo;
+  }
+  /**
+   * @return BackendServiceOrchestrationInfo
+   */
+  public function getOrchestrationInfo()
+  {
+    return $this->orchestrationInfo;
+  }
+  /**
    * Settings controlling the ejection of unhealthy backend endpoints from the
    * load balancing pool of each individual proxy instance that processes the
    * traffic for the given backend service. If not set, this feature is
@@ -1503,10 +1542,10 @@ class BackendService extends \Google\Collection
     return $this->protocol;
   }
   /**
-   * [Output Only] URL of the region where the regional backend service resides.
-   * This field is not applicable to global backend services. You must specify
-   * this field as part of the HTTP request URL. It is not settable as a field
-   * in the request body.
+   * Output only. [Output Only] URL of the region where the regional backend
+   * service resides. This field is not applicable to global backend services.
+   * You must specify this field as part of the HTTP request URL. It is not
+   * settable as a field in the request body.
    *
    * @param string $region
    */
@@ -1717,7 +1756,8 @@ class BackendService extends \Google\Collection
     return $this->tlsSettings;
   }
   /**
-   * [Output Only] List of resources referencing given backend service.
+   * Output only. [Output Only] List of resources referencing given backend
+   * service.
    *
    * @param BackendServiceUsedBy[] $usedBy
    */

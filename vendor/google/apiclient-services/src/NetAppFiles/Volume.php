@@ -114,6 +114,8 @@ class Volume extends \Google\Collection
   public $activeDirectory;
   protected $backupConfigType = BackupConfig::class;
   protected $backupConfigDataType = '';
+  protected $blockDevicesType = BlockDevice::class;
+  protected $blockDevicesDataType = 'array';
   protected $cacheParametersType = CacheParameters::class;
   protected $cacheParametersDataType = '';
   /**
@@ -122,6 +124,8 @@ class Volume extends \Google\Collection
    * @var string
    */
   public $capacityGib;
+  protected $cloneDetailsType = CloneDetails::class;
+  protected $cloneDetailsDataType = '';
   /**
    * Output only. Size of the volume cold tier data rounded down to the nearest
    * GiB.
@@ -368,6 +372,23 @@ class Volume extends \Google\Collection
     return $this->backupConfig;
   }
   /**
+   * Optional. Block devices for the volume. Currently, only one block device is
+   * permitted per Volume.
+   *
+   * @param BlockDevice[] $blockDevices
+   */
+  public function setBlockDevices($blockDevices)
+  {
+    $this->blockDevices = $blockDevices;
+  }
+  /**
+   * @return BlockDevice[]
+   */
+  public function getBlockDevices()
+  {
+    return $this->blockDevices;
+  }
+  /**
    * Optional. Cache parameters for the volume.
    *
    * @param CacheParameters $cacheParameters
@@ -398,6 +419,23 @@ class Volume extends \Google\Collection
   public function getCapacityGib()
   {
     return $this->capacityGib;
+  }
+  /**
+   * Output only. If this volume is a clone, this field contains details about
+   * the clone.
+   *
+   * @param CloneDetails $cloneDetails
+   */
+  public function setCloneDetails(CloneDetails $cloneDetails)
+  {
+    $this->cloneDetails = $cloneDetails;
+  }
+  /**
+   * @return CloneDetails
+   */
+  public function getCloneDetails()
+  {
+    return $this->cloneDetails;
   }
   /**
    * Output only. Size of the volume cold tier data rounded down to the nearest

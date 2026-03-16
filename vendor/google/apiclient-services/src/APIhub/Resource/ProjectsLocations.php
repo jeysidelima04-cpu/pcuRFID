@@ -19,6 +19,7 @@ namespace Google\Service\APIhub\Resource;
 
 use Google\Service\APIhub\GoogleCloudApihubV1CollectApiDataRequest;
 use Google\Service\APIhub\GoogleCloudApihubV1LookupRuntimeProjectAttachmentResponse;
+use Google\Service\APIhub\GoogleCloudApihubV1RetrieveApiViewsResponse;
 use Google\Service\APIhub\GoogleCloudApihubV1SearchResourcesRequest;
 use Google\Service\APIhub\GoogleCloudApihubV1SearchResourcesResponse;
 use Google\Service\APIhub\GoogleCloudLocationListLocationsResponse;
@@ -67,7 +68,11 @@ class ProjectsLocations extends \Google\Service\Resource
     return $this->call('get', [$params], GoogleCloudLocationLocation::class);
   }
   /**
-   * Lists information about the supported locations for this service.
+   * Lists information about the supported locations for this service. This method
+   * can be called in two ways: * **List all public locations:** Use the path `GET
+   * /v1/locations`. * **List project-visible locations:** Use the path `GET
+   * /v1/projects/{project_id}/locations`. This may include public locations as
+   * well as private or other locations specifically visible to the project.
    * (locations.listProjectsLocations)
    *
    * @param string $name The resource that owns the locations collection, if
@@ -109,6 +114,28 @@ class ProjectsLocations extends \Google\Service\Resource
     $params = ['name' => $name];
     $params = array_merge($params, $optParams);
     return $this->call('lookupRuntimeProjectAttachment', [$params], GoogleCloudApihubV1LookupRuntimeProjectAttachmentResponse::class);
+  }
+  /**
+   * Retrieve API views. (locations.retrieveApiViews)
+   *
+   * @param string $parent Required. The parent resource name. Format:
+   * `projects/{project}/locations/{location}`.
+   * @param array $optParams Optional parameters.
+   *
+   * @opt_param string filter Optional. The filter expression.
+   * @opt_param int pageSize Optional. The maximum number of results to return.
+   * Default to 100.
+   * @opt_param string pageToken Optional. A page token, received from a previous
+   * `RetrieveApiViews` call. Provide this to retrieve the subsequent page.
+   * @opt_param string view Required. The view type to return.
+   * @return GoogleCloudApihubV1RetrieveApiViewsResponse
+   * @throws \Google\Service\Exception
+   */
+  public function retrieveApiViews($parent, $optParams = [])
+  {
+    $params = ['parent' => $parent];
+    $params = array_merge($params, $optParams);
+    return $this->call('retrieveApiViews', [$params], GoogleCloudApihubV1RetrieveApiViewsResponse::class);
   }
   /**
    * Search across API-Hub resources. (locations.searchResources)

@@ -52,6 +52,10 @@ class InterconnectAttachment extends \Google\Collection
    */
   public const BANDWIDTH_BPS_300M = 'BPS_300M';
   /**
+   * 400 Gbit/s
+   */
+  public const BANDWIDTH_BPS_400G = 'BPS_400G';
+  /**
    * 400 Mbit/s
    */
   public const BANDWIDTH_BPS_400M = 'BPS_400M';
@@ -161,7 +165,8 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $adminEnabled;
   /**
-   * [Output Only] URL of the AttachmentGroup that includes this Attachment.
+   * Output only. [Output Only] URL of the AttachmentGroup that includes this
+   * Attachment.
    *
    * @var string
    */
@@ -176,11 +181,49 @@ class InterconnectAttachment extends \Google\Collection
    * BPS_200M: 200 Mbit/s    - BPS_300M: 300 Mbit/s    - BPS_400M: 400 Mbit/s
    * - BPS_500M: 500 Mbit/s    - BPS_1G: 1 Gbit/s    - BPS_2G: 2 Gbit/s    -
    * BPS_5G: 5 Gbit/s    - BPS_10G: 10 Gbit/s    - BPS_20G: 20 Gbit/s    -
-   * BPS_50G: 50 Gbit/s    - BPS_100G: 100 Gbit/s
+   * BPS_50G: 50 Gbit/s    - BPS_100G: 100 Gbit/s    - BPS_400G: 400 Gbit/s
    *
    * @var string
    */
   public $bandwidth;
+  /**
+   * Single IPv4 address + prefix length to be configured on the cloud router
+   * interface for this interconnect attachment.        - Both
+   * candidate_cloud_router_ip_address and
+   * candidate_customer_router_ip_address fields must be set or both must be
+   * unset.    - Prefix length of both candidate_cloud_router_ip_address and
+   * candidate_customer_router_ip_address must be the same.    - Max prefix
+   * length is 31.
+   *
+   * @var string
+   */
+  public $candidateCloudRouterIpAddress;
+  /**
+   * Single IPv6 address + prefix length to be configured on the cloud router
+   * interface for this interconnect attachment.        - Both
+   * candidate_cloud_router_ipv6_address and
+   * candidate_customer_router_ipv6_address fields must be set or both must be
+   * unset.    - Prefix length of both candidate_cloud_router_ipv6_address and
+   * candidate_customer_router_ipv6_address must be the same.    - Max prefix
+   * length is 126.
+   *
+   * @var string
+   */
+  public $candidateCloudRouterIpv6Address;
+  /**
+   * Single IPv4 address + prefix length to be configured on the customer router
+   * interface for this interconnect attachment.
+   *
+   * @var string
+   */
+  public $candidateCustomerRouterIpAddress;
+  /**
+   * Single IPv6 address + prefix length to be configured on the customer router
+   * interface for this interconnect attachment.
+   *
+   * @var string
+   */
+  public $candidateCustomerRouterIpv6Address;
   /**
    * This field is not available.
    *
@@ -201,15 +244,15 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $candidateSubnets;
   /**
-   * [Output Only] IPv4 address + prefix length to be configured on Cloud Router
-   * Interface for this interconnect attachment.
+   * Output only. [Output Only] IPv4 address + prefix length to be configured on
+   * Cloud Router Interface for this interconnect attachment.
    *
    * @var string
    */
   public $cloudRouterIpAddress;
   /**
-   * [Output Only] IPv6 address + prefix length to be configured on Cloud Router
-   * Interface for this interconnect attachment.
+   * Output only. [Output Only] IPv6 address + prefix length to be configured on
+   * Cloud Router Interface for this interconnect attachment.
    *
    * @var string
    */
@@ -223,21 +266,21 @@ class InterconnectAttachment extends \Google\Collection
   protected $configurationConstraintsType = InterconnectAttachmentConfigurationConstraints::class;
   protected $configurationConstraintsDataType = '';
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @var string
    */
   public $creationTimestamp;
   /**
-   * [Output Only] IPv4 address + prefix length to be configured on the customer
-   * router subinterface for this interconnect attachment.
+   * Output only. [Output Only] IPv4 address + prefix length to be configured on
+   * the customer router subinterface for this interconnect attachment.
    *
    * @var string
    */
   public $customerRouterIpAddress;
   /**
-   * [Output Only] IPv6 address + prefix length to be configured on the customer
-   * router subinterface for this interconnect attachment.
+   * Output only. [Output Only] IPv6 address + prefix length to be configured on
+   * the customer router subinterface for this interconnect attachment.
    *
    * @var string
    */
@@ -249,9 +292,10 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $customerRouterIpv6InterfaceId;
   /**
-   * [Output Only] Dataplane version for this InterconnectAttachment. This field
-   * is only present for Dataplane version 2 and higher. Absence of this field
-   * in the API output indicates that the Dataplane is version 1.
+   * Output only. [Output Only] Dataplane version for this
+   * InterconnectAttachment. This field is only present for Dataplane version 2
+   * and higher. Absence of this field in the API output indicates that the
+   * Dataplane is version 1.
    *
    * @var int
    */
@@ -294,17 +338,17 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $encryption;
   /**
-   * [Output Only] Google reference ID, to be used when raising support tickets
-   * with Google or otherwise to debug backend connectivity issues. [Deprecated]
-   * This field is not used.
+   * Output only. [Output Only] Google reference ID, to be used when raising
+   * support tickets with Google or otherwise to debug backend connectivity
+   * issues. [Deprecated] This field is not used.
    *
    * @deprecated
    * @var string
    */
   public $googleReferenceId;
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @var string
    */
@@ -335,8 +379,8 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $ipsecInternalAddresses;
   /**
-   * [Output Only] Type of the resource. Alwayscompute#interconnectAttachment
-   * for interconnect attachments.
+   * Output only. [Output Only] Type of the resource.
+   * Alwayscompute#interconnectAttachment for interconnect attachments.
    *
    * @var string
    */
@@ -386,11 +430,11 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $name;
   /**
-   * [Output Only] The current status of whether or not this interconnect
-   * attachment is functional, which can take one of the following values:
-   * - OS_ACTIVE: The attachment has been turned up and is ready to    use.
-   * - OS_UNPROVISIONED: The attachment is not ready to use yet,    because
-   * turnup is not complete.
+   * Output only. [Output Only] The current status of whether or not this
+   * interconnect attachment is functional, which can take one of the following
+   * values:        - OS_ACTIVE: The attachment has been turned up and is ready
+   * to    use.     - OS_UNPROVISIONED: The attachment is not ready to use yet,
+   * because turnup is not complete.
    *
    * @var string
    */
@@ -419,17 +463,18 @@ class InterconnectAttachment extends \Google\Collection
   protected $privateInterconnectInfoType = InterconnectAttachmentPrivateInfo::class;
   protected $privateInterconnectInfoDataType = '';
   /**
-   * [Output Only] URL of the region where the regional interconnect attachment
-   * resides. You must specify this field as part of the HTTP request URL. It is
-   * not settable as a field in the request body.
+   * Output only. [Output Only] URL of the region where the regional
+   * interconnect attachment resides. You must specify this field as part of the
+   * HTTP request URL. It is not settable as a field in the request body.
    *
    * @var string
    */
   public $region;
   /**
-   * [Output Only] If the attachment is on a Cross-Cloud Interconnect
-   * connection, this field contains the interconnect's remote location service
-   * provider. Example values: "Amazon Web Services" "Microsoft Azure".
+   * Output only. [Output Only] If the attachment is on a Cross-Cloud
+   * Interconnect connection, this field contains the interconnect's remote
+   * location service provider. Example values: "Amazon Web Services" "Microsoft
+   * Azure".
    *
    * The field is set only for attachments on Cross-Cloud Interconnect
    * connections. Its value is copied from the InterconnectRemoteLocation
@@ -448,13 +493,13 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $router;
   /**
-   * [Output Only] Reserved for future use.
+   * Output only. [Output Only] Reserved for future use.
    *
    * @var bool
    */
   public $satisfiesPzs;
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @var string
    */
@@ -470,23 +515,23 @@ class InterconnectAttachment extends \Google\Collection
    */
   public $stackType;
   /**
-   * [Output Only] The current state of this attachment's functionality. Enum
-   * values ACTIVE and UNPROVISIONED are shared by DEDICATED/PRIVATE, PARTNER,
-   * and PARTNER_PROVIDER interconnect attachments, while enum values
-   * PENDING_PARTNER, PARTNER_REQUEST_RECEIVED, and PENDING_CUSTOMER are used
-   * for only PARTNER and PARTNER_PROVIDER interconnect attachments. This state
-   * can take one of the following values:        - ACTIVE: The attachment has
-   * been turned up and is ready to use.    - UNPROVISIONED: The attachment is
-   * not ready to use yet, because turnup    is not complete.    -
-   * PENDING_PARTNER: A newly-created PARTNER attachment that has not yet
-   * been configured on the Partner side.    - PARTNER_REQUEST_RECEIVED: A
-   * PARTNER attachment is in the process of    provisioning after a
-   * PARTNER_PROVIDER attachment was created that    references it.     -
-   * PENDING_CUSTOMER: A PARTNER or PARTNER_PROVIDER    attachment that is
-   * waiting for a customer to activate it.     - DEFUNCT:    The attachment was
-   * deleted externally and is no longer functional. This    could be because
-   * the associated Interconnect was removed, or because the    other side of a
-   * Partner attachment was deleted.
+   * Output only. [Output Only] The current state of this attachment's
+   * functionality. Enum values ACTIVE and UNPROVISIONED are shared by
+   * DEDICATED/PRIVATE, PARTNER, and PARTNER_PROVIDER interconnect attachments,
+   * while enum values PENDING_PARTNER, PARTNER_REQUEST_RECEIVED, and
+   * PENDING_CUSTOMER are used for only PARTNER and PARTNER_PROVIDER
+   * interconnect attachments. This state can take one of the following values:
+   * - ACTIVE: The attachment has been turned up and is ready to use.    -
+   * UNPROVISIONED: The attachment is not ready to use yet, because turnup    is
+   * not complete.    - PENDING_PARTNER: A newly-created PARTNER attachment that
+   * has not yet    been configured on the Partner side.    -
+   * PARTNER_REQUEST_RECEIVED: A PARTNER attachment is in the process of
+   * provisioning after a PARTNER_PROVIDER attachment was created that
+   * references it.     - PENDING_CUSTOMER: A PARTNER or PARTNER_PROVIDER
+   * attachment that is waiting for a customer to activate it.     - DEFUNCT:
+   * The attachment was deleted externally and is no longer functional. This
+   * could be because the associated Interconnect was removed, or because the
+   * other side of a Partner attachment was deleted.
    *
    * @var string
    */
@@ -545,7 +590,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->adminEnabled;
   }
   /**
-   * [Output Only] URL of the AttachmentGroup that includes this Attachment.
+   * Output only. [Output Only] URL of the AttachmentGroup that includes this
+   * Attachment.
    *
    * @param string $attachmentGroup
    */
@@ -570,10 +616,10 @@ class InterconnectAttachment extends \Google\Collection
    * BPS_200M: 200 Mbit/s    - BPS_300M: 300 Mbit/s    - BPS_400M: 400 Mbit/s
    * - BPS_500M: 500 Mbit/s    - BPS_1G: 1 Gbit/s    - BPS_2G: 2 Gbit/s    -
    * BPS_5G: 5 Gbit/s    - BPS_10G: 10 Gbit/s    - BPS_20G: 20 Gbit/s    -
-   * BPS_50G: 50 Gbit/s    - BPS_100G: 100 Gbit/s
+   * BPS_50G: 50 Gbit/s    - BPS_100G: 100 Gbit/s    - BPS_400G: 400 Gbit/s
    *
    * Accepted values: BPS_100G, BPS_100M, BPS_10G, BPS_1G, BPS_200M, BPS_20G,
-   * BPS_2G, BPS_300M, BPS_400M, BPS_500M, BPS_50G, BPS_50M, BPS_5G
+   * BPS_2G, BPS_300M, BPS_400G, BPS_400M, BPS_500M, BPS_50G, BPS_50M, BPS_5G
    *
    * @param self::BANDWIDTH_* $bandwidth
    */
@@ -587,6 +633,84 @@ class InterconnectAttachment extends \Google\Collection
   public function getBandwidth()
   {
     return $this->bandwidth;
+  }
+  /**
+   * Single IPv4 address + prefix length to be configured on the cloud router
+   * interface for this interconnect attachment.        - Both
+   * candidate_cloud_router_ip_address and
+   * candidate_customer_router_ip_address fields must be set or both must be
+   * unset.    - Prefix length of both candidate_cloud_router_ip_address and
+   * candidate_customer_router_ip_address must be the same.    - Max prefix
+   * length is 31.
+   *
+   * @param string $candidateCloudRouterIpAddress
+   */
+  public function setCandidateCloudRouterIpAddress($candidateCloudRouterIpAddress)
+  {
+    $this->candidateCloudRouterIpAddress = $candidateCloudRouterIpAddress;
+  }
+  /**
+   * @return string
+   */
+  public function getCandidateCloudRouterIpAddress()
+  {
+    return $this->candidateCloudRouterIpAddress;
+  }
+  /**
+   * Single IPv6 address + prefix length to be configured on the cloud router
+   * interface for this interconnect attachment.        - Both
+   * candidate_cloud_router_ipv6_address and
+   * candidate_customer_router_ipv6_address fields must be set or both must be
+   * unset.    - Prefix length of both candidate_cloud_router_ipv6_address and
+   * candidate_customer_router_ipv6_address must be the same.    - Max prefix
+   * length is 126.
+   *
+   * @param string $candidateCloudRouterIpv6Address
+   */
+  public function setCandidateCloudRouterIpv6Address($candidateCloudRouterIpv6Address)
+  {
+    $this->candidateCloudRouterIpv6Address = $candidateCloudRouterIpv6Address;
+  }
+  /**
+   * @return string
+   */
+  public function getCandidateCloudRouterIpv6Address()
+  {
+    return $this->candidateCloudRouterIpv6Address;
+  }
+  /**
+   * Single IPv4 address + prefix length to be configured on the customer router
+   * interface for this interconnect attachment.
+   *
+   * @param string $candidateCustomerRouterIpAddress
+   */
+  public function setCandidateCustomerRouterIpAddress($candidateCustomerRouterIpAddress)
+  {
+    $this->candidateCustomerRouterIpAddress = $candidateCustomerRouterIpAddress;
+  }
+  /**
+   * @return string
+   */
+  public function getCandidateCustomerRouterIpAddress()
+  {
+    return $this->candidateCustomerRouterIpAddress;
+  }
+  /**
+   * Single IPv6 address + prefix length to be configured on the customer router
+   * interface for this interconnect attachment.
+   *
+   * @param string $candidateCustomerRouterIpv6Address
+   */
+  public function setCandidateCustomerRouterIpv6Address($candidateCustomerRouterIpv6Address)
+  {
+    $this->candidateCustomerRouterIpv6Address = $candidateCustomerRouterIpv6Address;
+  }
+  /**
+   * @return string
+   */
+  public function getCandidateCustomerRouterIpv6Address()
+  {
+    return $this->candidateCustomerRouterIpv6Address;
   }
   /**
    * This field is not available.
@@ -628,8 +752,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->candidateSubnets;
   }
   /**
-   * [Output Only] IPv4 address + prefix length to be configured on Cloud Router
-   * Interface for this interconnect attachment.
+   * Output only. [Output Only] IPv4 address + prefix length to be configured on
+   * Cloud Router Interface for this interconnect attachment.
    *
    * @param string $cloudRouterIpAddress
    */
@@ -645,8 +769,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->cloudRouterIpAddress;
   }
   /**
-   * [Output Only] IPv6 address + prefix length to be configured on Cloud Router
-   * Interface for this interconnect attachment.
+   * Output only. [Output Only] IPv6 address + prefix length to be configured on
+   * Cloud Router Interface for this interconnect attachment.
    *
    * @param string $cloudRouterIpv6Address
    */
@@ -678,8 +802,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->cloudRouterIpv6InterfaceId;
   }
   /**
-   * [Output Only] Constraints for this attachment, if any. The attachment does
-   * not work if these constraints are not met.
+   * Output only. [Output Only] Constraints for this attachment, if any. The
+   * attachment does not work if these constraints are not met.
    *
    * @param InterconnectAttachmentConfigurationConstraints $configurationConstraints
    */
@@ -695,7 +819,7 @@ class InterconnectAttachment extends \Google\Collection
     return $this->configurationConstraints;
   }
   /**
-   * [Output Only] Creation timestamp inRFC3339 text format.
+   * Output only. [Output Only] Creation timestamp inRFC3339 text format.
    *
    * @param string $creationTimestamp
    */
@@ -711,8 +835,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->creationTimestamp;
   }
   /**
-   * [Output Only] IPv4 address + prefix length to be configured on the customer
-   * router subinterface for this interconnect attachment.
+   * Output only. [Output Only] IPv4 address + prefix length to be configured on
+   * the customer router subinterface for this interconnect attachment.
    *
    * @param string $customerRouterIpAddress
    */
@@ -728,8 +852,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->customerRouterIpAddress;
   }
   /**
-   * [Output Only] IPv6 address + prefix length to be configured on the customer
-   * router subinterface for this interconnect attachment.
+   * Output only. [Output Only] IPv6 address + prefix length to be configured on
+   * the customer router subinterface for this interconnect attachment.
    *
    * @param string $customerRouterIpv6Address
    */
@@ -761,9 +885,10 @@ class InterconnectAttachment extends \Google\Collection
     return $this->customerRouterIpv6InterfaceId;
   }
   /**
-   * [Output Only] Dataplane version for this InterconnectAttachment. This field
-   * is only present for Dataplane version 2 and higher. Absence of this field
-   * in the API output indicates that the Dataplane is version 1.
+   * Output only. [Output Only] Dataplane version for this
+   * InterconnectAttachment. This field is only present for Dataplane version 2
+   * and higher. Absence of this field in the API output indicates that the
+   * Dataplane is version 1.
    *
    * @param int $dataplaneVersion
    */
@@ -851,9 +976,9 @@ class InterconnectAttachment extends \Google\Collection
     return $this->encryption;
   }
   /**
-   * [Output Only] Google reference ID, to be used when raising support tickets
-   * with Google or otherwise to debug backend connectivity issues. [Deprecated]
-   * This field is not used.
+   * Output only. [Output Only] Google reference ID, to be used when raising
+   * support tickets with Google or otherwise to debug backend connectivity
+   * issues. [Deprecated] This field is not used.
    *
    * @deprecated
    * @param string $googleReferenceId
@@ -871,8 +996,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->googleReferenceId;
   }
   /**
-   * [Output Only] The unique identifier for the resource. This identifier is
-   * defined by the server.
+   * Output only. [Output Only] The unique identifier for the resource. This
+   * identifier is defined by the server.
    *
    * @param string $id
    */
@@ -933,8 +1058,8 @@ class InterconnectAttachment extends \Google\Collection
     return $this->ipsecInternalAddresses;
   }
   /**
-   * [Output Only] Type of the resource. Alwayscompute#interconnectAttachment
-   * for interconnect attachments.
+   * Output only. [Output Only] Type of the resource.
+   * Alwayscompute#interconnectAttachment for interconnect attachments.
    *
    * @param string $kind
    */
@@ -1054,11 +1179,11 @@ class InterconnectAttachment extends \Google\Collection
     return $this->name;
   }
   /**
-   * [Output Only] The current status of whether or not this interconnect
-   * attachment is functional, which can take one of the following values:
-   * - OS_ACTIVE: The attachment has been turned up and is ready to    use.
-   * - OS_UNPROVISIONED: The attachment is not ready to use yet,    because
-   * turnup is not complete.
+   * Output only. [Output Only] The current status of whether or not this
+   * interconnect attachment is functional, which can take one of the following
+   * values:        - OS_ACTIVE: The attachment has been turned up and is ready
+   * to    use.     - OS_UNPROVISIONED: The attachment is not ready to use yet,
+   * because turnup is not complete.
    *
    * Accepted values: OS_ACTIVE, OS_UNPROVISIONED
    *
@@ -1148,9 +1273,9 @@ class InterconnectAttachment extends \Google\Collection
     return $this->partnerMetadata;
   }
   /**
-   * [Output Only] Information specific to an InterconnectAttachment. This
-   * property is populated if the interconnect that this is attached to is of
-   * type DEDICATED.
+   * Output only. [Output Only] Information specific to an
+   * InterconnectAttachment. This property is populated if the interconnect that
+   * this is attached to is of type DEDICATED.
    *
    * @param InterconnectAttachmentPrivateInfo $privateInterconnectInfo
    */
@@ -1166,9 +1291,9 @@ class InterconnectAttachment extends \Google\Collection
     return $this->privateInterconnectInfo;
   }
   /**
-   * [Output Only] URL of the region where the regional interconnect attachment
-   * resides. You must specify this field as part of the HTTP request URL. It is
-   * not settable as a field in the request body.
+   * Output only. [Output Only] URL of the region where the regional
+   * interconnect attachment resides. You must specify this field as part of the
+   * HTTP request URL. It is not settable as a field in the request body.
    *
    * @param string $region
    */
@@ -1184,9 +1309,10 @@ class InterconnectAttachment extends \Google\Collection
     return $this->region;
   }
   /**
-   * [Output Only] If the attachment is on a Cross-Cloud Interconnect
-   * connection, this field contains the interconnect's remote location service
-   * provider. Example values: "Amazon Web Services" "Microsoft Azure".
+   * Output only. [Output Only] If the attachment is on a Cross-Cloud
+   * Interconnect connection, this field contains the interconnect's remote
+   * location service provider. Example values: "Amazon Web Services" "Microsoft
+   * Azure".
    *
    * The field is set only for attachments on Cross-Cloud Interconnect
    * connections. Its value is copied from the InterconnectRemoteLocation
@@ -1225,7 +1351,7 @@ class InterconnectAttachment extends \Google\Collection
     return $this->router;
   }
   /**
-   * [Output Only] Reserved for future use.
+   * Output only. [Output Only] Reserved for future use.
    *
    * @param bool $satisfiesPzs
    */
@@ -1241,7 +1367,7 @@ class InterconnectAttachment extends \Google\Collection
     return $this->satisfiesPzs;
   }
   /**
-   * [Output Only] Server-defined URL for the resource.
+   * Output only. [Output Only] Server-defined URL for the resource.
    *
    * @param string $selfLink
    */
@@ -1279,23 +1405,23 @@ class InterconnectAttachment extends \Google\Collection
     return $this->stackType;
   }
   /**
-   * [Output Only] The current state of this attachment's functionality. Enum
-   * values ACTIVE and UNPROVISIONED are shared by DEDICATED/PRIVATE, PARTNER,
-   * and PARTNER_PROVIDER interconnect attachments, while enum values
-   * PENDING_PARTNER, PARTNER_REQUEST_RECEIVED, and PENDING_CUSTOMER are used
-   * for only PARTNER and PARTNER_PROVIDER interconnect attachments. This state
-   * can take one of the following values:        - ACTIVE: The attachment has
-   * been turned up and is ready to use.    - UNPROVISIONED: The attachment is
-   * not ready to use yet, because turnup    is not complete.    -
-   * PENDING_PARTNER: A newly-created PARTNER attachment that has not yet
-   * been configured on the Partner side.    - PARTNER_REQUEST_RECEIVED: A
-   * PARTNER attachment is in the process of    provisioning after a
-   * PARTNER_PROVIDER attachment was created that    references it.     -
-   * PENDING_CUSTOMER: A PARTNER or PARTNER_PROVIDER    attachment that is
-   * waiting for a customer to activate it.     - DEFUNCT:    The attachment was
-   * deleted externally and is no longer functional. This    could be because
-   * the associated Interconnect was removed, or because the    other side of a
-   * Partner attachment was deleted.
+   * Output only. [Output Only] The current state of this attachment's
+   * functionality. Enum values ACTIVE and UNPROVISIONED are shared by
+   * DEDICATED/PRIVATE, PARTNER, and PARTNER_PROVIDER interconnect attachments,
+   * while enum values PENDING_PARTNER, PARTNER_REQUEST_RECEIVED, and
+   * PENDING_CUSTOMER are used for only PARTNER and PARTNER_PROVIDER
+   * interconnect attachments. This state can take one of the following values:
+   * - ACTIVE: The attachment has been turned up and is ready to use.    -
+   * UNPROVISIONED: The attachment is not ready to use yet, because turnup    is
+   * not complete.    - PENDING_PARTNER: A newly-created PARTNER attachment that
+   * has not yet    been configured on the Partner side.    -
+   * PARTNER_REQUEST_RECEIVED: A PARTNER attachment is in the process of
+   * provisioning after a PARTNER_PROVIDER attachment was created that
+   * references it.     - PENDING_CUSTOMER: A PARTNER or PARTNER_PROVIDER
+   * attachment that is waiting for a customer to activate it.     - DEFUNCT:
+   * The attachment was deleted externally and is no longer functional. This
+   * could be because the associated Interconnect was removed, or because the
+   * other side of a Partner attachment was deleted.
    *
    * Accepted values: ACTIVE, DEFUNCT, PARTNER_REQUEST_RECEIVED,
    * PENDING_CUSTOMER, PENDING_PARTNER, STATE_UNSPECIFIED, UNPROVISIONED

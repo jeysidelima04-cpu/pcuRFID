@@ -54,6 +54,31 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    */
   public const INDUSTRY_VERTICAL_HEALTHCARE_FHIR = 'HEALTHCARE_FHIR';
   /**
+   * Defaults to `MARKETPLACE_AGENT_VISIBILITY_UNSPECIFIED`.
+   */
+  public const MARKETPLACE_AGENT_VISIBILITY_MARKETPLACE_AGENT_VISIBILITY_UNSPECIFIED = 'MARKETPLACE_AGENT_VISIBILITY_UNSPECIFIED';
+  /**
+   * Only agents that are currently available for use by the user are visible.
+   */
+  public const MARKETPLACE_AGENT_VISIBILITY_SHOW_AVAILABLE_AGENTS_ONLY = 'SHOW_AVAILABLE_AGENTS_ONLY';
+  /**
+   * Show marketplace agents that the user does not yet have access to but are
+   * integrated into the engine. This level also includes all agents visible
+   * with `SHOW_AVAILABLE_AGENTS_ONLY`.
+   */
+  public const MARKETPLACE_AGENT_VISIBILITY_SHOW_AGENTS_ALREADY_INTEGRATED = 'SHOW_AGENTS_ALREADY_INTEGRATED';
+  /**
+   * Show all agents visible with `SHOW_AGENTS_ALREADY_INTEGRATED`, plus agents
+   * that have already been purchased by the project/organization, even if they
+   * are not currently integrated into the engine.
+   */
+  public const MARKETPLACE_AGENT_VISIBILITY_SHOW_AGENTS_ALREADY_PURCHASED = 'SHOW_AGENTS_ALREADY_PURCHASED';
+  /**
+   * All agents in the marketplace are visible, regardless of access or purchase
+   * status. This level encompasses all agents shown in the previous levels.
+   */
+  public const MARKETPLACE_AGENT_VISIBILITY_SHOW_ALL_AGENTS = 'SHOW_ALL_AGENTS';
+  /**
    * Default value.
    */
   public const SOLUTION_TYPE_SOLUTION_TYPE_UNSPECIFIED = 'SOLUTION_TYPE_UNSPECIFIED';
@@ -75,6 +100,10 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * `SOLUTION_TYPE_CHAT` solution.
    */
   public const SOLUTION_TYPE_SOLUTION_TYPE_GENERATIVE_CHAT = 'SOLUTION_TYPE_GENERATIVE_CHAT';
+  /**
+   * Used for AI Mode.
+   */
+  public const SOLUTION_TYPE_SOLUTION_TYPE_AI_MODE = 'SOLUTION_TYPE_AI_MODE';
   protected $collection_key = 'dataStoreIds';
   /**
    * Optional. Immutable. This the application type which this engine resource
@@ -98,6 +127,14 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * @var string
    */
   public $configurableBillingApproach;
+  /**
+   * Optional. Maps a connector ID (e.g., "hybrid-github", "shopify") to tenant-
+   * specific information required for that connector. The structure of the
+   * tenant information string is connector-dependent.
+   *
+   * @var string[]
+   */
+  public $connectorTenantInfo;
   /**
    * Output only. Timestamp the Recommendation Engine was created at.
    *
@@ -136,9 +173,10 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * state settings are ignored. * `agent-gallery` * `no-code-agent-builder` *
    * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` *
    * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-
-   * sharing` * `personalization-memory` * `disable-agent-sharing` * `disable-
-   * image-generation` * `disable-video-generation` * `disable-onedrive-upload`
-   * * `disable-talk-to-content` * `disable-google-drive-upload`
+   * sharing` * `personalization-memory` * `personalization-suggested-
+   * highlights` * `disable-agent-sharing` * `disable-image-generation` *
+   * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-
+   * content` * `disable-google-drive-upload` * `disable-welcome-emails`
    *
    * @var string[]
    */
@@ -151,6 +189,14 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * @var string
    */
   public $industryVertical;
+  protected $knowledgeGraphConfigType = GoogleCloudDiscoveryengineV1EngineKnowledgeGraphConfig::class;
+  protected $knowledgeGraphConfigDataType = '';
+  /**
+   * Optional. The visibility of marketplace agents in the agent gallery.
+   *
+   * @var string
+   */
+  public $marketplaceAgentVisibility;
   protected $mediaRecommendationEngineConfigType = GoogleCloudDiscoveryengineV1EngineMediaRecommendationEngineConfig::class;
   protected $mediaRecommendationEngineConfigDataType = '';
   /**
@@ -175,6 +221,14 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * @var string
    */
   public $name;
+  protected $observabilityConfigType = GoogleCloudDiscoveryengineV1ObservabilityConfig::class;
+  protected $observabilityConfigDataType = '';
+  /**
+   * Optional. The email of the procurement contact.
+   *
+   * @var string
+   */
+  public $procurementContactEmail;
   protected $searchEngineConfigType = GoogleCloudDiscoveryengineV1EngineSearchEngineConfig::class;
   protected $searchEngineConfigDataType = '';
   /**
@@ -296,6 +350,24 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
     return $this->configurableBillingApproach;
   }
   /**
+   * Optional. Maps a connector ID (e.g., "hybrid-github", "shopify") to tenant-
+   * specific information required for that connector. The structure of the
+   * tenant information string is connector-dependent.
+   *
+   * @param string[] $connectorTenantInfo
+   */
+  public function setConnectorTenantInfo($connectorTenantInfo)
+  {
+    $this->connectorTenantInfo = $connectorTenantInfo;
+  }
+  /**
+   * @return string[]
+   */
+  public function getConnectorTenantInfo()
+  {
+    return $this->connectorTenantInfo;
+  }
+  /**
    * Output only. Timestamp the Recommendation Engine was created at.
    *
    * @param string $createTime
@@ -373,9 +445,10 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * state settings are ignored. * `agent-gallery` * `no-code-agent-builder` *
    * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` *
    * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-
-   * sharing` * `personalization-memory` * `disable-agent-sharing` * `disable-
-   * image-generation` * `disable-video-generation` * `disable-onedrive-upload`
-   * * `disable-talk-to-content` * `disable-google-drive-upload`
+   * sharing` * `personalization-memory` * `personalization-suggested-
+   * highlights` * `disable-agent-sharing` * `disable-image-generation` *
+   * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-
+   * content` * `disable-google-drive-upload` * `disable-welcome-emails`
    *
    * @param string[] $features
    */
@@ -410,6 +483,43 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
   public function getIndustryVertical()
   {
     return $this->industryVertical;
+  }
+  /**
+   * Optional. Configurations for the Knowledge Graph. Only applicable if
+   * solution_type is SOLUTION_TYPE_SEARCH.
+   *
+   * @param GoogleCloudDiscoveryengineV1EngineKnowledgeGraphConfig $knowledgeGraphConfig
+   */
+  public function setKnowledgeGraphConfig(GoogleCloudDiscoveryengineV1EngineKnowledgeGraphConfig $knowledgeGraphConfig)
+  {
+    $this->knowledgeGraphConfig = $knowledgeGraphConfig;
+  }
+  /**
+   * @return GoogleCloudDiscoveryengineV1EngineKnowledgeGraphConfig
+   */
+  public function getKnowledgeGraphConfig()
+  {
+    return $this->knowledgeGraphConfig;
+  }
+  /**
+   * Optional. The visibility of marketplace agents in the agent gallery.
+   *
+   * Accepted values: MARKETPLACE_AGENT_VISIBILITY_UNSPECIFIED,
+   * SHOW_AVAILABLE_AGENTS_ONLY, SHOW_AGENTS_ALREADY_INTEGRATED,
+   * SHOW_AGENTS_ALREADY_PURCHASED, SHOW_ALL_AGENTS
+   *
+   * @param self::MARKETPLACE_AGENT_VISIBILITY_* $marketplaceAgentVisibility
+   */
+  public function setMarketplaceAgentVisibility($marketplaceAgentVisibility)
+  {
+    $this->marketplaceAgentVisibility = $marketplaceAgentVisibility;
+  }
+  /**
+   * @return self::MARKETPLACE_AGENT_VISIBILITY_*
+   */
+  public function getMarketplaceAgentVisibility()
+  {
+    return $this->marketplaceAgentVisibility;
   }
   /**
    * Configurations for the Media Engine. Only applicable on the data stores
@@ -472,6 +582,38 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
     return $this->name;
   }
   /**
+   * Optional. Observability config for the engine.
+   *
+   * @param GoogleCloudDiscoveryengineV1ObservabilityConfig $observabilityConfig
+   */
+  public function setObservabilityConfig(GoogleCloudDiscoveryengineV1ObservabilityConfig $observabilityConfig)
+  {
+    $this->observabilityConfig = $observabilityConfig;
+  }
+  /**
+   * @return GoogleCloudDiscoveryengineV1ObservabilityConfig
+   */
+  public function getObservabilityConfig()
+  {
+    return $this->observabilityConfig;
+  }
+  /**
+   * Optional. The email of the procurement contact.
+   *
+   * @param string $procurementContactEmail
+   */
+  public function setProcurementContactEmail($procurementContactEmail)
+  {
+    $this->procurementContactEmail = $procurementContactEmail;
+  }
+  /**
+   * @return string
+   */
+  public function getProcurementContactEmail()
+  {
+    return $this->procurementContactEmail;
+  }
+  /**
    * Configurations for the Search Engine. Only applicable if solution_type is
    * SOLUTION_TYPE_SEARCH.
    *
@@ -492,7 +634,8 @@ class GoogleCloudDiscoveryengineV1Engine extends \Google\Collection
    * Required. The solutions of the engine.
    *
    * Accepted values: SOLUTION_TYPE_UNSPECIFIED, SOLUTION_TYPE_RECOMMENDATION,
-   * SOLUTION_TYPE_SEARCH, SOLUTION_TYPE_CHAT, SOLUTION_TYPE_GENERATIVE_CHAT
+   * SOLUTION_TYPE_SEARCH, SOLUTION_TYPE_CHAT, SOLUTION_TYPE_GENERATIVE_CHAT,
+   * SOLUTION_TYPE_AI_MODE
    *
    * @param self::SOLUTION_TYPE_* $solutionType
    */

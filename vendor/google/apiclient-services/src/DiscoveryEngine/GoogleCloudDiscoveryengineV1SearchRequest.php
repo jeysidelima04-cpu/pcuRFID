@@ -168,10 +168,11 @@ class GoogleCloudDiscoveryengineV1SearchRequest extends \Google\Collection
   /**
    * Optional. The categories associated with a category page. Must be set for
    * category navigation queries to achieve good search quality. The format
-   * should be the same as UserEvent.PageInfo.page_category. This field is the
-   * equivalent of the query for browse (navigation) queries. It's used by the
-   * browse model when the query is empty. If the field is empty, it will not be
-   * used by the browse model. To represent full path of a category, use '>'
+   * should be the same as PageInfo.page_category. This field is the equivalent
+   * of the query for browse (navigation) queries. It's used by the browse model
+   * when the query is empty. If the field is empty, it will not be used by the
+   * browse model. If the field contains more than one element, only the first
+   * element will be used. To represent full path of a category, use '>'
    * character to separate different hierarchies. If '>' is part of the category
    * name, replace it with other character(s). For example, `Graphics Cards >
    * RTX>4090 > Founders Edition` where "RTX > 4090" represents one level, can
@@ -290,10 +291,12 @@ class GoogleCloudDiscoveryengineV1SearchRequest extends \Google\Collection
   protected $relevanceScoreSpecType = GoogleCloudDiscoveryengineV1SearchRequestRelevanceScoreSpec::class;
   protected $relevanceScoreSpecDataType = '';
   /**
-   * The relevance threshold of the search results. Default to Google defined
-   * threshold, leveraging a balance of precision and recall to deliver both
-   * highly accurate results and comprehensive coverage of relevant information.
-   * This feature is not supported for healthcare search.
+   * The global relevance threshold of the search results. Defaults to Google
+   * defined threshold, leveraging a balance of precision and recall to deliver
+   * both highly accurate results and comprehensive coverage of relevant
+   * information. If more granular relevance filtering is required, use the
+   * `relevance_filter_spec` instead. This feature is not supported for
+   * healthcare search.
    *
    * @var string
    */
@@ -663,10 +666,11 @@ class GoogleCloudDiscoveryengineV1SearchRequest extends \Google\Collection
   /**
    * Optional. The categories associated with a category page. Must be set for
    * category navigation queries to achieve good search quality. The format
-   * should be the same as UserEvent.PageInfo.page_category. This field is the
-   * equivalent of the query for browse (navigation) queries. It's used by the
-   * browse model when the query is empty. If the field is empty, it will not be
-   * used by the browse model. To represent full path of a category, use '>'
+   * should be the same as PageInfo.page_category. This field is the equivalent
+   * of the query for browse (navigation) queries. It's used by the browse model
+   * when the query is empty. If the field is empty, it will not be used by the
+   * browse model. If the field contains more than one element, only the first
+   * element will be used. To represent full path of a category, use '>'
    * character to separate different hierarchies. If '>' is part of the category
    * name, replace it with other character(s). For example, `Graphics Cards >
    * RTX>4090 > Founders Edition` where "RTX > 4090" represents one level, can
@@ -887,10 +891,12 @@ class GoogleCloudDiscoveryengineV1SearchRequest extends \Google\Collection
     return $this->relevanceScoreSpec;
   }
   /**
-   * The relevance threshold of the search results. Default to Google defined
-   * threshold, leveraging a balance of precision and recall to deliver both
-   * highly accurate results and comprehensive coverage of relevant information.
-   * This feature is not supported for healthcare search.
+   * The global relevance threshold of the search results. Defaults to Google
+   * defined threshold, leveraging a balance of precision and recall to deliver
+   * both highly accurate results and comprehensive coverage of relevant
+   * information. If more granular relevance filtering is required, use the
+   * `relevance_filter_spec` instead. This feature is not supported for
+   * healthcare search.
    *
    * Accepted values: RELEVANCE_THRESHOLD_UNSPECIFIED, LOWEST, LOW, MEDIUM, HIGH
    *

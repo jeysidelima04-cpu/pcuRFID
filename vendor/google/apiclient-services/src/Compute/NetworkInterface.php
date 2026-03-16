@@ -77,6 +77,13 @@ class NetworkInterface extends \Google\Collection
   protected $aliasIpRangesType = AliasIpRange::class;
   protected $aliasIpRangesDataType = 'array';
   /**
+   * Optional. If true, DNS resolution will be enabled over this interface. Only
+   * valid with network_attachment.
+   *
+   * @var bool
+   */
+  public $enableVpcScopedDns;
+  /**
    * Fingerprint hash of contents stored in this network interface. This field
    * will be ignored when inserting an Instance or adding a NetworkInterface. An
    * up-to-date fingerprint must be provided in order to update
@@ -103,9 +110,9 @@ class NetworkInterface extends \Google\Collection
   protected $ipv6AccessConfigsType = AccessConfig::class;
   protected $ipv6AccessConfigsDataType = 'array';
   /**
-   * [Output Only] One of EXTERNAL, INTERNAL to indicate whether the IP can be
-   * accessed from the Internet. This field is always inherited from its
-   * subnetwork.
+   * Output only. [Output Only] One of EXTERNAL, INTERNAL to indicate whether
+   * the IP can be accessed from the Internet. This field is always inherited
+   * from its subnetwork.
    *
    * Valid only if stackType is IPV4_IPV6.
    *
@@ -122,8 +129,8 @@ class NetworkInterface extends \Google\Collection
    */
   public $ipv6Address;
   /**
-   * [Output Only] Type of the resource. Alwayscompute#networkInterface for
-   * network interfaces.
+   * Output only. [Output Only] Type of the resource.
+   * Alwayscompute#networkInterface for network interfaces.
    *
    * @var string
    */
@@ -258,6 +265,23 @@ class NetworkInterface extends \Google\Collection
     return $this->aliasIpRanges;
   }
   /**
+   * Optional. If true, DNS resolution will be enabled over this interface. Only
+   * valid with network_attachment.
+   *
+   * @param bool $enableVpcScopedDns
+   */
+  public function setEnableVpcScopedDns($enableVpcScopedDns)
+  {
+    $this->enableVpcScopedDns = $enableVpcScopedDns;
+  }
+  /**
+   * @return bool
+   */
+  public function getEnableVpcScopedDns()
+  {
+    return $this->enableVpcScopedDns;
+  }
+  /**
    * Fingerprint hash of contents stored in this network interface. This field
    * will be ignored when inserting an Instance or adding a NetworkInterface. An
    * up-to-date fingerprint must be provided in order to update
@@ -333,9 +357,9 @@ class NetworkInterface extends \Google\Collection
     return $this->ipv6AccessConfigs;
   }
   /**
-   * [Output Only] One of EXTERNAL, INTERNAL to indicate whether the IP can be
-   * accessed from the Internet. This field is always inherited from its
-   * subnetwork.
+   * Output only. [Output Only] One of EXTERNAL, INTERNAL to indicate whether
+   * the IP can be accessed from the Internet. This field is always inherited
+   * from its subnetwork.
    *
    * Valid only if stackType is IPV4_IPV6.
    *
@@ -374,8 +398,8 @@ class NetworkInterface extends \Google\Collection
     return $this->ipv6Address;
   }
   /**
-   * [Output Only] Type of the resource. Alwayscompute#networkInterface for
-   * network interfaces.
+   * Output only. [Output Only] Type of the resource.
+   * Alwayscompute#networkInterface for network interfaces.
    *
    * @param string $kind
    */

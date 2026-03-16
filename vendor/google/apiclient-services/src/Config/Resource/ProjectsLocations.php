@@ -17,8 +17,10 @@
 
 namespace Google\Service\Config\Resource;
 
+use Google\Service\Config\AutoMigrationConfig;
 use Google\Service\Config\ListLocationsResponse;
 use Google\Service\Config\Location;
+use Google\Service\Config\Operation;
 
 /**
  * The "locations" collection of methods.
@@ -45,7 +47,27 @@ class ProjectsLocations extends \Google\Service\Resource
     return $this->call('get', [$params], Location::class);
   }
   /**
-   * Lists information about the supported locations for this service.
+   * Get the AutoMigrationConfig for a given project and location.
+   * (locations.getAutoMigrationConfig)
+   *
+   * @param string $name Required. The name of the AutoMigrationConfig. Format:
+   * 'projects/{project_id}/locations/{location}/AutoMigrationConfig'.
+   * @param array $optParams Optional parameters.
+   * @return AutoMigrationConfig
+   * @throws \Google\Service\Exception
+   */
+  public function getAutoMigrationConfig($name, $optParams = [])
+  {
+    $params = ['name' => $name];
+    $params = array_merge($params, $optParams);
+    return $this->call('getAutoMigrationConfig', [$params], AutoMigrationConfig::class);
+  }
+  /**
+   * Lists information about the supported locations for this service. This method
+   * can be called in two ways: * **List all public locations:** Use the path `GET
+   * /v1/locations`. * **List project-visible locations:** Use the path `GET
+   * /v1/projects/{project_id}/locations`. This may include public locations as
+   * well as private or other locations specifically visible to the project.
    * (locations.listProjectsLocations)
    *
    * @param string $name The resource that owns the locations collection, if
@@ -70,6 +92,26 @@ class ProjectsLocations extends \Google\Service\Resource
     $params = ['name' => $name];
     $params = array_merge($params, $optParams);
     return $this->call('list', [$params], ListLocationsResponse::class);
+  }
+  /**
+   * Updates the AutoMigrationConfig for a given project and location.
+   * (locations.updateAutoMigrationConfig)
+   *
+   * @param string $name Identifier. The name of the AutoMigrationConfig. Format:
+   * 'projects/{project_id}/locations/{location}/AutoMigrationConfig'.
+   * @param AutoMigrationConfig $postBody
+   * @param array $optParams Optional parameters.
+   *
+   * @opt_param string updateMask Optional. The update mask applies to the
+   * resource. See google.protobuf.FieldMask.
+   * @return Operation
+   * @throws \Google\Service\Exception
+   */
+  public function updateAutoMigrationConfig($name, AutoMigrationConfig $postBody, $optParams = [])
+  {
+    $params = ['name' => $name, 'postBody' => $postBody];
+    $params = array_merge($params, $optParams);
+    return $this->call('updateAutoMigrationConfig', [$params], Operation::class);
   }
 }
 
