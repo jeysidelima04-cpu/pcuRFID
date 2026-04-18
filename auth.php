@@ -101,7 +101,7 @@ function handleSignup(): void {
     $_POST['student_type'] = 'college'; // Ensure college type is set
 
     // Check duplicates by email only. New accounts are assigned TEMP IDs until admin verification.
-    $stmt = $pdo->prepare('SELECT id, email, student_id, role, verification_status FROM users WHERE email = :email LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, email, student_id, role, verification_status FROM users WHERE email = :email AND deleted_at IS NULL LIMIT 1');
     $stmt->execute([':email' => $email]);
     $existing = $stmt->fetch();
     
@@ -200,7 +200,7 @@ function handleLogin(): void {
     if (!$email || !$password) {
         redirect_error('login.php', 'Please enter email and password.');
     }
-    $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email AND deleted_at IS NULL LIMIT 1');
     $stmt->execute([':email' => $email]);
     $user = $stmt->fetch();
 

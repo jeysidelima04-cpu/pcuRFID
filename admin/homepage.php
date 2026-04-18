@@ -16,7 +16,7 @@ try {
     $query = '
         SELECT id, student_id, name, email, course, status, role, rfid_uid, rfid_registered_at, profile_picture
         FROM users 
-        WHERE role = "Student" AND rfid_uid IS NULL AND status = "Active"
+        WHERE role = "Student" AND rfid_uid IS NULL AND status = "Active" AND deleted_at IS NULL
         ORDER BY created_at DESC
     ';
     $stmt = $pdo->prepare($query);
@@ -28,7 +28,7 @@ try {
     $queryAll = '
         SELECT id, student_id, name, email, course, status, role, rfid_uid, rfid_registered_at, profile_picture, face_registered, face_registered_at
         FROM users 
-        WHERE role = "Student" AND status = "Active"
+        WHERE role = "Student" AND status = "Active" AND deleted_at IS NULL
         ORDER BY created_at DESC
     ';
     $stmtAll = $pdo->prepare($queryAll);
@@ -36,7 +36,7 @@ try {
     $allStudents = $stmtAll->fetchAll(\PDO::FETCH_ASSOC);
     
     // Get registered cards count (only Active students)
-    $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL AND status = "Active"');
+    $stmt = $pdo->query('SELECT COUNT(*) FROM users WHERE role = "Student" AND rfid_uid IS NOT NULL AND status = "Active" AND deleted_at IS NULL');
     $registeredCount = $stmt->fetchColumn();
     
     // Auto-populate rfid_cards table with existing RFID registrations
@@ -48,6 +48,7 @@ try {
             FROM users u
             LEFT JOIN rfid_cards rc ON u.id = rc.user_id
             WHERE u.role = 'Student' 
+            AND u.deleted_at IS NULL
             AND u.rfid_uid IS NOT NULL 
             AND rc.user_id IS NULL
         ");
@@ -84,7 +85,7 @@ try {
     $stmt = $pdo->prepare('SELECT id, student_id, name, email, rfid_uid, violation_count, 
                            COALESCE(active_violations_count, 0) as active_violations_count
                            FROM users 
-                           WHERE role = "Student" AND COALESCE(active_violations_count, 0) > 0
+                           WHERE role = "Student" AND deleted_at IS NULL AND COALESCE(active_violations_count, 0) > 0
                            ORDER BY COALESCE(active_violations_count, 0) DESC, violation_count DESC, name ASC');
     $stmt->execute([]);
     $violationAlerts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -1383,6 +1384,47 @@ $activeSection = $_GET['section'] ?? 'students';
                 </div>
             </div>
 
+            <div class="glass-card rounded-2xl overflow-hidden mt-6">
+                <div class="p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Live Violation History</h2>
+                            <p class="text-sm text-slate-500">Realtime list of recorded student violations</p>
+                        </div>
+                        <div class="flex-1 sm:max-w-md">
+                            <input
+                                type="text"
+                                id="liveViolationSearch"
+                                placeholder="Search name, student ID, email, RFID, course, year, semester, violation..."
+                                class="w-full h-11 px-4 rounded-lg border border-slate-200 bg-white/80 text-slate-800 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                                autocomplete="off"
+                            >
+                            <p id="liveViolationMeta" class="text-xs text-slate-400 mt-2">Loading...</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-xl border border-white/60 bg-white/50">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-white/70 text-slate-600">
+                                <tr>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="created_at">Date</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="student_name">Student</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="student_id">Student ID</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="email">Email</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="rfid_uid">RFID UID</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="course">Course</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="year_level">Year</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="current_semester">Semester</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="violation_name">Violation</th>
+                                    <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort-key="offense_category">Offense Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liveViolationTbody" class="divide-y divide-slate-100 bg-white/40"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         <?php elseif ($activeSection === 'analytics'): ?>
         <!-- ═══ ANALYTICS SECTION ══════════════════════════════════════════════ -->
 
@@ -1904,7 +1946,7 @@ $activeSection = $_GET['section'] ?? 'students';
                     SELECT u.id, u.name, u.student_id, u.email, u.profile_picture, u.face_registered_at,
                            (SELECT COUNT(*) FROM face_descriptors fd WHERE fd.user_id = u.id AND fd.is_active = 1) AS descriptor_count
                     FROM users u
-                    WHERE u.role = 'Student' AND u.status = 'Active' AND u.face_registered = 1
+                                        WHERE u.role = 'Student' AND u.status = 'Active' AND u.deleted_at IS NULL AND u.face_registered = 1
                       AND u.face_registered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                     ORDER BY u.face_registered_at DESC
                     LIMIT 10
@@ -2114,7 +2156,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                     SELECT u.id, u.student_id, u.name, u.email, u.profile_picture, u.face_registered,
                                            (SELECT COUNT(*) FROM face_descriptors fd WHERE fd.user_id = u.id AND fd.is_active = 1) as descriptor_count
                                     FROM users u
-                                    WHERE u.role = 'Student' AND u.status = 'Active'
+                                     WHERE u.role = 'Student' AND u.status = 'Active' AND u.deleted_at IS NULL
                                     ORDER BY u.face_registered ASC, u.name ASC
                                 ")->fetchAll(\PDO::FETCH_ASSOC);
                             } catch (\PDOException $e) {
@@ -2247,6 +2289,36 @@ $activeSection = $_GET['section'] ?? 'students';
                             <option value="BS Nursing">BS Nursing</option>
                             <option value="BS Criminology">BS Criminology</option>
                             <option value="BS Social Work">BS Social Work</option>
+                        </select>
+                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400" aria-hidden="true">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0l-4.25-4.51a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <label for="rfidYearInput" class="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                    <input
+                        type="text"
+                        id="rfidYearInput"
+                        oninput="debouncedValidateRfidEligibility()"
+                        class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter year (e.g., 1st Year)"
+                        autocomplete="off"
+                    >
+                </div>
+                <div>
+                    <label for="rfidSemesterInput" class="block text-sm font-medium text-slate-700 mb-1">Semester</label>
+                    <div class="relative">
+                        <select
+                            id="rfidSemesterInput"
+                            onchange="debouncedValidateRfidEligibility()"
+                            class="w-full appearance-none px-4 py-2.5 pr-10 border border-slate-300 rounded-lg bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="">-- Select Semester --</option>
+                            <option value="1st">1st Semester</option>
+                            <option value="2nd">2nd Semester</option>
                         </select>
                         <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400" aria-hidden="true">
                             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -3041,6 +3113,8 @@ function openCardRegistration(studentId, studentCode = '', studentName = '', stu
     resetRfidStudentLookupCache();
 
     const courseInput = document.getElementById('rfidCourseInput');
+    const yearInput = document.getElementById('rfidYearInput');
+    const semesterInput = document.getElementById('rfidSemesterInput');
     const studentIdInput = document.getElementById('rfidStudentIdInput');
     const fullNameInput = document.getElementById('rfidFullNameInput');
     const proceedBtn = document.getElementById('rfidProceedBtn');
@@ -3049,12 +3123,14 @@ function openCardRegistration(studentId, studentCode = '', studentName = '', stu
         ensureRfidCourseOption(courseInput, currentStudentContext.course);
         courseInput.value = currentStudentContext.course || '';
     }
+    if (yearInput) yearInput.value = '';
+    if (semesterInput) semesterInput.value = '';
     if (studentIdInput) studentIdInput.value = currentStudentContext.studentId;
     if (fullNameInput) fullNameInput.value = currentStudentContext.fullName;
     if (proceedBtn) proceedBtn.disabled = true;
 
     showRfidPrecheckPanel();
-    setRfidCheckMessage('Enter Course, Student ID, and Full Name to validate this account.', 'info');
+    setRfidCheckMessage('Enter Course, Year, Semester, Student ID, and Full Name to validate this account.', 'info');
     setRfidStudentIdRealtimeMessage('Enter Student ID to check enrollment and avoid duplicate registration.', 'info');
 
     document.getElementById('cardModal').classList.remove('hidden');
@@ -3108,7 +3184,7 @@ function closeCardModal() {
     currentStudentContext = null;
     currentRfidEligibility = { eligible: false, studentUserId: null, resolvedStudentId: null };
     resetRfidStudentLookupCache();
-    setRfidCheckMessage('Enter Course, Student ID, and Full Name to validate this account.', 'info');
+    setRfidCheckMessage('Enter Course, Year, Semester, Student ID, and Full Name to validate this account.', 'info');
     setRfidStudentIdRealtimeMessage('Enter Student ID to check enrollment and avoid duplicate registration.', 'info');
 }
 
@@ -3121,15 +3197,19 @@ function debouncedValidateRfidEligibility() {
 
 async function validateRfidEligibility() {
     const courseInput = document.getElementById('rfidCourseInput');
+    const yearInput = document.getElementById('rfidYearInput');
+    const semesterInput = document.getElementById('rfidSemesterInput');
     const studentIdInput = document.getElementById('rfidStudentIdInput');
     const fullNameInput = document.getElementById('rfidFullNameInput');
     const proceedBtn = document.getElementById('rfidProceedBtn');
 
-    if (!courseInput || !studentIdInput || !fullNameInput || !proceedBtn) {
+    if (!courseInput || !yearInput || !semesterInput || !studentIdInput || !fullNameInput || !proceedBtn) {
         return;
     }
 
     const course = courseInput.value.trim();
+    const yearLevel = yearInput.value.trim();
+    const currentSemester = semesterInput.value.trim();
     const studentCode = studentIdInput.value.trim();
     const fullName = fullNameInput.value.trim();
 
@@ -3175,6 +3255,11 @@ async function validateRfidEligibility() {
 
     if (!course || !fullName) {
         setRfidCheckMessage('Student ID verified. Complete Course and Full Name to proceed.', 'warning');
+        return;
+    }
+
+    if (!yearLevel || !currentSemester) {
+        setRfidCheckMessage('Student ID verified. Complete Year and Semester to proceed.', 'warning');
         return;
     }
 
@@ -3354,7 +3439,10 @@ function registerCard(studentId, uid, resolvedStudentId = null) {
         body: JSON.stringify({
             student_id: studentId,
             rfid_uid: uid,
-            student_code: resolvedStudentId
+            student_code: resolvedStudentId,
+            course: document.getElementById('rfidCourseInput')?.value?.trim() || '',
+            year_level: document.getElementById('rfidYearInput')?.value?.trim() || '',
+            current_semester: document.getElementById('rfidSemesterInput')?.value?.trim() || ''
         })
     })
     .then(response => response.json())
@@ -4322,6 +4410,210 @@ async function resolveAllViolations(studentId) {
 }
 
 // ===== END VIOLATION MANAGEMENT =====
+
+// ===== LIVE VIOLATION HISTORY (REALTIME TABLE) =====
+
+let liveViolationRows = [];
+let liveViolationSeenIds = new Set();
+let liveViolationAfterId = 0;
+let liveViolationLatestServerId = 0;
+let liveViolationPollTimer = null;
+let liveViolationSearchText = '';
+let liveViolationSort = { key: 'created_at', dir: 'desc' };
+
+function liveViolationNormalize(value) {
+    return String(value ?? '').toLowerCase().trim();
+}
+
+function liveViolationCompare(a, b, key, dir) {
+    const direction = dir === 'asc' ? 1 : -1;
+    const va = a?.[key];
+    const vb = b?.[key];
+
+    if (key === 'created_at') {
+        const ta = va ? Date.parse(va) : 0;
+        const tb = vb ? Date.parse(vb) : 0;
+        return (ta - tb) * direction;
+    }
+
+    const sa = liveViolationNormalize(va);
+    const sb = liveViolationNormalize(vb);
+    if (sa < sb) return -1 * direction;
+    if (sa > sb) return 1 * direction;
+    return 0;
+}
+
+function formatLiveViolationDate(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString();
+}
+
+function computeLiveViolationSearchHaystack(row) {
+    return [
+        row.created_at,
+        row.student_name,
+        row.student_id,
+        row.email,
+        row.rfid_uid,
+        row.course,
+        row.year_level,
+        row.current_semester,
+        row.violation_name,
+        row.offense_category,
+        row.offense_number
+    ].map(v => String(v ?? '')).join(' ').toLowerCase();
+}
+
+function renderLiveViolationTable() {
+    const tbody = document.getElementById('liveViolationTbody');
+    const meta = document.getElementById('liveViolationMeta');
+    if (!tbody || !meta) return;
+
+    const query = liveViolationNormalize(liveViolationSearchText);
+
+    let filtered = liveViolationRows;
+    if (query) {
+        filtered = liveViolationRows.filter(r => computeLiveViolationSearchHaystack(r).includes(query));
+    }
+
+    const sorted = [...filtered].sort((a, b) => liveViolationCompare(a, b, liveViolationSort.key, liveViolationSort.dir));
+
+    if (sorted.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="px-4 py-10 text-center text-slate-400">No violations found.</td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = sorted.map(r => {
+            const rfid = r.rfid_uid ? String(r.rfid_uid) : 'Not Registered';
+            return `
+                <tr class="hover:bg-white/60 transition-colors">
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(formatLiveViolationDate(r.created_at))}</td>
+                    <td class="px-4 py-3 text-slate-800 font-medium whitespace-nowrap">${escapeHtml(r.student_name || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(r.student_id || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(r.email || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap font-mono">${escapeHtml(rfid)}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(r.course || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(r.year_level || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(r.current_semester || '')}</td>
+                    <td class="px-4 py-3 text-slate-800 whitespace-nowrap">${escapeHtml(r.violation_name || '')}</td>
+                    <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escapeHtml(adminViolationTypeLabel(r.offense_category || ''))}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    const now = new Date();
+    const loaded = liveViolationRows.length;
+    const showing = sorted.length;
+    meta.textContent = `Loaded ${loaded} record${loaded !== 1 ? 's' : ''}. Showing ${showing}. Latest ID: ${liveViolationLatestServerId}. Updated: ${now.toLocaleTimeString()}`;
+}
+
+async function fetchLiveViolationRows({ initial = false } = {}) {
+    const url = new URL('live_violation_feed.php', window.location.href);
+    url.searchParams.set('after_id', String(initial ? 0 : liveViolationAfterId));
+    url.searchParams.set('limit', String(initial ? 1000 : 500));
+
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    const data = await res.json();
+    if (!data || !data.success) {
+        throw new Error(data?.error || 'Failed to fetch live violations');
+    }
+
+    liveViolationLatestServerId = Number(data.latest_id || liveViolationLatestServerId || 0);
+
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    if (rows.length === 0) {
+        // Keep afterId in sync even if there are currently no rows.
+        if (initial && liveViolationAfterId === 0) {
+            liveViolationAfterId = liveViolationLatestServerId;
+        }
+        return;
+    }
+
+    for (const row of rows) {
+        const id = Number(row?.id || 0);
+        if (!id || liveViolationSeenIds.has(id)) continue;
+        liveViolationSeenIds.add(id);
+        liveViolationRows.push(row);
+        if (id > liveViolationAfterId) liveViolationAfterId = id;
+    }
+}
+
+function attachLiveViolationSortHandlers() {
+    const tbody = document.getElementById('liveViolationTbody');
+    const table = tbody ? tbody.closest('table') : null;
+    const thead = table ? table.querySelector('thead') : null;
+    if (!thead) return;
+    const headers = thead.querySelectorAll('th[data-sort-key]');
+    headers.forEach(th => {
+        th.addEventListener('click', () => {
+            const key = th.getAttribute('data-sort-key') || 'created_at';
+            if (liveViolationSort.key === key) {
+                liveViolationSort.dir = liveViolationSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                liveViolationSort.key = key;
+                liveViolationSort.dir = key === 'created_at' ? 'desc' : 'asc';
+            }
+            renderLiveViolationTable();
+        });
+    });
+}
+
+function initLiveViolationHistoryTable() {
+    const tbody = document.getElementById('liveViolationTbody');
+    const searchInput = document.getElementById('liveViolationSearch');
+    const meta = document.getElementById('liveViolationMeta');
+    if (!tbody || !searchInput || !meta) return;
+
+    attachLiveViolationSortHandlers();
+
+    let searchTimer = null;
+    searchInput.addEventListener('input', () => {
+        liveViolationSearchText = searchInput.value;
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => renderLiveViolationTable(), 120);
+    });
+
+    (async () => {
+        try {
+            meta.textContent = 'Loading...';
+            await fetchLiveViolationRows({ initial: true });
+            renderLiveViolationTable();
+
+            // Poll for new rows.
+            if (liveViolationPollTimer) clearInterval(liveViolationPollTimer);
+            liveViolationPollTimer = setInterval(async () => {
+                try {
+                    await fetchLiveViolationRows({ initial: false });
+                    renderLiveViolationTable();
+                } catch (e) {
+                    // Keep UI stable; transient network errors are expected.
+                    console.error('Live violation poll error:', e);
+                }
+            }, 3000);
+        } catch (e) {
+            console.error('Live violation init error:', e);
+            meta.textContent = 'Failed to load live violations.';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="px-4 py-10 text-center text-red-400">Failed to load violations.</td>
+                </tr>
+            `;
+        }
+    })();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('liveViolationTbody')) {
+        initLiveViolationHistoryTable();
+    }
+});
+
+// ===== END LIVE VIOLATION HISTORY =====
 
 // Approve student account
 function approveStudent(studentId, studentName) {

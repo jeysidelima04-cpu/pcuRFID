@@ -60,6 +60,24 @@ try {
         throw new \Exception('Student ID must be exactly 9 digits (numbers only).');
     }
 
+    $yearLevel = trim((string)($data['year_level'] ?? ''));
+    if ($yearLevel !== '' && strlen($yearLevel) > 20) {
+        throw new \Exception('Year must be 20 characters or fewer.');
+    }
+
+    $course = trim((string)($data['course'] ?? ''));
+    if ($course === '') {
+        throw new \Exception('Course is required.');
+    }
+    if (strlen($course) > 255) {
+        throw new \Exception('Course must be 255 characters or fewer.');
+    }
+
+    $currentSemester = trim((string)($data['current_semester'] ?? ''));
+    if ($currentSemester !== '' && !in_array($currentSemester, ['1st', '2nd'], true)) {
+        throw new \Exception('Semester must be 1st or 2nd.');
+    }
+
     // Preserve scanned value (no added/removed digits) and enforce strict format.
     $rfid_uid = trim((string)($data['rfid_uid'] ?? ''));
     
@@ -77,6 +95,26 @@ try {
     }
 
     $pdo = pdo();
+
+    // Ensure academic profile columns exist (safe for fresh installs that imported database.sql).
+    // IMPORTANT: Do NOT run ALTER TABLE inside an open transaction on MySQL/MariaDB because
+    // it causes an implicit commit, which breaks later commit/rollback calls.
+    try {
+        $columnsStmt = $pdo->query('SHOW COLUMNS FROM users');
+        $columns = $columnsStmt ? $columnsStmt->fetchAll(\PDO::FETCH_COLUMN, 0) : [];
+
+        if (!in_array('year_level', $columns, true)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN year_level VARCHAR(20) NULL");
+        }
+
+        if (!in_array('current_semester', $columns, true)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN current_semester ENUM('1st','2nd') NULL");
+        }
+    } catch (\PDOException $e) {
+        // Do not fail RFID registration on schema drift; log and proceed.
+        error_log('register_card ensure academic columns warning: ' . $e->getMessage());
+    }
+
     $pdo->beginTransaction();
 
     // Validate target user is an existing student before any write operations.
@@ -152,9 +190,30 @@ try {
         error_log('register_card duplicate check (rfid_cards) warning: ' . $e->getMessage());
     }
 
-    // Update user record with RFID UID, set registration timestamp, and status to Active
-    $stmt = $pdo->prepare('UPDATE users SET rfid_uid = ?, rfid_registered_at = NOW(), status = "Active" WHERE id = ? AND role = "Student"');
-    $success = $stmt->execute([$rfid_uid, $studentUserId]);
+    // Update user record with RFID UID + course + academic info, set registration timestamp, and status to Active.
+    // Academic fields are best-effort (columns may be absent on legacy installs).
+    $setClauses = ['rfid_uid = ?', 'rfid_registered_at = NOW()', 'status = "Active"', 'course = ?'];
+    $baseParams = [$rfid_uid, $course];
+
+    if ($yearLevel !== '' || $currentSemester !== '') {
+        try {
+            $sql = 'UPDATE users SET ' . implode(', ', array_merge($setClauses, [
+                'year_level = NULLIF(?, "")',
+                'current_semester = NULLIF(?, "")'
+            ])) . ' WHERE id = ? AND role = "Student"';
+            $stmt = $pdo->prepare($sql);
+            $success = $stmt->execute(array_merge($baseParams, [$yearLevel, $currentSemester, $studentUserId]));
+        } catch (\PDOException $e) {
+            error_log('register_card academic update warning: ' . $e->getMessage());
+            $sql = 'UPDATE users SET ' . implode(', ', $setClauses) . ' WHERE id = ? AND role = "Student"';
+            $stmt = $pdo->prepare($sql);
+            $success = $stmt->execute(array_merge($baseParams, [$studentUserId]));
+        }
+    } else {
+        $sql = 'UPDATE users SET ' . implode(', ', $setClauses) . ' WHERE id = ? AND role = "Student"';
+        $stmt = $pdo->prepare($sql);
+        $success = $stmt->execute(array_merge($baseParams, [$studentUserId]));
+    }
 
     if (!$success || $stmt->rowCount() === 0) {
         throw new \Exception('Student not found or failed to update record');
@@ -184,9 +243,19 @@ try {
     // Audit log
     $adminId = $_SESSION['admin_id'] ?? 0;
     $adminName = $_SESSION['admin_name'] ?? 'Admin';
-    logAuditAction($pdo, $adminId, $adminName, 'REGISTER_RFID', 'student', $studentUserId, $studentName,
+    $auditDetails = ['rfid_uid' => $rfid_uid, 'student_id' => $studentIdStr, 'course' => $course];
+    if ($yearLevel !== '') $auditDetails['year_level'] = $yearLevel;
+    if ($currentSemester !== '') $auditDetails['current_semester'] = $currentSemester;
+    logAuditAction(
+        $pdo,
+        $adminId,
+        $adminName,
+        'REGISTER_RFID',
+        'student',
+        $studentUserId,
+        $studentName,
         "Registered RFID card {$rfid_uid} to {$studentName} ({$studentIdStr})",
-        ['rfid_uid' => $rfid_uid, 'student_id' => $studentIdStr]
+        $auditDetails
     );
 
     $pdo->commit();

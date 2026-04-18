@@ -87,6 +87,7 @@ try {
         WHERE fd.is_active = 1
           AND u.role = 'Student'
           AND u.status = 'Active'
+                    AND u.deleted_at IS NULL
         ORDER BY fd.user_id, fd.label
     ");
     $stmt->execute();

@@ -1558,6 +1558,8 @@ CREATE TABLE `users` (
   `face_registered_at` timestamp NULL DEFAULT NULL,
   `active_violations_count` int(11) NOT NULL DEFAULT 0,
   `gate_mark_count` int(11) NOT NULL DEFAULT 0,
+  `terms_accepted_at` datetime DEFAULT NULL,
+  `terms_version` varchar(32) DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `student_id` (`student_id`),
@@ -1590,7 +1592,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'ADMIN001','System Admin','admin@pcu.edu.ph',NULL,NULL,'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','Admin','Active',NULL,0,NULL,'2026-02-04 10:52:03','2026-02-04 10:52:03',NULL,NULL,NULL,NULL,0,0,NULL,0,0,NULL),(2,'202232903','Mark Jason Briones Ramoss','mrk.jason118@gmail.com','BS Information Technology','117931670655597175684','$2y$10$FNjaXw2zWHfTRMYeYOu1j.6SewRlL7KfwJG1xR6iDl8p8UXXWydg2','Student','Active',NULL,0,'2026-04-06 20:42:59','2026-02-04 11:27:36','2026-04-06 12:42:59','573a472de056478a7fd5e57d2c593268.jpg',NULL,'0014973874','2026-02-21 04:50:18',9,1,'2026-03-19 11:56:30',0,0,NULL),(3,'ADMIN-001','System Administrator','jeysidelima04@gmail.com',NULL,NULL,'$argon2id$v=19$m=65536,t=4,p=1$UVEucG03OUZENEVPNlhvSA$9l8SnovYbeEdFd1TovGNvhpiQMCP2PdRtmsx1d1Ttwk','Admin','Active',NULL,0,NULL,'2026-02-04 11:44:42','2026-03-17 13:20:52',NULL,NULL,NULL,NULL,0,0,NULL,0,0,NULL),(5,'TEMP-1770538459','Joshua Morales','morales.josh133@gmail.com',NULL,'108230023574228583644','$2y$10$7GlTtRmZWWKMw5.q49u7uutm01nLCmdYMyMndMFgdLaMfhrXFBklO','Student','Active',NULL,0,'2026-02-08 16:18:21','2026-02-08 08:14:19','2026-03-19 11:51:15',NULL,NULL,NULL,NULL,2,0,NULL,0,0,NULL);
+INSERT INTO `users` VALUES (1,'ADMIN001','System Admin','admin@pcu.edu.ph',NULL,NULL,'$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','Admin','Active',NULL,0,NULL,'2026-02-04 10:52:03','2026-02-04 10:52:03',NULL,NULL,NULL,NULL,0,0,NULL,0,0,NULL,NULL,NULL),(2,'202232903','Mark Jason Briones Ramoss','mrk.jason118@gmail.com','BS Information Technology','117931670655597175684','$2y$10$FNjaXw2zWHfTRMYeYOu1j.6SewRlL7KfwJG1xR6iDl8p8UXXWydg2','Student','Active',NULL,0,'2026-04-06 20:42:59','2026-02-04 11:27:36','2026-04-06 12:42:59','573a472de056478a7fd5e57d2c593268.jpg',NULL,'0014973874','2026-02-21 04:50:18',9,1,'2026-03-19 11:56:30',0,0,NULL,NULL,NULL),(3,'ADMIN-001','System Administrator','jeysidelima04@gmail.com',NULL,NULL,'$argon2id$v=19$m=65536,t=4,p=1$UVEucG03OUZENEVPNlhvSA$9l8SnovYbeEdFd1TovGNvhpiQMCP2PdRtmsx1d1Ttwk','Admin','Active',NULL,0,NULL,'2026-02-04 11:44:42','2026-03-17 13:20:52',NULL,NULL,NULL,NULL,0,0,NULL,0,0,NULL,NULL,NULL),(5,'TEMP-1770538459','Joshua Morales','morales.josh133@gmail.com',NULL,'108230023574228583644','$2y$10$7GlTtRmZWWKMw5.q49u7uutm01nLCmdYMyMndMFgdLaMfhrXFBklO','Student','Active',NULL,0,'2026-02-08 16:18:21','2026-02-08 08:14:19','2026-03-19 11:51:15',NULL,NULL,NULL,NULL,2,0,NULL,0,0,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 

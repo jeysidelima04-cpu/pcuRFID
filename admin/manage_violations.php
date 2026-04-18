@@ -539,9 +539,10 @@ try {
                 $isGrave   = $category['type'] === 'grave';
                 $isMaxHit  = $offenseNumber >= 4 && !$isGrave;
 
+                $ts = date('F j, Y g:i A');
+
                 // Send student notification email based on offense number
                 try {
-                    $ts = date('F j, Y g:i A');
                     if ($offenseNumber === 1) {
                         // First violation notice
                         $subject  = 'First Violation Notice - ' . $category['name'];
@@ -573,6 +574,40 @@ try {
                     }
                 } catch (\Exception $mailEx) {
                     error_log('Violation add email error: ' . $mailEx->getMessage());
+                }
+
+                // Send parent/guardian notification email (if a guardian email exists and notifications are enabled)
+                try {
+                    $violationContext = [
+                        'offense_number' => $offenseNumber,
+                        'category_name' => (string)($category['name'] ?? 'Violation'),
+                        'category_type' => (string)($category['type'] ?? ''),
+                    ];
+                    $disciplinaryPayload = admin_build_disciplinary_payload($violationContext);
+                    $notice = is_array($disciplinaryPayload['disciplinary_notice'] ?? null)
+                        ? (array)$disciplinaryPayload['disciplinary_notice']
+                        : [];
+
+                    send_guardian_violation_notification($userId, [
+                        'student_name' => (string)($student['name'] ?? 'Student'),
+                        'student_id' => (string)($student['student_id'] ?? (string)$student['id']),
+                        'student_email' => (string)($student['email'] ?? ''),
+                        'violation_name' => (string)($category['name'] ?? 'Violation'),
+                        'violation_type_label' => (string)($disciplinaryPayload['violation_type_label'] ?? admin_violation_type_label((string)($category['type'] ?? ''))),
+                        'offense_number' => $offenseNumber,
+                        'semester' => $semester,
+                        'school_year' => $schoolYear,
+                        'recorded_at' => $ts,
+                        'description' => $description,
+                        'disciplinary_code' => (string)($disciplinaryPayload['disciplinary_code'] ?? ''),
+                        'disciplinary_title' => (string)($disciplinaryPayload['disciplinary_title'] ?? ''),
+                        'disciplinary_message' => (string)($notice['message'] ?? ''),
+                        'disciplinary_action' => (string)($disciplinaryPayload['disciplinary_action'] ?? ''),
+                        'intervention_intent' => (string)($notice['intervention_intent'] ?? ''),
+                        'category_rationale' => (string)($notice['category_rationale'] ?? ''),
+                    ]);
+                } catch (\Throwable $guardianMailEx) {
+                    error_log('Guardian violation email error: ' . $guardianMailEx->getMessage());
                 }
 
                 echo json_encode([
@@ -828,6 +863,35 @@ try {
                     $reparationType,
                     $reparationNotes
                 );
+
+                // Also notify the primary guardian about the assigned reparation task
+                try {
+                    $notice = is_array($disciplinaryPayload['disciplinary_notice'] ?? null)
+                        ? (array)$disciplinaryPayload['disciplinary_notice']
+                        : [];
+
+                    send_guardian_violation_notification((int)$violation['user_id'], [
+                        'student_name' => (string)($violation['student_name'] ?? ''),
+                        'student_id' => (string)($violation['student_number'] ?? ''),
+                        'violation_name' => (string)($violation['category_name'] ?? ''),
+                        'violation_type_label' => (string)($disciplinaryPayload['violation_type_label'] ?? admin_violation_type_label((string)($violation['category_type'] ?? ''))),
+                        'offense_number' => (int)($violation['offense_number'] ?? 1),
+                        'semester' => $semester,
+                        'school_year' => $schoolYear,
+                        'recorded_at' => date('F j, Y g:i A'),
+                        'description' => $reparationNotes,
+                        'reparation_type' => $reparationType,
+                        'reparation_notes' => $reparationNotes,
+                        'disciplinary_code' => (string)($disciplinaryPayload['disciplinary_code'] ?? ''),
+                        'disciplinary_title' => (string)($disciplinaryPayload['disciplinary_title'] ?? ''),
+                        'disciplinary_message' => (string)($notice['message'] ?? ''),
+                        'disciplinary_action' => (string)($disciplinaryPayload['disciplinary_action'] ?? ''),
+                        'intervention_intent' => (string)($notice['intervention_intent'] ?? ''),
+                        'category_rationale' => (string)($notice['category_rationale'] ?? ''),
+                    ]);
+                } catch (\Throwable $e) {
+                    error_log('Guardian reparation email error: ' . $e->getMessage());
+                }
             }
 
             echo json_encode([

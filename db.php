@@ -249,7 +249,7 @@ function require_student_auth(): void {
     // Verify account still exists and is active in the database
     try {
         $pdo = pdo();
-        $stmt = $pdo->prepare('SELECT id, status FROM users WHERE id = ? AND email = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, status FROM users WHERE id = ? AND email = ? AND deleted_at IS NULL LIMIT 1');
         $stmt->execute([$_SESSION['user']['id'], $_SESSION['user']['email']]);
         $row = $stmt->fetch();
 
@@ -1849,6 +1849,141 @@ function send_guardian_entry_notification(int $studentId, string $entryTime): bo
         return $sentCount > 0;
     } catch (\PDOException $e) {
         error_log("Error sending guardian notification: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Send violation notification to a student's primary parent/guardian.
+ *
+ * @param int $studentId Student user ID
+ * @param array<string,mixed> $notice Notice payload (student/violation/disciplinary fields)
+ * @return bool True if at least one email was sent
+ */
+function send_guardian_violation_notification(int $studentId, array $notice): bool {
+    // Check global setting
+    if (!are_guardian_notifications_enabled()) {
+        return false;
+    }
+
+    try {
+        $pdo = pdo();
+
+        // Get primary guardians with violation notifications enabled
+        $stmt = $pdo->prepare("
+            SELECT g.id, g.email, g.first_name, g.last_name, ns.violation_notification
+            FROM guardians g
+            JOIN student_guardians sg ON g.id = sg.guardian_id
+            LEFT JOIN notification_settings ns ON g.id = ns.guardian_id
+            WHERE sg.student_id = ?
+              AND sg.is_primary = 1
+              AND (ns.violation_notification IS NULL OR ns.violation_notification = 1)
+        ");
+        $stmt->execute([$studentId]);
+        $guardians = $stmt->fetchAll();
+
+        if (empty($guardians)) {
+            return false;
+        }
+
+        // Load the email template library only when needed.
+        require_once __DIR__ . '/includes/email_templates.php';
+
+        $studentName = (string)($notice['student_name'] ?? 'Student');
+        $studentNumber = (string)($notice['student_id'] ?? (string)$studentId);
+        $violationName = (string)($notice['violation_name'] ?? 'Violation');
+        $violationTypeLabel = (string)($notice['violation_type_label'] ?? 'Unspecified');
+        $offenseNumber = (int)($notice['offense_number'] ?? 1);
+        $semester = (string)($notice['semester'] ?? '');
+        $schoolYear = (string)($notice['school_year'] ?? '');
+        $timestamp = (string)($notice['recorded_at'] ?? date('F j, Y g:i A'));
+
+        $disciplinaryCode = (string)($notice['disciplinary_code'] ?? '');
+        $disciplinaryTitle = (string)($notice['disciplinary_title'] ?? '');
+        $disciplinaryMessage = (string)($notice['disciplinary_message'] ?? '');
+        $disciplinaryAction = (string)($notice['disciplinary_action'] ?? '');
+        $categoryRationale = (string)($notice['category_rationale'] ?? '');
+        $interventionIntent = (string)($notice['intervention_intent'] ?? '');
+        $incidentNotes = (string)($notice['description'] ?? '');
+
+        $sentCount = 0;
+
+        foreach ($guardians as $guardian) {
+            $guardianEmail = (string)($guardian['email'] ?? '');
+            if ($guardianEmail === '') {
+                continue;
+            }
+
+            $guardianName = trim((string)($guardian['first_name'] ?? '') . ' ' . (string)($guardian['last_name'] ?? ''));
+            if ($guardianName === '') {
+                $guardianName = 'Parent/Guardian';
+            }
+
+            // Queue notification
+            $queueStmt = $pdo->prepare("
+                INSERT INTO notification_queue
+                (student_id, guardian_id, notification_type, scheduled_for, data)
+                VALUES (?, ?, 'violation', NOW(), ?)
+            ");
+            $queueStmt->execute([
+                $studentId,
+                (int)$guardian['id'],
+                json_encode($notice, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+
+            $subject = "SSO Violation Notice - {$studentName} - {$violationName} (Offense #" . max(1, $offenseNumber) . ")";
+
+            $html = emailGuardianViolationNotice(
+                $guardianName,
+                $studentName,
+                $studentNumber,
+                $violationName,
+                $violationTypeLabel,
+                $offenseNumber,
+                $semester,
+                $schoolYear,
+                $timestamp,
+                $disciplinaryCode,
+                $disciplinaryTitle,
+                $disciplinaryMessage,
+                $disciplinaryAction,
+                $categoryRationale,
+                $interventionIntent,
+                $incidentNotes
+            );
+
+            $emailSent = sendMail($guardianEmail, $subject, $html);
+
+            if ($emailSent) {
+                $logStmt = $pdo->prepare("
+                    INSERT INTO notification_logs
+                    (student_id, guardian_id, notification_type, sent_at, status)
+                    VALUES (?, ?, 'violation', NOW(), 'sent')
+                ");
+                $logStmt->execute([$studentId, (int)$guardian['id']]);
+
+                $updateQueueStmt = $pdo->prepare("
+                    UPDATE notification_queue
+                    SET status = 'sent', sent_at = NOW()
+                    WHERE student_id = ? AND guardian_id = ? AND notification_type = 'violation' AND status = 'pending'
+                    ORDER BY id DESC LIMIT 1
+                ");
+                $updateQueueStmt->execute([$studentId, (int)$guardian['id']]);
+
+                $sentCount++;
+            } else {
+                $logStmt = $pdo->prepare("
+                    INSERT INTO notification_logs
+                    (student_id, guardian_id, notification_type, sent_at, status)
+                    VALUES (?, ?, 'violation', NOW(), 'failed')
+                ");
+                $logStmt->execute([$studentId, (int)$guardian['id']]);
+            }
+        }
+
+        return $sentCount > 0;
+    } catch (Throwable $e) {
+        error_log('Error sending guardian violation notification: ' . $e->getMessage());
         return false;
     }
 }

@@ -115,6 +115,7 @@ try {
             WHERE fd.is_active = 1
               AND u.role = 'Student'
               AND u.status = 'Active'
+                            AND u.deleted_at IS NULL
             ORDER BY fd.user_id, fd.label
         ");
         $stmt->execute();
@@ -186,7 +187,8 @@ try {
             u.violation_count
         FROM face_descriptors fd
         INNER JOIN users u ON fd.user_id = u.id
-        WHERE fd.version > ?
+                WHERE fd.version > ?
+                    AND (fd.is_active = 0 OR (u.role = 'Student' AND u.status = 'Active' AND u.deleted_at IS NULL))
         ORDER BY fd.version ASC
     ");
     $stmt->execute([$sinceVersion]);

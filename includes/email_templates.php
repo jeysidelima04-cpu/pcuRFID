@@ -413,6 +413,120 @@ function emailFirstViolationNotice(string $name, string $studentId, string $viol
 }
 
 /**
+ * Parent/Guardian Violation Notice — formal navy
+ * Sent to a student's primary parent/guardian when a violation is recorded.
+ */
+function emailGuardianViolationNotice(
+    string $guardianName,
+    string $studentName,
+    string $studentId,
+    string $violationName,
+    string $violationTypeLabel,
+    int $offenseNumber,
+    string $semester,
+    string $schoolYear,
+    string $timestamp,
+    string $disciplinaryCode,
+    string $disciplinaryTitle,
+    string $disciplinaryMessage,
+    string $disciplinaryAction,
+    string $categoryRationale,
+    string $interventionIntent,
+    string $incidentNotes = ''
+): string {
+    $safeGuardian = htmlspecialchars($guardianName, ENT_QUOTES, 'UTF-8');
+    $safeStudent  = htmlspecialchars($studentName, ENT_QUOTES, 'UTF-8');
+    $safeId       = htmlspecialchars($studentId, ENT_QUOTES, 'UTF-8');
+    $safeViol     = htmlspecialchars($violationName, ENT_QUOTES, 'UTF-8');
+    $safeType     = htmlspecialchars($violationTypeLabel, ENT_QUOTES, 'UTF-8');
+    $safeSem      = htmlspecialchars($semester, ENT_QUOTES, 'UTF-8');
+    $safeSY       = htmlspecialchars($schoolYear, ENT_QUOTES, 'UTF-8');
+    $safeCode     = htmlspecialchars($disciplinaryCode, ENT_QUOTES, 'UTF-8');
+    $safeTitle    = htmlspecialchars($disciplinaryTitle, ENT_QUOTES, 'UTF-8');
+    $safeMessage  = htmlspecialchars($disciplinaryMessage, ENT_QUOTES, 'UTF-8');
+    $safeAction   = htmlspecialchars($disciplinaryAction, ENT_QUOTES, 'UTF-8');
+    $safeRationale = htmlspecialchars($categoryRationale, ENT_QUOTES, 'UTF-8');
+    $safeIntent   = htmlspecialchars($interventionIntent, ENT_QUOTES, 'UTF-8');
+    $safeNotes    = htmlspecialchars($incidentNotes, ENT_QUOTES, 'UTF-8');
+
+    $offenseLabel = 'Offense #' . max(1, $offenseNumber);
+
+    $body  = _emailGreeting($guardianName);
+    $body .= _emailBanner('#e0e7ff', '#1d4ed8', '#1e3a8a',
+        'This is a formal notice from the Student Services Office (SSO) regarding a recorded student violation.');
+
+    $body .= "<div style='text-align:justify;'>";
+    $body .= _emailPara("We respectfully inform you that <strong>{$safeStudent}</strong> has a violation recorded in the GateWatch system. This communication is intended to keep the parent/guardian informed and to guide timely compliance with the SSO process.");
+    $body .= "</div>";
+
+    $body .= _emailDetailsTable([
+        ['Student Name', $safeStudent, '#111827'],
+        ['Student ID', $safeId, '#111827'],
+        ['Violation', $safeViol, '#dc2626'],
+        ['Violation Category', $safeType, '#374151'],
+        ['Offense Level', htmlspecialchars($offenseLabel, ENT_QUOTES, 'UTF-8'), '#b45309'],
+        ['Semester', "{$safeSem} Semester — {$safeSY}", '#374151'],
+        ['Date Recorded', htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8'), '#374151'],
+    ]);
+
+    if ($safeNotes !== '') {
+        $body .= _emailActionBox('#f8fafc', '#e2e8f0', '#0f172a', '#334155',
+            '📝 Incident Notes (as recorded)',
+            "<div style='text-align:justify;'>{$safeNotes}</div>"
+        );
+    }
+
+    $complianceParts = '';
+    if (trim($safeCode) !== '' || trim($safeTitle) !== '') {
+        $complianceParts .= "<p style='margin:0 0 10px; font-family:Arial,sans-serif; font-size:13px; color:#0f172a; line-height:1.6; text-align:justify;'>" .
+            "<strong>Disciplinary Reference:</strong> {$safeCode}" . (trim($safeTitle) !== '' ? " — {$safeTitle}" : '') .
+            "</p>";
+    }
+
+    if (trim($safeMessage) !== '') {
+        $complianceParts .= "<p style='margin:0 0 10px; font-family:Arial,sans-serif; font-size:13px; color:#0f172a; line-height:1.7; text-align:justify;'>{$safeMessage}</p>";
+    }
+
+    if (trim($safeAction) !== '') {
+        $complianceParts .= "<p style='margin:0; font-family:Arial,sans-serif; font-size:13px; color:#0f172a; line-height:1.7; text-align:justify;'><strong>Guidance to Comply:</strong> {$safeAction}</p>";
+    }
+
+    if (trim($safeRationale) !== '' || trim($safeIntent) !== '') {
+        $complianceParts .= "<div style='margin-top:12px; padding:12px; background:#eef2ff; border-radius:8px;'>";
+        if (trim($safeIntent) !== '') {
+            $complianceParts .= "<p style='margin:0 0 8px; font-family:Arial,sans-serif; font-size:12px; color:#1e3a8a; line-height:1.6; text-align:justify;'><strong>Intervention Intent:</strong> {$safeIntent}</p>";
+        }
+        if (trim($safeRationale) !== '') {
+            $complianceParts .= "<p style='margin:0; font-family:Arial,sans-serif; font-size:12px; color:#1e3a8a; line-height:1.6; text-align:justify;'><strong>Category Rationale:</strong> {$safeRationale}</p>";
+        }
+        $complianceParts .= "</div>";
+    }
+
+    if ($complianceParts === '') {
+        $complianceParts = "<p style='margin:0; font-family:Arial,sans-serif; font-size:13px; color:#0f172a; line-height:1.7; text-align:justify;'>Please coordinate with the Student Services Office (SSO) for the official compliance requirements and timelines.</p>";
+    }
+
+    $body .= _emailActionBox('#eff6ff', '#93c5fd', '#1e3a8a', '#0f172a',
+        '📌 Compliance Guidance',
+        $complianceParts
+    );
+
+    $body .= _emailActionBox('#f8fafc', '#e2e8f0', '#0f172a', '#334155',
+        '📍 Next Steps',
+        "<div style='text-align:justify;'>If a parent/guardian conference is required, the SSO will provide scheduling instructions. We encourage you to guide your son/daughter to comply promptly with the SSO process. If you believe this notice was sent in error or you need clarification, please contact the Student Services Office.</div>"
+    );
+
+    return _emailBase(
+        'SSO Parent/Guardian Notice — Violation Recorded',
+        '#0f172a',
+        '🏛️',
+        'Student Services Office Notice',
+        'Parent/Guardian Notification — Violation Recorded in GateWatch',
+        $body
+    );
+}
+
+/**
  * Final Warning — Strike #3
  * Sent when a student reaches their 3rd strike on a category.
  */
