@@ -508,8 +508,12 @@ try {
                 $stmt->execute([$userId, $categoryId, $description, $offenseNumber, $schoolYear, $semester, (int)($_SESSION['admin_id'] ?? 0)]);
                 $newViolationId = $pdo->lastInsertId();
 
-                // Increment active_violations_count
-                $pdo->prepare('UPDATE users SET active_violations_count = active_violations_count + 1 WHERE id = ?')->execute([$userId]);
+                // Let the DB trigger keep `users.active_violations_count` accurate.
+                // Read the authoritative active count for response or follow-up actions.
+                $countStmt = $pdo->prepare("SELECT COUNT(*) FROM student_violations WHERE user_id = ? AND status = 'active'");
+                $countStmt->execute([$userId]);
+                $newActive = (int)$countStmt->fetchColumn();
+                $pdo->prepare('UPDATE users SET active_violations_count = ? WHERE id = ?')->execute([$newActive, $userId]);
 
                 $pdo->commit();
                 rotate_csrf_after_critical_action();

@@ -199,15 +199,13 @@ try {
             $guardId,
         ]);
         $newViolationId = (int)$pdo->lastInsertId();
-
-        $pdo->prepare('UPDATE users SET active_violations_count = active_violations_count + 1, violation_count = GREATEST(violation_count, ?) WHERE id = ?')
-            ->execute([$offenseNumber, $userId]);
-
+        // Rely on DB trigger to keep `users.active_violations_count` in sync.
+        // Read authoritative values from `users` after the insert.
         $updatedStmt = $pdo->prepare('SELECT COALESCE(violation_count,0) AS violation_count, COALESCE(active_violations_count,0) AS active_violations_count, COALESCE(gate_mark_count,0) AS gate_mark_count FROM users WHERE id = ? LIMIT 1');
         $updatedStmt->execute([$userId]);
         $updated = $updatedStmt->fetch(PDO::FETCH_ASSOC) ?: [
             'violation_count' => (int)$student['violation_count'],
-            'active_violations_count' => (int)$student['active_violations_count'] + 1,
+            'active_violations_count' => (int)$student['active_violations_count'],
             'gate_mark_count' => (int)$student['gate_mark_count'],
         ];
 

@@ -1330,11 +1330,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                                     <?php echo $student['active_violations_count']; ?> Active
                                                 </span>
                                                 <?php endif; ?>
-                                                <?php if ($student['violation_count'] >= $maxViolationLimit): ?>
-                                                <span class="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                                    <?php echo $student['violation_count']; ?> Gate Strikes
-                                                </span>
-                                                <?php endif; ?>
+                                                <!-- Gate Strikes removed: system no longer uses "strikes" terminology -->
                                             </div>
                                         </div>
                                         
@@ -5261,13 +5257,13 @@ function lookupRfidCard() {
         let violationColor = 'green';
         let violationLabel = 'No violations';
         if (s.violation_count >= 4) {
-            violationColor = 'red'; violationLabel = 'BLOCKED — Max violations exceeded';
+            violationColor = 'red'; violationLabel = 'BLOCKED — Max offenses exceeded';
         } else if (s.violation_count === 3) {
-            violationColor = 'orange'; violationLabel = 'FINAL WARNING — 3 strikes';
+            violationColor = 'orange'; violationLabel = 'FINAL WARNING — 3 offenses';
         } else if (s.violation_count === 2) {
-            violationColor = 'yellow'; violationLabel = 'Warning — 2 strikes';
+            violationColor = 'yellow'; violationLabel = 'Warning — 2 offenses';
         } else if (s.violation_count === 1) {
-            violationColor = 'blue'; violationLabel = '1 strike';
+            violationColor = 'blue'; violationLabel = '1 offense';
         }
 
         const lastScan = data.last_scan
