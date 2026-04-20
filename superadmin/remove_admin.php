@@ -58,6 +58,17 @@ try {
     
     // Begin transaction
     $pdo->beginTransaction();
+
+    // Best-effort cleanup: remove any enrolled admin face descriptors
+    // (table is created lazily under /superadmin; ignore if missing)
+    try {
+        $fdCheck = $pdo->query("SHOW TABLES LIKE 'admin_face_descriptors'")->fetch();
+        if ($fdCheck) {
+            $pdo->prepare('DELETE FROM admin_face_descriptors WHERE user_id = ?')->execute([$adminId]);
+        }
+    } catch (Throwable $e) {
+        // Ignore cleanup failures.
+    }
     
     // Get admin_account ID for audit log
     $stmt = $pdo->prepare("SELECT id FROM admin_accounts WHERE user_id = ?");

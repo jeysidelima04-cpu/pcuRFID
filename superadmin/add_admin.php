@@ -32,6 +32,17 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
     exit;
 }
 
+// Enforce face-first admin registration when face recognition is enabled.
+if (filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+    http_response_code(409);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Face enrollment is required before creating a new admin. Please use the admin registration flow.',
+        'enrollment_start' => 'start_admin_registration.php',
+    ]);
+    exit;
+}
+
 // Get form data
 $name = trim($_POST['name'] ?? '');
 $email = strtolower(trim($_POST['email'] ?? ''));
@@ -124,10 +135,16 @@ try {
         'target_user_id' => (int)$newAdminId,
         'target_role' => 'admin',
     ]);
+
+    $faceEnabled = filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN);
     
     echo json_encode([
         'success' => true,
-        'message' => "Admin account for '{$name}' has been created successfully."
+        'message' => "Admin account for '{$name}' has been created successfully.",
+        'admin_user_id' => (int)$newAdminId,
+        'admin_account_id' => (int)$adminAccountId,
+        'face_enrollment_required' => $faceEnabled,
+        'enroll_url' => $faceEnabled ? ('enroll_admin_face.php?admin_id=' . (int)$newAdminId) : null,
     ]);
     
 } catch (PDOException $e) {
