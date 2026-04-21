@@ -1357,11 +1357,21 @@ class FaceRecognitionSystem {
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (_e) {
+                data = null;
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                const serverMessage = data && typeof data.error === 'string' ? data.error : null;
+                throw new Error(serverMessage || `Server returned ${response.status}`);
+            }
+
+            if (!data) {
+                throw new Error('Invalid server response while registering face descriptor');
+            }
             return data;
         } catch (error) {
             this._handleError('Failed to register face', error);

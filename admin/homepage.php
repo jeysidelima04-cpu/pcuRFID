@@ -2158,6 +2158,10 @@ $activeSection = $_GET['section'] ?? 'students';
                             } catch (\PDOException $e) {
                                 $faceStudents = [];
                             }
+                            $faceDescriptorLimit = (int)env('FACE_MAX_DESCRIPTORS_PER_STUDENT', '3');
+                            if ($faceDescriptorLimit <= 0 || $faceDescriptorLimit > 3) {
+                                $faceDescriptorLimit = 3;
+                            }
                             
                             if (empty($faceStudents)): ?>
                                 <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No active students found.</td></tr>
@@ -2192,7 +2196,7 @@ $activeSection = $_GET['section'] ?? 'students';
                                             </span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-slate-600"><?php echo (int)$fs['descriptor_count']; ?> / <?php echo env('FACE_MAX_DESCRIPTORS_PER_STUDENT', '5'); ?></td>
+                                    <td class="px-6 py-4 text-sm text-slate-600"><?php echo (int)$fs['descriptor_count']; ?> / <?php echo $faceDescriptorLimit; ?></td>
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-2">
                                             <button onclick="openFaceRegModal(<?php echo $fs['id']; ?>, <?php echo e(json_encode($fs['name'])); ?>, <?php echo e(json_encode($fs['student_id'])); ?>)" 
@@ -5849,8 +5853,6 @@ function showToast(message, type = 'info') {
                 <button onclick="selectFaceLabel('front')" id="lblFront" class="px-4 py-2 rounded-lg text-sm font-medium bg-[#0056b3] text-white">Front</button>
                 <button onclick="selectFaceLabel('left')" id="lblLeft" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Left</button>
                 <button onclick="selectFaceLabel('right')" id="lblRight" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Right</button>
-                <button onclick="selectFaceLabel('up')" id="lblUp" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Up</button>
-                <button onclick="selectFaceLabel('down')" id="lblDown" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Down</button>
             </div>
         </div>
 
@@ -5942,7 +5944,7 @@ let faceRegModelsLoaded = false;
 
 function selectFaceLabel(label) {
     faceRegLabel = label;
-    ['front','left','right','up','down'].forEach(l => {
+    ['front','left','right'].forEach(l => {
         const btn = document.getElementById('lbl' + l.charAt(0).toUpperCase() + l.slice(1));
         if (btn) {
             btn.className = l === label 

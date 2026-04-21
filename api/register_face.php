@@ -87,7 +87,7 @@ try {
     }
     
     // Sanitize label
-    $allowedLabels = ['front', 'left', 'right', 'up', 'down'];
+    $allowedLabels = ['front', 'left', 'right'];
     if (!in_array($label, $allowedLabels)) {
         $label = 'front';
     }
@@ -119,14 +119,15 @@ try {
         $crossUserBlockThreshold = 0.45;
     }
 
-    $stmt = $pdo->prepare("\
-        SELECT fd.user_id, fd.descriptor_data, fd.descriptor_iv, fd.descriptor_tag, u.name, u.student_id\
-        FROM face_descriptors fd\
-        INNER JOIN users u ON fd.user_id = u.id\
-        WHERE fd.is_active = 1\
-          AND fd.user_id != ?\
-          AND u.role = 'Student'\
-    ");
+    $crossStudentSql = <<<'SQL'
+        SELECT fd.user_id, fd.descriptor_data, fd.descriptor_iv, fd.descriptor_tag, u.name, u.student_id
+        FROM face_descriptors fd
+        INNER JOIN users u ON fd.user_id = u.id
+        WHERE fd.is_active = 1
+          AND fd.user_id != ?
+          AND u.role = 'Student'
+    SQL;
+    $stmt = $pdo->prepare($crossStudentSql);
     $stmt->execute([$studentId]);
     $otherStudentRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -157,8 +158,8 @@ try {
                 $closestOtherDistance = $distance;
                 $closestOtherMatch = $row;
             }
-        } catch (RuntimeException $e) {
-            error_log('Cross-student duplicate check: decryption failed for candidate user ' . (int)$row['user_id'] . ': ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            error_log('Cross-student duplicate check: descriptor row skipped for candidate user ' . (int)$row['user_id'] . ': ' . $e->getMessage());
             continue;
         }
     }
@@ -170,7 +171,10 @@ try {
     }
     
     // Check max descriptors per student
-    $maxDescriptors = (int)env('FACE_MAX_DESCRIPTORS_PER_STUDENT', '5');
+    $maxDescriptors = (int)env('FACE_MAX_DESCRIPTORS_PER_STUDENT', '3');
+    if ($maxDescriptors <= 0 || $maxDescriptors > 3) {
+        $maxDescriptors = 3;
+    }
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM face_descriptors WHERE user_id = ? AND is_active = 1");
     $stmt->execute([$studentId]);
     $currentCount = (int)$stmt->fetchColumn();
@@ -226,9 +230,9 @@ try {
                 if ($distance > $inconsistentThreshold) {
                     throw new Exception('This descriptor is too different from existing ones. Ensure this is the same student, or re-enroll from scratch.');
                 }
-            } catch (RuntimeException $e) {
-                // Decryption error — skip this descriptor but continue
-                error_log('Inter-descriptor check: decryption failed for user ' . $studentId . ': ' . $e->getMessage());
+            } catch (\Throwable $e) {
+                // Corrupt or legacy descriptor row — skip and continue with remaining rows
+                error_log('Inter-descriptor check: descriptor row skipped for user ' . $studentId . ': ' . $e->getMessage());
                 continue;
             }
         }
@@ -297,15 +301,15 @@ try {
         throw $e;
     }
     
-} catch (RuntimeException $e) {
-    // Encryption errors
-    error_log('Face registration encryption error: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Encryption error - check server configuration']);
 } catch (\PDOException $e) {
     error_log('Face registration database error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Server error while registering face descriptor. Please try again.']);
+} catch (RuntimeException $e) {
+    // Encryption/config-related runtime errors
+    error_log('Face registration encryption error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Encryption error - check server configuration']);
 } catch (Exception $e) {
     error_log('Face registration error: ' . $e->getMessage());
     $statusCode = 400;

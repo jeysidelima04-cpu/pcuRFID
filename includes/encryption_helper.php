@@ -1,7 +1,5 @@
 <?php
 
-use RuntimeException;
-
 /**
  * Encryption Helper for Face Recognition Descriptors
  * Uses AES-256-GCM for authenticated encryption
