@@ -2085,7 +2085,7 @@ $activeSection = $_GET['section'] ?? 'students';
             <!-- Face Recognition Management Section -->
             <div class="glass-card rounded-2xl px-6 py-5 mb-6">
                 <h1 class="text-2xl font-bold text-slate-800">Face Recognition Management</h1>
-                <p class="text-slate-600 mt-1">Register and manage student face recognition data</p>
+                <p class="text-slate-600 mt-1">Review and manage student face recognition data</p>
             </div>
 
             <?php if (!filter_var(env('FACE_RECOGNITION_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN)): ?>
@@ -2127,7 +2127,7 @@ $activeSection = $_GET['section'] ?? 'students';
                 <div class="px-6 py-4 border-b border-white/50 flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-semibold text-slate-800">Active Students</h3>
-                        <p class="text-sm text-slate-600">Click "Register Face" to capture face data via webcam</p>
+                        <p class="text-sm text-slate-600">View registration status and remove existing face data when needed</p>
                     </div>
                     <input type="text" id="faceSearchInput" placeholder="Search students..." 
                            class="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2199,15 +2199,13 @@ $activeSection = $_GET['section'] ?? 'students';
                                     <td class="px-6 py-4 text-sm text-slate-600"><?php echo (int)$fs['descriptor_count']; ?> / <?php echo $faceDescriptorLimit; ?></td>
                                     <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-2">
-                                            <button onclick="openFaceRegModal(<?php echo $fs['id']; ?>, <?php echo e(json_encode($fs['name'])); ?>, <?php echo e(json_encode($fs['student_id'])); ?>)" 
-                                                    class="px-3 py-1.5 bg-[#0056b3] hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium">
-                                                📷 Register Face
-                                            </button>
                                             <?php if ($fs['face_registered']): ?>
                                             <button onclick="deleteFaceData(<?php echo $fs['id']; ?>, <?php echo e(json_encode($fs['name'])); ?>)" 
                                                     class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition-colors font-medium">
                                                 🗑 Delete
                                             </button>
+                                            <?php else: ?>
+                                            <span class="text-xs text-slate-400">-</span>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -5822,52 +5820,6 @@ function showToast(message, type = 'info') {
 }
 </script>
 
-<!-- Face Registration Modal -->
-<div id="faceRegModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" style="display:none;">
-    <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h3 class="text-xl font-semibold text-slate-800">Register Face</h3>
-                <p class="text-slate-600 text-sm" id="faceRegStudentName"></p>
-            </div>
-            <button onclick="closeFaceRegModal()" class="text-slate-400 hover:text-slate-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <!-- Status indicator -->
-        <div id="faceRegStatus" class="bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4">
-            Initializing camera...
-        </div>
-
-        <!-- Webcam container -->
-        <div class="relative mx-auto mb-4 bg-black rounded-lg overflow-hidden" style="max-width:640px;">
-            <video id="faceRegVideo" class="w-full" autoplay muted playsinline></video>
-            <canvas id="faceRegCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
-        </div>
-
-        <!-- Angle selector -->
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-slate-700 mb-2">Face Angle</label>
-            <div class="flex gap-2">
-                <button onclick="selectFaceLabel('front')" id="lblFront" class="px-4 py-2 rounded-lg text-sm font-medium bg-[#0056b3] text-white">Front</button>
-                <button onclick="selectFaceLabel('left')" id="lblLeft" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Left</button>
-                <button onclick="selectFaceLabel('right')" id="lblRight" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Right</button>
-            </div>
-        </div>
-
-        <!-- Capture controls -->
-        <div class="flex gap-3">
-            <button onclick="captureFace()" id="btnCaptureFace" class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                📷 Capture & Register
-            </button>
-            <button onclick="closeFaceRegModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Face Enroll Modal -->
 <div id="faceEnrollModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50" style="display:none;">
     <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 fade-in max-h-[90vh] overflow-y-auto">
@@ -5935,172 +5887,10 @@ function showToast(message, type = 'info') {
 <script defer src="../assets/js/vendor/face-api.min.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/vendor/face-api.min.js'); ?>"></script>
 <script defer src="../assets/js/face-recognition.js?v=<?php echo filemtime(__DIR__ . '/../assets/js/face-recognition.js'); ?>"></script>
 <script>
-// Face Registration Logic for Admin
+// Face Logic for Admin
 const CSRF_TOKEN_FACE = (typeof csrfToken !== 'undefined') ? csrfToken : '';
 let faceRegSystem = null;
-let faceRegStudentId = null;
-let faceRegLabel = 'front';
 let faceRegModelsLoaded = false;
-
-function selectFaceLabel(label) {
-    faceRegLabel = label;
-    ['front','left','right'].forEach(l => {
-        const btn = document.getElementById('lbl' + l.charAt(0).toUpperCase() + l.slice(1));
-        if (btn) {
-            btn.className = l === label 
-                ? 'px-4 py-2 rounded-lg text-sm font-medium bg-[#0056b3] text-white'
-                : 'px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200';
-        }
-    });
-}
-
-async function openFaceRegModal(studentId, studentName, studentSid) {
-    faceRegStudentId = studentId;
-    document.getElementById('faceRegStudentName').textContent = studentName + ' (' + studentSid + ')';
-    
-    const modal = document.getElementById('faceRegModal');
-    modal.style.display = 'flex';
-    modal.classList.remove('hidden');
-    
-    const statusEl = document.getElementById('faceRegStatus');
-    const captureBtn = document.getElementById('btnCaptureFace');
-    captureBtn.disabled = true;
-
-    // Initialize system if not yet done
-    if (!faceRegSystem) {
-        faceRegSystem = new FaceRecognitionSystem({
-            modelPath: '../assets/models',
-            minConfidence: 0.5,
-            csrfToken: CSRF_TOKEN_FACE,
-            onStatusChange: (s, msg) => { statusEl.textContent = msg; },
-            onError: (msg) => { statusEl.textContent = '❌ ' + msg; statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4'; }
-        });
-    }
-
-    // Load models if not loaded
-    if (!faceRegModelsLoaded) {
-        statusEl.textContent = 'Loading face recognition models (first time may take a moment)...';
-        statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
-        const ok = await faceRegSystem.loadModels();
-        if (!ok) {
-            statusEl.textContent = '❌ Failed to load models. Ensure model files are in assets/models/';
-            statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
-            return;
-        }
-        faceRegModelsLoaded = true;
-    }
-
-    // Start camera
-    statusEl.textContent = 'Starting camera...';
-    const camOk = await faceRegSystem.startCamera(
-        document.getElementById('faceRegVideo'),
-        document.getElementById('faceRegCanvas')
-    );
-
-    if (camOk) {
-        statusEl.textContent = '✅ Camera ready. Position the student\'s face in the frame and click Capture.';
-        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
-        captureBtn.disabled = false;
-        
-        // Start live face detection preview
-        startLiveDetectionPreview();
-    } else {
-        statusEl.textContent = '❌ Camera failed. Check browser permissions.';
-        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
-    }
-}
-
-let liveDetectionTimer = null;
-function startLiveDetectionPreview() {
-    if (liveDetectionTimer) clearInterval(liveDetectionTimer);
-    liveDetectionTimer = setInterval(async () => {
-        if (!faceRegSystem) return;
-        await faceRegSystem.detectSingleFace();
-    }, 300);
-}
-
-function closeFaceRegModal() {
-    if (liveDetectionTimer) {
-        clearInterval(liveDetectionTimer);
-        liveDetectionTimer = null;
-    }
-    if (faceRegSystem) {
-        faceRegSystem.stopCamera();
-    }
-    const modal = document.getElementById('faceRegModal');
-    modal.style.display = 'none';
-    modal.classList.add('hidden');
-}
-
-async function captureFace() {
-    if (!faceRegSystem || !faceRegStudentId) return;
-    
-    const statusEl = document.getElementById('faceRegStatus');
-    const captureBtn = document.getElementById('btnCaptureFace');
-    captureBtn.disabled = true;
-    
-    statusEl.textContent = '📸 Capturing face...';
-    statusEl.className = 'bg-blue-50 text-blue-700 text-sm p-3 rounded-lg mb-4';
-    
-    // Detect face
-    const detection = await faceRegSystem.detectSingleFace();
-    
-    if (!detection) {
-        statusEl.textContent = '❌ No face detected. Please position the face clearly in the frame.';
-        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
-        captureBtn.disabled = false;
-        return;
-    }
-    
-    if (detection.score < 0.5) {
-        statusEl.textContent = '⚠️ Low confidence (' + (detection.score * 100).toFixed(1) + '%). Try better lighting or positioning.';
-        statusEl.className = 'bg-yellow-50 text-yellow-700 text-sm p-3 rounded-lg mb-4';
-        captureBtn.disabled = false;
-        return;
-    }
-    
-    // Quality assessment
-    const quality = faceRegSystem.assessFaceQuality(detection);
-    if (!quality.acceptable) {
-        const issues = [];
-        if (quality.factors.size < 0.4) issues.push('face too small — move closer');
-        if (quality.factors.centering < 0.4) issues.push('face not centered');
-        if (quality.factors.angle < 0.4) issues.push('face too angled — look straight');
-        if (quality.factors.confidence < 0.5) issues.push('low detection confidence');
-        statusEl.textContent = '⚠️ Quality too low (' + (quality.score * 100).toFixed(0) + '%). Issues: ' + (issues.join(', ') || 'try better conditions');
-        statusEl.className = 'bg-yellow-50 text-yellow-700 text-sm p-3 rounded-lg mb-4';
-        captureBtn.disabled = false;
-        return;
-    }
-    
-    // Register the descriptor
-    statusEl.textContent = '⬆️ Registering face descriptor (' + faceRegLabel + ') — quality: ' + (quality.score * 100).toFixed(0) + '%';
-    
-    const result = await faceRegSystem.registerFace(
-        faceRegStudentId,
-        detection.descriptor,
-        faceRegLabel,
-        detection.score,
-        '../api/register_face.php'
-    );
-    
-    if (result.success) {
-        statusEl.textContent = '✅ ' + result.message + ' (Total: ' + result.total_descriptors + ')';
-        statusEl.className = 'bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4';
-        
-        // Show toast notification
-        if (typeof showToast === 'function') {
-            showToast(result.message, 'success');
-        }
-        
-        // Re-enable after 2 sec for next capture
-        setTimeout(() => { captureBtn.disabled = false; }, 2000);
-    } else {
-        statusEl.textContent = '❌ ' + (result.error || 'Registration failed');
-        statusEl.className = 'bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-4';
-        captureBtn.disabled = false;
-    }
-}
 
 async function deleteFaceData(studentId, studentName) {
     if (!confirm('Delete all face recognition data for ' + studentName + '? This cannot be undone.')) {
