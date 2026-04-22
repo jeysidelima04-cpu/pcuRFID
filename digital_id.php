@@ -108,6 +108,18 @@ try {
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            --glass-strong: rgba(255, 255, 255, 0.78);
+            --glass-soft: rgba(255, 255, 255, 0.56);
+            --glass-subtle: rgba(255, 255, 255, 0.42);
+            --glass-border: rgba(255, 255, 255, 0.58);
+            --text-main: #0f172a;
+            --text-soft: #334155;
+            --text-muted: #64748b;
+            --brand-1: #0369a1;
+            --brand-2: #0284c7;
+        }
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -130,7 +142,7 @@ try {
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('pcu-building.jpg');
+            background-image: url('assets/images/pcu-building.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -150,7 +162,10 @@ try {
             right: 0;
             bottom: 0;
             z-index: -1;
-            background: linear-gradient(135deg, rgba(12, 74, 110, 0.7) 0%, rgba(3, 105, 161, 0.6) 50%, rgba(2, 132, 199, 0.5) 100%);
+            background:
+                radial-gradient(circle at 14% 18%, rgba(14, 165, 233, 0.22), transparent 32%),
+                radial-gradient(circle at 82% 8%, rgba(125, 211, 252, 0.18), transparent 24%),
+                linear-gradient(145deg, rgba(12, 74, 110, 0.62) 0%, rgba(2, 132, 199, 0.53) 50%, rgba(14, 116, 144, 0.48) 100%);
         }
         
         /* Header */
@@ -166,32 +181,35 @@ try {
         .header-inner {
             max-width: 400px;
             margin: 0 auto;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
+            background: var(--glass-strong);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-radius: 16px;
             padding: 12px 16px;
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
         }
         
         .back-btn {
             width: 40px;
             height: 40px;
             border-radius: 12px;
-            background: #f1f5f9;
+            background: rgba(241, 245, 249, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
             text-decoration: none;
             color: #475569;
+            border: 1px solid rgba(148, 163, 184, 0.24);
             transition: all 0.2s;
         }
         
         .back-btn:hover {
-            background: #e0f2fe;
+            background: rgba(224, 242, 254, 0.9);
             color: #0284c7;
         }
         
@@ -209,16 +227,17 @@ try {
         
         .logo span {
             font-weight: 700;
-            color: #0369a1;
+            color: var(--brand-1);
             font-size: 18px;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
         }
         
         .refresh-btn {
             width: 40px;
             height: 40px;
             border-radius: 12px;
-            background: #e0f2fe;
-            border: none;
+            background: rgba(224, 242, 254, 0.88);
+            border: 1px solid rgba(2, 132, 199, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -228,30 +247,46 @@ try {
         }
         
         .refresh-btn:hover {
-            background: #bae6fd;
+            background: rgba(186, 230, 253, 0.95);
         }
         
         /* Card */
         .card {
             width: 100%;
             max-width: 380px;
-            background: rgba(255,255,255,0.98);
+            background: linear-gradient(170deg, var(--glass-strong) 0%, var(--glass-soft) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 26px 58px rgba(2, 6, 23, 0.3);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.08) 34%, transparent 62%);
+            pointer-events: none;
         }
         
         /* Card Header */
         .card-header {
-            background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+            background: linear-gradient(135deg, rgba(3, 105, 161, 0.8) 0%, rgba(2, 132, 199, 0.72) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 24px 24px 40px 24px;
             text-align: center;
             position: relative;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.28);
         }
         
         .university-badge {
             display: inline-block;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.26);
+            border: 1px solid rgba(255, 255, 255, 0.38);
             padding: 6px 16px;
             border-radius: 20px;
             margin-bottom: 8px;
@@ -306,6 +341,8 @@ try {
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            z-index: 1;
         }
         
         .avatar-wrapper {
@@ -344,7 +381,7 @@ try {
         .student-name {
             font-size: 22px;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--text-main);
             margin-bottom: 4px;
             text-align: center;
         }
@@ -366,13 +403,15 @@ try {
         }
         
         .info-card {
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.56), rgba(248, 250, 252, 0.44));
             border-radius: 12px;
             padding: 14px 16px;
             display: flex;
             flex-direction: row;
             align-items: center;
             gap: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
         }
         
         .info-icon {
@@ -395,13 +434,13 @@ try {
         
         .info-label {
             font-size: 12px;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 500;
         }
         
         .info-value {
             font-size: 14px;
-            color: #334155;
+            color: var(--text-soft);
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -411,10 +450,11 @@ try {
         /* QR Section */
         .qr-section {
             margin: 0 24px 24px 24px;
-            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.52), rgba(241, 245, 249, 0.44));
             border-radius: 16px;
             padding: 20px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.58);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
         }
         
         .qr-header {
@@ -433,7 +473,7 @@ try {
         .qr-header span {
             font-size: 14px;
             font-weight: 600;
-            color: #334155;
+            color: var(--text-soft);
         }
         
         /* QR CODE CENTERING - THE FIX */
@@ -531,13 +571,13 @@ try {
         
         .timer-text .label {
             font-size: 11px;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 500;
         }
         
         .timer-text .time {
             font-size: 18px;
-            color: #1e293b;
+            color: var(--text-main);
             font-weight: 700;
         }
         

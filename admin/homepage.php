@@ -25,12 +25,48 @@ try {
     
     // Get ALL students including those with RFID (for Registered Cards panel)
     // Only show Active students (exclude Pending students awaiting verification)
-    $queryAll = '
-        SELECT id, student_id, name, email, course, status, role, rfid_uid, rfid_registered_at, profile_picture, face_registered, face_registered_at
-        FROM users 
-        WHERE role = "Student" AND status = "Active" AND deleted_at IS NULL
-        ORDER BY created_at DESC
-    ';
+    $hasGuardianTables = false;
+    try {
+        $hasStudentGuardians = (bool)$pdo->query("SHOW TABLES LIKE 'student_guardians'")->fetch();
+        $hasGuardians = (bool)$pdo->query("SHOW TABLES LIKE 'guardians'")->fetch();
+        $hasGuardianTables = $hasStudentGuardians && $hasGuardians;
+    } catch (\PDOException $e) {
+        $hasGuardianTables = false;
+    }
+
+    if ($hasGuardianTables) {
+        $queryAll = '
+            SELECT u.id, u.student_id, u.name, u.email, u.course, u.status, u.role, u.rfid_uid, u.rfid_registered_at, u.profile_picture, u.face_registered, u.face_registered_at,
+                   COALESCE((
+                        SELECT TRIM(CONCAT(COALESCE(g.first_name, ""), " ", COALESCE(g.last_name, "")))
+                        FROM student_guardians sg
+                        JOIN guardians g ON g.id = sg.guardian_id
+                        WHERE sg.student_id = u.id
+                        ORDER BY sg.is_primary DESC, sg.id ASC
+                        LIMIT 1
+                   ), "") AS guardian_name,
+                   COALESCE((
+                        SELECT COALESCE(g.phone_number, "")
+                        FROM student_guardians sg
+                        JOIN guardians g ON g.id = sg.guardian_id
+                        WHERE sg.student_id = u.id
+                        ORDER BY sg.is_primary DESC, sg.id ASC
+                        LIMIT 1
+                   ), "") AS guardian_contact
+            FROM users u
+            WHERE u.role = "Student" AND u.status = "Active" AND u.deleted_at IS NULL
+            ORDER BY u.created_at DESC
+        ';
+    } else {
+        $queryAll = '
+            SELECT id, student_id, name, email, course, status, role, rfid_uid, rfid_registered_at, profile_picture, face_registered, face_registered_at,
+                   "" AS guardian_name,
+                   "" AS guardian_contact
+            FROM users 
+            WHERE role = "Student" AND status = "Active" AND deleted_at IS NULL
+            ORDER BY created_at DESC
+        ';
+    }
     $stmtAll = $pdo->prepare($queryAll);
     $stmtAll->execute();
     $allStudents = $stmtAll->fetchAll(\PDO::FETCH_ASSOC);
@@ -433,6 +469,96 @@ $activeSection = $_GET['section'] ?? 'students';
             box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255,255,255,0.18);
         }
 
+        .sidebar-calendar-card {
+            margin-top: 0.9rem;
+            border-radius: 0.95rem;
+            padding: 0.8rem;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(224, 242, 254, 0.5));
+            border: 1px solid rgba(125, 211, 252, 0.45);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 10px 24px rgba(15, 23, 42, 0.09);
+        }
+
+        .sidebar-calendar-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.65rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .sidebar-calendar-month {
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            color: #0369a1;
+            line-height: 1.2;
+        }
+
+        .sidebar-calendar-date {
+            margin-top: 0.2rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #64748b;
+            line-height: 1.2;
+        }
+
+        .sidebar-calendar-clock {
+            border-radius: 0.7rem;
+            padding: 0.32rem 0.5rem;
+            background: linear-gradient(140deg, rgba(2, 132, 199, 0.18), rgba(14, 165, 233, 0.1));
+            border: 1px solid rgba(2, 132, 199, 0.28);
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            min-width: 3.45rem;
+            text-align: center;
+        }
+
+        .sidebar-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 0.22rem;
+        }
+
+        .sidebar-calendar-cell {
+            height: 1.42rem;
+            border-radius: 0.45rem;
+            font-size: 0.67rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #334155;
+            background: rgba(255, 255, 255, 0.56);
+            border: 1px solid rgba(226, 232, 240, 0.68);
+            user-select: none;
+        }
+
+        .sidebar-calendar-head {
+            height: auto;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-weight: 700;
+            font-size: 0.58rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.05rem;
+        }
+
+        .sidebar-calendar-cell.is-muted {
+            color: #94a3b8;
+            background: rgba(248, 250, 252, 0.46);
+        }
+
+        .sidebar-calendar-cell.is-today {
+            background: linear-gradient(145deg, rgba(2, 132, 199, 0.9), rgba(14, 165, 233, 0.86));
+            color: #ffffff;
+            border-color: rgba(2, 132, 199, 0.95);
+            box-shadow: 0 6px 14px rgba(2, 132, 199, 0.26);
+            font-weight: 700;
+        }
+
         .toast-glass-panel {
             position: relative;
             width: min(430px, calc(100vw - 2rem));
@@ -809,6 +935,17 @@ $activeSection = $_GET['section'] ?? 'students';
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                     </svg>
                 </a>
+
+                <div class="sidebar-calendar-card" aria-live="polite">
+                    <div class="sidebar-calendar-top">
+                        <div>
+                            <p id="sidebarCalendarMonth" class="sidebar-calendar-month">Month Year</p>
+                            <p id="sidebarCalendarDate" class="sidebar-calendar-date">Day, Mon 00</p>
+                        </div>
+                        <div id="sidebarCalendarClock" class="sidebar-calendar-clock">00:00</div>
+                    </div>
+                    <div id="sidebarCalendarGrid" class="sidebar-calendar-grid" aria-label="Mini calendar"></div>
+                </div>
             </div>
 
             <!-- Logout Button -->
@@ -1186,7 +1323,16 @@ $activeSection = $_GET['section'] ?? 'students';
                                             Edit
                                         </button>
                                         <button 
-                                            onclick="viewCardDetails('<?php echo htmlspecialchars($student['id']); ?>', '<?php echo htmlspecialchars($student['name']); ?>', '<?php echo htmlspecialchars($student['rfid_uid']); ?>', '<?php echo htmlspecialchars($student['rfid_registered_at']); ?>', '<?php echo htmlspecialchars($student['profile_picture'] ?? ''); ?>')"
+                                            onclick="viewCardDetails(
+                                                <?php echo htmlspecialchars(json_encode((string)($student['id'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['name'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['rfid_uid'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['rfid_registered_at'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['profile_picture'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['email'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['guardian_name'] ?? '')), ENT_QUOTES); ?>,
+                                                <?php echo htmlspecialchars(json_encode((string)($student['guardian_contact'] ?? '')), ENT_QUOTES); ?>
+                                            )"
                                             class="px-4 py-2 bg-blue-500 text-white rounded-lg btn-hover text-sm whitespace-nowrap"
                                         >
                                             View Details
@@ -3687,22 +3833,39 @@ function executeDelete(studentId, studentName) {
     });
 }
 
-function viewCardDetails(studentId, name, uid, registeredAt, profilePicture) {
+function viewCardDetails(studentId, name, uid, registeredAt, profilePicture, email, guardianName, guardianContact) {
     const modal = document.getElementById('cardDetailsModal');
     const content = document.getElementById('cardDetailsContent');
+
+    const safeName = String(name || 'N/A');
+    const safeUid = String(uid || 'N/A');
+    const safeEmail = String(email || 'N/A');
+    const safeGuardianName = String(guardianName || '').trim() || 'Not assigned';
+    const safeGuardianContact = String(guardianContact || '').trim() || 'Not provided';
+
+    let registeredOnText = 'Not available';
+    if (registeredAt) {
+        const registeredDate = new Date(registeredAt);
+        if (!Number.isNaN(registeredDate.getTime())) {
+            registeredOnText = registeredDate.toLocaleString();
+        }
+    }
     
     // Get first letter for fallback avatar
-    const firstLetter = name.charAt(0).toUpperCase();
+    const firstLetter = safeName.charAt(0).toUpperCase();
     const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
     const colorIndex = firstLetter.charCodeAt(0) % colors.length;
     const bgColor = colors[colorIndex];
+
+    const profileFile = String(profilePicture || '').trim();
+    const profileSrc = profileFile ? `../assets/images/profiles/${encodeURIComponent(profileFile)}` : '';
     
     content.innerHTML = `
         <div class="space-y-4">
-            ${profilePicture ? `
+            ${profileSrc ? `
                 <div class="flex justify-center mb-4">
-                    <img src="../assets/images/profiles/${profilePicture}" 
-                         alt="${name}" 
+                    <img src="${profileSrc}" 
+                         alt="${escapeHtml(safeName)}" 
                          class="rfid-detail-avatar">
                 </div>
             ` : `
@@ -3714,15 +3877,27 @@ function viewCardDetails(studentId, name, uid, registeredAt, profilePicture) {
             `}
             <div class="rfid-detail-panel">
                 <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Student Name</p>
-                <p class="font-semibold text-slate-800 text-lg">${name}</p>
+                <p class="font-semibold text-slate-800 text-lg">${escapeHtml(safeName)}</p>
             </div>
             <div class="rfid-detail-panel">
                 <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">RFID UID</p>
-                <code class="font-mono text-lg tracking-widest text-slate-800">${uid}</code>
+                <code class="font-mono text-lg tracking-widest text-slate-800">${escapeHtml(safeUid)}</code>
             </div>
             <div class="rfid-detail-panel">
                 <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Registered On</p>
-                <p class="font-semibold text-slate-800">${new Date(registeredAt).toLocaleString()}</p>
+                <p class="font-semibold text-slate-800">${escapeHtml(registeredOnText)}</p>
+            </div>
+            <div class="rfid-detail-panel">
+                <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Email</p>
+                <p class="font-semibold text-slate-800 break-all">${escapeHtml(safeEmail)}</p>
+            </div>
+            <div class="rfid-detail-panel">
+                <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Parent/Guardian Name</p>
+                <p class="font-semibold text-slate-800">${escapeHtml(safeGuardianName)}</p>
+            </div>
+            <div class="rfid-detail-panel">
+                <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Parent Guardian Contact</p>
+                <p class="font-semibold text-slate-800">${escapeHtml(safeGuardianContact)}</p>
             </div>
         </div>
     `;
@@ -4734,6 +4909,79 @@ function toggleSidebar() {
     overlay.classList.toggle('active');
 }
 
+function renderSidebarMiniCalendar(now) {
+    const monthEl = document.getElementById('sidebarCalendarMonth');
+    const dateEl = document.getElementById('sidebarCalendarDate');
+    const timeEl = document.getElementById('sidebarCalendarClock');
+    const gridEl = document.getElementById('sidebarCalendarGrid');
+
+    if (!monthEl || !dateEl || !timeEl || !gridEl) return;
+
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+
+    monthEl.textContent = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const cells = [];
+
+    for (const label of labels) {
+        cells.push(`<div class="sidebar-calendar-cell sidebar-calendar-head">${label}</div>`);
+    }
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+        cells.push(`<div class="sidebar-calendar-cell is-muted">${prevMonthDays - i}</div>`);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const todayClass = day === today ? ' is-today' : '';
+        cells.push(`<div class="sidebar-calendar-cell${todayClass}">${day}</div>`);
+    }
+
+    const totalCellsWithoutHeads = cells.length - labels.length;
+    const trailingCount = (7 - (totalCellsWithoutHeads % 7)) % 7;
+    for (let nextDay = 1; nextDay <= trailingCount; nextDay++) {
+        cells.push(`<div class="sidebar-calendar-cell is-muted">${nextDay}</div>`);
+    }
+
+    gridEl.innerHTML = cells.join('');
+}
+
+function initSidebarMiniCalendar() {
+    const gridEl = document.getElementById('sidebarCalendarGrid');
+    if (!gridEl) return;
+
+    let monthKey = '';
+    const tick = () => {
+        const now = new Date();
+        const key = now.getFullYear() + '-' + now.getMonth();
+        if (key !== monthKey) {
+            monthKey = key;
+            renderSidebarMiniCalendar(now);
+            return;
+        }
+
+        const dateEl = document.getElementById('sidebarCalendarDate');
+        const timeEl = document.getElementById('sidebarCalendarClock');
+        if (dateEl) {
+            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        }
+        if (timeEl) {
+            timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+    };
+
+    tick();
+    setInterval(tick, 1000);
+}
+
 // Close sidebar when clicking outside on mobile
 document.addEventListener('DOMContentLoaded', function() {
     // Only initialize mobile behavior on small screens
@@ -4766,6 +5014,8 @@ document.addEventListener('DOMContentLoaded', function() {
             initMobileSidebar();
         }, 250);
     });
+
+    initSidebarMiniCalendar();
 });
 
 // ========================================

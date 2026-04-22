@@ -275,6 +275,21 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            try {
+                var key = 'homepage_theme_preference';
+                var storedTheme = localStorage.getItem(key);
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var resolvedTheme = (storedTheme === 'dark' || storedTheme === 'light')
+                    ? storedTheme
+                    : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', resolvedTheme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <title>GateWatch | Home</title>
     <link rel="icon" type="image/png" href="assets/images/gatewatch-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -290,6 +305,49 @@ try {
             --sky-600: #0284c7;
             --slate-900: #0f172a;
             --glass: rgba(255, 255, 255, 0.65);
+            --page-bg-start: #e0f2ff;
+            --page-bg-end: #f8fbff;
+            --bg-spot-1: rgba(2, 132, 199, 0.07);
+            --bg-spot-2: rgba(59, 130, 246, 0.08);
+            --hero-overlay-top: rgba(15, 23, 42, 0.14);
+            --hero-overlay-bottom: rgba(255, 255, 255, 0.7);
+            --page-text: #0f172a;
+            --surface-1: rgba(255, 255, 255, 0.92);
+            --surface-border: rgba(255, 255, 255, 0.5);
+            --surface-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+            --header-bg: rgba(255, 255, 255, 0.9);
+            --header-border: #e2e8f0;
+            --brand-color: #000000;
+            --toggle-track-bg: linear-gradient(135deg, #dbeafe, #f8fafc);
+            --toggle-track-border: rgba(2, 132, 199, 0.24);
+            --toggle-thumb-bg: linear-gradient(135deg, #0284c7, #0ea5e9);
+            --toggle-thumb-shadow: 0 6px 14px rgba(2, 132, 199, 0.42);
+            --toggle-icon-muted: #64748b;
+            --toggle-label: #0f172a;
+        }
+
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --glass: rgba(15, 23, 42, 0.68);
+            --page-bg-start: #020617;
+            --page-bg-end: #0f172a;
+            --bg-spot-1: rgba(14, 165, 233, 0.17);
+            --bg-spot-2: rgba(56, 189, 248, 0.14);
+            --hero-overlay-top: rgba(2, 6, 23, 0.72);
+            --hero-overlay-bottom: rgba(15, 23, 42, 0.48);
+            --page-text: #e2e8f0;
+            --surface-1: rgba(15, 23, 42, 0.82);
+            --surface-border: rgba(148, 163, 184, 0.3);
+            --surface-shadow: 0 22px 65px rgba(1, 5, 20, 0.55);
+            --header-bg: rgba(8, 13, 28, 0.84);
+            --header-border: rgba(148, 163, 184, 0.28);
+            --brand-color: #e2e8f0;
+            --toggle-track-bg: linear-gradient(135deg, #1e293b, #020617);
+            --toggle-track-border: rgba(56, 189, 248, 0.36);
+            --toggle-thumb-bg: linear-gradient(135deg, #f8fafc, #dbeafe);
+            --toggle-thumb-shadow: 0 8px 18px rgba(15, 23, 42, 0.58);
+            --toggle-icon-muted: #94a3b8;
+            --toggle-label: #e2e8f0;
         }
 
         html {
@@ -302,12 +360,14 @@ try {
             margin: 0;
             padding: 0;
             min-height: 100%;
-            background: #e0f2ff;
-            background: radial-gradient(circle at 20% 20%, rgba(2, 132, 199, 0.07), transparent 30%),
-                        radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.08), transparent 25%),
-                        linear-gradient(135deg, #e0f2ff 0%, #f8fbff 100%);
+            color: var(--page-text);
+            background: var(--page-bg-start);
+            background: radial-gradient(circle at 20% 20%, var(--bg-spot-1), transparent 30%),
+                        radial-gradient(circle at 80% 10%, var(--bg-spot-2), transparent 25%),
+                        linear-gradient(135deg, var(--page-bg-start) 0%, var(--page-bg-end) 100%);
             background-attachment: fixed;
             overflow-x: hidden;
+            transition: background 0.55s ease, color 0.45s ease;
         }
 
         .page-shell {
@@ -332,8 +392,9 @@ try {
         .hero-gradient {
             position: fixed;
             inset: 0;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.14), rgba(255, 255, 255, 0.7));
+            background: linear-gradient(180deg, var(--hero-overlay-top), var(--hero-overlay-bottom));
             z-index: 0;
+            transition: background 0.45s ease;
         }
 
         .floating-blob {
@@ -366,14 +427,16 @@ try {
             background: var(--glass);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--surface-shadow);
+            transition: background 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease;
         }
 
         .frosted {
-            background: rgba(255, 255, 255, 0.92);
+            background: var(--surface-1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            transition: background 0.45s ease, border-color 0.45s ease;
         }
 
         .pill {
@@ -505,9 +568,11 @@ try {
         }
 
         .nav-blur {
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--header-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
+            border-color: var(--header-border) !important;
+            transition: background 0.45s ease, border-color 0.45s ease;
         }
 
         @font-face {
@@ -538,9 +603,333 @@ try {
             font-size: clamp(1.05rem, 2.2vw, 1.875rem);
             line-height: 1;
             letter-spacing: 0;
-            color: #000000;
+            color: var(--brand-color);
             text-rendering: optimizeLegibility;
             white-space: nowrap;
+            transition: color 0.45s ease;
+        }
+
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+            border-radius: 999px;
+            padding: 0.25rem 0.65rem 0.25rem 0.25rem;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(255, 255, 255, 0.75);
+            color: var(--toggle-label);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+            transition: transform 0.25s ease, background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+        }
+
+        .theme-toggle:focus-visible {
+            outline: 2px solid rgba(14, 165, 233, 0.65);
+            outline-offset: 2px;
+        }
+
+        .theme-toggle-track {
+            position: relative;
+            width: 3.7rem;
+            height: 1.9rem;
+            border-radius: 999px;
+            background: var(--toggle-track-bg);
+            border: 1px solid var(--toggle-track-border);
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0.44rem;
+            overflow: hidden;
+            transition: background 0.45s ease, border-color 0.45s ease;
+        }
+
+        .theme-toggle-icon {
+            width: 0.82rem;
+            height: 0.82rem;
+            color: var(--toggle-icon-muted);
+            z-index: 2;
+            transition: color 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .theme-toggle-thumb {
+            position: absolute;
+            top: 0.17rem;
+            left: 0.18rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 999px;
+            background: var(--toggle-thumb-bg);
+            box-shadow: var(--toggle-thumb-shadow);
+            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.26, 1.05), background 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .theme-toggle-label {
+            font-size: 0.78rem;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--toggle-label);
+            transition: color 0.35s ease;
+        }
+
+        html[data-theme="dark"] .theme-toggle {
+            background: rgba(2, 6, 23, 0.72);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 12px 28px rgba(2, 6, 23, 0.55);
+        }
+
+        html[data-theme="dark"] .theme-toggle-thumb {
+            transform: translateX(1.78rem);
+        }
+
+        html[data-theme="dark"] .theme-toggle .theme-toggle-sun {
+            opacity: 0.55;
+            transform: rotate(-22deg);
+        }
+
+        html[data-theme="dark"] .theme-toggle .theme-toggle-moon {
+            opacity: 1;
+            transform: rotate(0deg) scale(1.05);
+            color: #38bdf8;
+        }
+
+        html[data-theme="light"] .theme-toggle .theme-toggle-sun {
+            opacity: 1;
+            transform: rotate(0deg) scale(1.05);
+            color: #f59e0b;
+        }
+
+        html[data-theme="light"] .theme-toggle .theme-toggle-moon {
+            opacity: 0.55;
+            transform: rotate(18deg);
+        }
+
+        .theme-shift-flash {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 65;
+            opacity: 0;
+            background: radial-gradient(circle at var(--theme-fx-x, 82%) var(--theme-fx-y, 9%), rgba(56, 189, 248, 0.34), transparent 52%);
+        }
+
+        .theme-shift-flash.is-active {
+            animation: themeShiftPulse 520ms ease-out;
+        }
+
+        @keyframes themeShiftPulse {
+            from {
+                opacity: 0.62;
+                transform: scale(0.96);
+            }
+            to {
+                opacity: 0;
+                transform: scale(1.08);
+            }
+        }
+
+        html[data-theme="dark"] .text-slate-900,
+        html[data-theme="dark"] .text-slate-800 {
+            color: #e2e8f0 !important;
+        }
+
+        html[data-theme="dark"] .text-slate-700,
+        html[data-theme="dark"] .text-slate-600 {
+            color: #cbd5e1 !important;
+        }
+
+        html[data-theme="dark"] .text-slate-500,
+        html[data-theme="dark"] .text-slate-400 {
+            color: #94a3b8 !important;
+        }
+
+        html[data-theme="dark"] .text-indigo-600 {
+            color: #93c5fd !important;
+        }
+
+        html[data-theme="dark"] .text-indigo-800 {
+            color: #bfdbfe !important;
+        }
+
+        html[data-theme="dark"] .bg-white {
+            background-color: rgba(30, 41, 59, 0.82) !important;
+        }
+
+        html[data-theme="dark"] .border-slate-200,
+        html[data-theme="dark"] .border-slate-300 {
+            border-color: rgba(148, 163, 184, 0.35) !important;
+        }
+
+        html[data-theme="dark"] .chip {
+            border-color: rgba(56, 189, 248, 0.25);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(2, 6, 23, 0.45));
+        }
+
+        html[data-theme="dark"] .violation-history-modal-panel {
+            background: rgba(8, 13, 28, 0.86);
+            border-color: rgba(148, 163, 184, 0.38);
+        }
+
+        html[data-theme="dark"] .violation-history-item {
+            background: rgba(15, 23, 42, 0.76);
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        html[data-theme="dark"] .pending-reparation-panel {
+            background: linear-gradient(135deg, rgba(113, 63, 18, 0.74) 0%, rgba(120, 53, 15, 0.84) 100%) !important;
+            border-color: rgba(251, 191, 36, 0.62) !important;
+        }
+
+        .contact-support-modal {
+            background: rgba(2, 6, 23, 0.38);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .contact-support-panel {
+            position: relative;
+            border-radius: 1.4rem;
+            padding: 2rem;
+            background: linear-gradient(155deg, rgba(255, 255, 255, 0.84) 0%, rgba(255, 255, 255, 0.72) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            box-shadow: 0 26px 60px rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            overflow: hidden;
+        }
+
+        .contact-support-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(130deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08) 55%, transparent 72%);
+            pointer-events: none;
+        }
+
+        .contact-support-close {
+            position: absolute;
+            top: 0.9rem;
+            right: 0.9rem;
+            color: #94a3b8;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .contact-support-close:hover {
+            color: #475569;
+            transform: rotate(90deg);
+        }
+
+        .contact-support-icon-wrap {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1.1rem;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(186, 230, 253, 0.95), rgba(224, 242, 254, 0.82));
+            border: 1px solid rgba(125, 211, 252, 0.45);
+            box-shadow: 0 10px 24px rgba(2, 132, 199, 0.24);
+        }
+
+        .contact-support-note {
+            background: linear-gradient(135deg, rgba(241, 245, 249, 0.88), rgba(248, 250, 252, 0.78));
+            border: 1px solid rgba(191, 219, 254, 0.6);
+            border-radius: 0.95rem;
+            padding: 1.35rem 1.1rem;
+            margin-bottom: 1.35rem;
+        }
+
+        .contact-support-mail-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            color: #0284c7;
+            font-weight: 700;
+            margin-top: 0.65rem;
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .contact-support-mail-line a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .contact-support-mail-line a:hover {
+            text-decoration: underline;
+        }
+
+        .contact-support-action {
+            width: 100%;
+            height: 2.85rem;
+            border-radius: 0.7rem;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            font-size: 1.06rem;
+            font-weight: 700;
+            border: 1px solid rgba(2, 132, 199, 0.28);
+            box-shadow: 0 10px 24px rgba(2, 132, 199, 0.3);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        }
+
+        .contact-support-action:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(2, 132, 199, 0.34);
+        }
+
+        .contact-support-action:active {
+            transform: translateY(0);
+        }
+
+        html[data-theme="dark"] .contact-support-panel {
+            background: linear-gradient(155deg, rgba(8, 13, 28, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border-color: rgba(148, 163, 184, 0.35);
+            box-shadow: 0 30px 70px rgba(2, 6, 23, 0.64);
+        }
+
+        html[data-theme="dark"] .contact-support-icon-wrap {
+            background: linear-gradient(135deg, rgba(14, 116, 144, 0.5), rgba(14, 165, 233, 0.28));
+            border-color: rgba(56, 189, 248, 0.36);
+        }
+
+        html[data-theme="dark"] .contact-support-note {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.86), rgba(30, 41, 59, 0.8));
+            border-color: rgba(56, 189, 248, 0.28);
+        }
+
+        html[data-theme="dark"] .contact-support-close {
+            color: #94a3b8;
+        }
+
+        html[data-theme="dark"] .contact-support-close:hover {
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 640px) {
+            .contact-support-panel {
+                padding: 1.4rem;
+                border-radius: 1.1rem;
+            }
+
+            .contact-support-mail-line {
+                font-size: 0.96rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
         }
 
         .sidebar-button {
@@ -597,6 +986,10 @@ try {
                 letter-spacing: 0;
                 max-width: calc(100vw - 10rem);
             }
+
+            .theme-toggle-label {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -606,6 +999,7 @@ try {
         <div class="hero-gradient"></div>
         <span class="floating-blob blob-1"></span>
         <span class="floating-blob blob-2"></span>
+        <div id="themeShiftFlash" class="theme-shift-flash" aria-hidden="true"></div>
 
         <nav class="nav-blur border-b border-slate-200 fixed w-full top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -618,8 +1012,21 @@ try {
 
                     </div>
 
-                    <div class="flex items-center">
-                        <form action="auth.php" method="POST" class="ml-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <button id="themeToggleButton" type="button" class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                            <span class="theme-toggle-track" aria-hidden="true">
+                                <svg class="theme-toggle-icon theme-toggle-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m0 13.5V21m8.25-9H18m-13.5 0H2.25m15.273 6.364l-1.591-1.591M8.318 8.318 6.727 6.727m10.546 0-1.591 1.591M8.318 15.682l-1.591 1.591M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                                </svg>
+                                <svg class="theme-toggle-icon theme-toggle-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3c-.066.344-.1.7-.1 1.06a8.25 8.25 0 008.25 8.25c.36 0 .716-.034 1.06-.1z" />
+                                </svg>
+                                <span class="theme-toggle-thumb"></span>
+                            </span>
+                            <span id="themeToggleLabel" class="theme-toggle-label">Light</span>
+                        </button>
+
+                        <form action="auth.php" method="POST" class="ml-0">
                             <?= csrf_input() ?>
                             <input type="hidden" name="action" value="logout">
                             <button type="submit" class="sidebar-button px-4 py-2 rounded-full text-sm font-semibold text-slate-700 border border-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-sky-500">
@@ -828,7 +1235,7 @@ try {
 
                 <?php if (!empty($pendingReparations)): ?>
                 <div class="order-2 lg:order-3 lg:col-span-12 md:col-span-12">
-                    <div class="mt-4 rounded-2xl card-animate" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b;">
+                    <div class="mt-4 rounded-2xl card-animate pending-reparation-panel" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b;">
                         <div class="p-4 flex items-center gap-3 border-b border-amber-200">
                             <div class="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1121,10 +1528,10 @@ try {
     </div>
 
     <!-- Contact Support Modal (Hidden by default) -->
-    <div id="contactSupportModal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden" style="display: none;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl relative">
+    <div id="contactSupportModal" class="contact-support-modal fixed inset-0 items-center justify-center z-50 hidden" style="display: none;">
+        <div class="contact-support-panel max-w-md w-full mx-4">
             <!-- Close button -->
-            <button onclick="toggleContactSupport()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+            <button onclick="toggleContactSupport()" class="contact-support-close" aria-label="Close contact support modal">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1132,7 +1539,7 @@ try {
             
             <!-- Icon -->
             <div class="flex justify-center mb-6">
-                <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center">
+                <div class="contact-support-icon-wrap">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
@@ -1143,22 +1550,22 @@ try {
             <h4 class="text-2xl font-bold text-slate-800 text-center mb-4">Contact Support</h4>
             
             <!-- Message -->
-            <div class="bg-gradient-to-br from-sky-50 to-white rounded-xl p-6 border border-sky-100 mb-6">
+            <div class="contact-support-note">
                 <p class="text-slate-700 text-center mb-4 leading-relaxed">
                     For any issues or concerns regarding your RFID account, please contact our support team:
                 </p>
-                <div class="flex items-center justify-center gap-2 text-sky-600 font-semibold">
+                <div class="contact-support-mail-line">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <a href="mailto:studentservices.manila@pcu.edu.ph" class="hover:underline">studentservices.manila@pcu.edu.ph</a>
+                    <a href="mailto:studentservices.manila@pcu.edu.ph">studentservices.manila@pcu.edu.ph</a>
                 </div>
             </div>
             
             <!-- Action button -->
             <button 
                 onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=studentservices.manila@pcu.edu.ph', '_blank')" 
-                class="w-full h-11 bg-sky-600 text-white text-base font-medium rounded-lg shadow-md transition duration-150 hover:bg-sky-700 active:transform active:scale-[0.98] flex items-center justify-center gap-2">
+                class="contact-support-action flex items-center justify-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
@@ -1173,6 +1580,70 @@ try {
     <script>
         // CSRF Token for JavaScript fetch requests
         const csrfToken = '<?php echo $_SESSION['csrf_token']; ?>';
+        const THEME_STORAGE_KEY = 'homepage_theme_preference';
+
+        function applyHomepageTheme(theme, shouldAnimate, eventForFlash) {
+            const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', resolvedTheme);
+
+            const toggleButton = document.getElementById('themeToggleButton');
+            const toggleLabel = document.getElementById('themeToggleLabel');
+            if (toggleButton) {
+                toggleButton.setAttribute('aria-pressed', String(resolvedTheme === 'dark'));
+                toggleButton.setAttribute('aria-label', resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+            if (toggleLabel) {
+                toggleLabel.textContent = resolvedTheme === 'dark' ? 'Dark' : 'Light';
+            }
+
+            if (shouldAnimate) {
+                const flash = document.getElementById('themeShiftFlash');
+                if (flash) {
+                    if (eventForFlash && typeof eventForFlash.clientX === 'number' && typeof eventForFlash.clientY === 'number') {
+                        flash.style.setProperty('--theme-fx-x', eventForFlash.clientX + 'px');
+                        flash.style.setProperty('--theme-fx-y', eventForFlash.clientY + 'px');
+                    } else {
+                        flash.style.setProperty('--theme-fx-x', '82%');
+                        flash.style.setProperty('--theme-fx-y', '9%');
+                    }
+                    flash.classList.remove('is-active');
+                    void flash.offsetWidth;
+                    flash.classList.add('is-active');
+                }
+            }
+        }
+
+        function initHomepageThemeToggle() {
+            let savedTheme = null;
+            try {
+                savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            } catch (e) {
+                savedTheme = null;
+            }
+
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const initialTheme = (savedTheme === 'dark' || savedTheme === 'light')
+                ? savedTheme
+                : (document.documentElement.getAttribute('data-theme') || (systemPrefersDark ? 'dark' : 'light'));
+
+            applyHomepageTheme(initialTheme, false);
+
+            const toggleButton = document.getElementById('themeToggleButton');
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function (event) {
+                    const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+                    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    applyHomepageTheme(nextTheme, true, event);
+                    try {
+                        localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+                    } catch (e) {
+                        // Non-blocking if browser storage is unavailable.
+                    }
+                });
+            }
+        }
+
+        initHomepageThemeToggle();
         
         // User menu toggle
         const userMenuButton = document.getElementById('user-menu-button');
