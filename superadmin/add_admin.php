@@ -62,9 +62,19 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-// Validate password length
-if (strlen($password) < 8) {
-    echo json_encode(['success' => false, 'error' => 'Password must be at least 8 characters']);
+// Enforce strong password policy for admin accounts.
+if (strlen($password) < 12) {
+    echo json_encode(['success' => false, 'error' => 'Password must be at least 12 characters']);
+    exit;
+}
+
+if (!preg_match('/[A-Z]/', $password)) {
+    echo json_encode(['success' => false, 'error' => 'Password must include at least one uppercase letter']);
+    exit;
+}
+
+if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+    echo json_encode(['success' => false, 'error' => 'Password must include at least one special character']);
     exit;
 }
 

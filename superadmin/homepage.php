@@ -1312,12 +1312,34 @@ document.getElementById('addAdminForm').addEventListener('submit', async functio
         return;
     }
     
-    // Validate password length
-    if (formData.get('password').length < 8) {
+    const password = formData.get('password') || '';
+
+    // Align with secure admin password policy.
+    if (password.length < 12) {
         Swal.fire({
             icon: 'error',
             title: 'Invalid Password',
-            text: 'Password must be at least 8 characters long.',
+            text: 'Password must be at least 12 characters long.',
+            confirmButtonColor: '#0056b3'
+        });
+        return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Password',
+            text: 'Password must include at least one uppercase letter.',
+            confirmButtonColor: '#0056b3'
+        });
+        return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Invalid Password',
+            text: 'Password must include at least one special character.',
             confirmButtonColor: '#0056b3'
         });
         return;
@@ -1453,7 +1475,7 @@ async function toggleAdminStatus(adminId, newStatus) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
                     admin_id: adminId,
@@ -1497,7 +1519,7 @@ async function toggleAdminStatus(adminId, newStatus) {
 async function confirmDeleteAdmin(adminId, adminName) {
     const result = await Swal.fire({
         title: 'Delete Admin?',
-        html: `Are you sure you want to permanently delete <strong>${adminName}</strong>?<br><br><span class="text-red-600 text-sm">This action cannot be undone!</span>`,
+        text: `Are you sure you want to permanently delete ${adminName}? This action cannot be undone.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -1511,7 +1533,7 @@ async function confirmDeleteAdmin(adminId, adminName) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
+                    'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
                     admin_id: adminId,

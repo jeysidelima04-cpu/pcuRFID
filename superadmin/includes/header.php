@@ -1,6 +1,7 @@
 <?php
 // Centralized super admin auth check (includes no-cache headers)
 require_superadmin_auth();
+send_security_headers();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -219,6 +220,12 @@ require_superadmin_auth();
                                 <p class="text-xs text-slate-500"><?php echo e($_SESSION['superadmin_email'] ?? ''); ?></p>
                             </div>
                             <div class="border-t border-slate-100">
+                                <a href="audit_logs.php" class="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6m3 6V7m3 10v-4m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Audit Logs
+                                </a>
                                 <a href="superadmin_logout.php" class="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
